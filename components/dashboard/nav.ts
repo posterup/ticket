@@ -4,6 +4,7 @@ import {
   Ticket,
   ChartColumn,
   ScanLine,
+  Megaphone,
   Users,
   User,
   type LucideIcon,
@@ -22,6 +23,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
   { href: "/dashboard/tickets/customize", label: "قالب بلیت", icon: Ticket },
   { href: "/dashboard/analytics", label: "تحلیل", icon: ChartColumn },
   { href: "/dashboard/checkin", label: "پذیرش", icon: ScanLine },
+  { href: "/dashboard/marketing", label: "بازاریابی", icon: Megaphone },
   { href: "/dashboard/customers", label: "مشتریان", icon: Users },
   { href: "/dashboard/profile", label: "پروفایل", icon: User },
 ];
