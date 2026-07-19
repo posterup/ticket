@@ -501,18 +501,13 @@ export function EventComposer() {
               <Plus className="size-4" aria-hidden />
               افزودن نوع بلیت
             </button>
-          </div>
-        </SectionCard>
 
-        <SectionCard
-          title="طراحی بلیت"
-          description="اختیاری — ظاهر بلیت صادرشده را با برند خود هماهنگ کنید."
-        >
-          <TicketDesignSection
-            design={draft.ticketDesign}
-            sample={ticketSample}
-            onChange={(d) => patch({ ticketDesign: d })}
-          />
+            <TicketDesignSection
+              design={draft.ticketDesign}
+              sample={ticketSample}
+              onChange={(d) => patch({ ticketDesign: d })}
+            />
+          </div>
         </SectionCard>
 
         <SectionCard title="حریم خصوصی">

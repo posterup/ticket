@@ -97,18 +97,27 @@ export function Disclosure({
   label,
   children,
   defaultOpen = false,
+  onOpenChange,
 }: {
   label: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const id = useId();
+  const toggle = () => {
+    setOpen((o) => {
+      const next = !o;
+      onOpenChange?.(next);
+      return next;
+    });
+  };
   return (
     <div className="border-t border-border pt-3">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         aria-expanded={open}
         aria-controls={id}
         className="flex w-full items-center justify-between gap-2 text-sm font-medium text-muted hover:text-foreground"
