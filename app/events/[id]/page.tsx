@@ -136,9 +136,24 @@ export default async function PublicEventDetail({ params }: Params) {
               <MapPin className="size-4 text-faint" aria-hidden />
               مکان
             </h2>
-            <p className="text-sm text-foreground">{event.venue.name}</p>
-            <p className="mt-1 text-sm text-muted">{event.venue.address}</p>
-            <p className="mt-1 text-sm text-muted">{event.venue.city}</p>
+            {event.venue.name ? (
+              <p className="text-sm text-foreground">{event.venue.name}</p>
+            ) : null}
+            <p
+              className={cn(
+                "text-sm text-muted",
+                event.venue.name ? "mt-1" : undefined,
+              )}
+            >
+              {[event.venue.province, event.venue.city].filter(Boolean).join("، ")}
+            </p>
+            {event.venue.hideAddress ? (
+              <p className="mt-1 text-xs text-faint">
+                آدرس دقیق و موقعیت روی نقشه برای این رویداد نمایش داده نمی‌شود.
+              </p>
+            ) : event.venue.address ? (
+              <p className="mt-1 text-sm text-muted">{event.venue.address}</p>
+            ) : null}
           </div>
         </div>
 

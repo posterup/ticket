@@ -21,6 +21,8 @@ export type WeekDay = "SA" | "SU" | "MO" | "TU" | "WE" | "TH" | "FR";
 export interface Venue {
   id: string;
   name: string;
+  /** Province (استان), e.g. `تهران`. */
+  province?: string;
   /** City, e.g. `تهران`. */
   city: string;
   address: string;
@@ -31,6 +33,8 @@ export interface Venue {
   /** Dropped-pin coordinates, when the organizer placed one. */
   lat?: number;
   lng?: number;
+  /** When true, hide the exact address and pin from the public event page. */
+  hideAddress?: boolean;
 }
 
 /**

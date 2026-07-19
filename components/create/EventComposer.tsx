@@ -18,9 +18,11 @@ import { formatJalaliDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionCard, Toggle, Stepper } from "@/components/create/ui";
 import { LocationPicker } from "@/components/create/LocationPicker";
+import { IRAN_PROVINCES, citiesOfProvince } from "@/lib/create/iran-locations";
 import { MediaSection } from "@/components/create/MediaSection";
 import { TicketDesignSection } from "@/components/create/TicketDesignSection";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
@@ -56,7 +58,7 @@ const STEP_TITLES = ["رویداد", "زمان‌بندی", "بلیت‌ها"];
 
 /** Error keys owned by each step, so Next validates only that step. */
 function stepErrorKeys(step: number, draft: CreateDraft): string[] {
-  if (step === 0) return ["title", "venueName", "city", "onlineUrl"];
+  if (step === 0) return ["title", "province", "city", "onlineUrl"];
   if (step === 1) return ["schedule"];
   return ["tickets", ...draft.ticketTypes.map((t) => `ticket-${t.id}`)];
 }
@@ -261,10 +263,14 @@ export function EventComposer() {
         description: draft.description.trim(),
         mode,
         venue: {
-          name: draft.location.venueName.trim() || (draft.location.mode === "online" ? "آنلاین" : ""),
+          name:
+            draft.location.venueName.trim() ||
+            (draft.location.mode === "online" ? "آنلاین" : draft.location.city.trim()),
+          province: draft.location.province.trim(),
           city: draft.location.city.trim(),
           address: draft.location.address.trim() || draft.location.onlineUrl.trim(),
           capacity: 0,
+          hideAddress: draft.location.hideAddress,
           ...(draft.location.mode !== "in-person" && draft.location.onlineUrl.trim()
             ? { onlineUrl: draft.location.onlineUrl.trim() }
             : {}),
@@ -398,6 +404,36 @@ export function EventComposer() {
           </div>
         </SectionCard>
 
+        <SectionCard title="حریم خصوصی">
+          <div className="flex flex-col gap-4">
+            <div className="grid max-w-md gap-2 sm:grid-cols-2">
+              {(["public", "unlisted"] as Visibility[]).map((v) => {
+                const Icon = VIS_ICON[v];
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={draft.visibility === v}
+                    onClick={() => patch({ visibility: v })}
+                    className={cn(
+                      "flex flex-col items-start gap-1.5 rounded-md border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                      draft.visibility === v
+                        ? "border-foreground bg-subtle"
+                        : "border-border hover:border-border-strong",
+                    )}
+                  >
+                    <Icon className="size-4 text-foreground" aria-hidden />
+                    <span className="text-sm font-medium text-foreground">
+                      {VISIBILITY_LABELS[v]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted">{VISIBILITY_HINTS[draft.visibility]}</p>
+          </div>
+        </SectionCard>
+
         <SectionCard title="مکان">
           <div className="flex flex-col gap-4">
             {/* Only in-person for now; the mode toggle is kept but hidden. */}
@@ -423,22 +459,52 @@ export function EventComposer() {
             ) : null}
             {draft.location.mode !== "online" ? (
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="venue" label="نام محل" required error={errors.venueName}>
-                  <Input
-                    id="venue"
-                    value={draft.location.venueName}
-                    onChange={(e) => patchLocation({ venueName: e.target.value })}
-                    aria-invalid={Boolean(errors.venueName)}
-                  />
+                <Field id="province" label="استان" required error={errors.province}>
+                  <Select
+                    id="province"
+                    value={draft.location.province}
+                    onChange={(e) =>
+                      // Changing the province clears the now-stale city choice.
+                      patchLocation({ province: e.target.value, city: "" })
+                    }
+                    aria-invalid={Boolean(errors.province)}
+                  >
+                    <option value="">انتخاب استان…</option>
+                    {IRAN_PROVINCES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </Select>
                 </Field>
                 <Field id="city" label="شهر" required error={errors.city}>
-                  <Input
+                  <Select
                     id="city"
                     value={draft.location.city}
                     onChange={(e) => patchLocation({ city: e.target.value })}
+                    disabled={!draft.location.province}
                     aria-invalid={Boolean(errors.city)}
-                  />
+                  >
+                    <option value="">
+                      {draft.location.province ? "انتخاب شهر…" : "ابتدا استان را انتخاب کنید"}
+                    </option>
+                    {citiesOfProvince(draft.location.province).map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
                 </Field>
+                <div className="sm:col-span-2">
+                  <Field id="venue" label="نام محل" hint="اختیاری — مثلاً سالن یا مجموعه.">
+                    <Input
+                      id="venue"
+                      value={draft.location.venueName}
+                      onChange={(e) => patchLocation({ venueName: e.target.value })}
+                      placeholder="مثلاً تالار وحدت"
+                    />
+                  </Field>
+                </div>
                 <div className="sm:col-span-2">
                   <Field id="address" label="آدرس">
                     <Input
@@ -453,6 +519,14 @@ export function EventComposer() {
                     lat={draft.location.lat}
                     lng={draft.location.lng}
                     onChange={(lat, lng) => patchLocation({ lat, lng })}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Toggle
+                    label="پنهان‌کردن آدرس و نقشه"
+                    hint="اگر فعال باشد، آدرس دقیق و موقعیت روی نقشه در صفحهٔ رویداد نمایش داده نمی‌شود."
+                    checked={draft.location.hideAddress}
+                    onChange={(v) => patchLocation({ hideAddress: v })}
                   />
                 </div>
               </div>
@@ -482,36 +556,6 @@ export function EventComposer() {
             onPosterChange={(url) => patch({ poster: url })}
             onGalleryChange={(items) => patch({ gallery: items })}
           />
-        </SectionCard>
-
-        <SectionCard title="حریم خصوصی">
-          <div className="flex flex-col gap-4">
-            <div className="grid max-w-md gap-2 sm:grid-cols-2">
-              {(["public", "unlisted"] as Visibility[]).map((v) => {
-                const Icon = VIS_ICON[v];
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    aria-pressed={draft.visibility === v}
-                    onClick={() => patch({ visibility: v })}
-                    className={cn(
-                      "flex flex-col items-start gap-1.5 rounded-md border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
-                      draft.visibility === v
-                        ? "border-foreground bg-subtle"
-                        : "border-border hover:border-border-strong",
-                    )}
-                  >
-                    <Icon className="size-4 text-foreground" aria-hidden />
-                    <span className="text-sm font-medium text-foreground">
-                      {VISIBILITY_LABELS[v]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-xs text-muted">{VISIBILITY_HINTS[draft.visibility]}</p>
-          </div>
         </SectionCard>
         </>
         ) : null}

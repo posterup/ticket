@@ -118,13 +118,19 @@ export interface CreateDraft {
   gallery: MediaItem[];
   location: {
     mode: LocationMode;
-    venueName: string;
+    /** Province (استان) — chosen from a fixed list. */
+    province: string;
+    /** City (شهر) — chosen from the selected province's cities. */
     city: string;
+    /** Optional venue/place name (نام محل). */
+    venueName: string;
     address: string;
     onlineUrl: string;
     /** Dropped pin coordinates (null until the organizer places one). */
     lat: number | null;
     lng: number | null;
+    /** When true, the exact address and map pin stay hidden on the event page. */
+    hideAddress: boolean;
   };
   visibility: Visibility;
   /** Optional custom ticket appearance; `null` uses the default design. */
@@ -208,12 +214,14 @@ export const initialDraft: CreateDraft = {
   gallery: [],
   location: {
     mode: "in-person",
-    venueName: "",
+    province: "",
     city: "",
+    venueName: "",
     address: "",
     onlineUrl: "",
     lat: null,
     lng: null,
+    hideAddress: false,
   },
   visibility: "public",
   ticketDesign: null,
