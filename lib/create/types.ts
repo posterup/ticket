@@ -8,6 +8,7 @@
  */
 
 import type { RecurrenceFrequency, WeekDay } from "@/types";
+import type { TicketTemplate } from "@/components/tickets/TicketPreview";
 
 export type LocationMode = "in-person" | "online" | "hybrid";
 
@@ -85,6 +86,8 @@ export interface CreateDraft {
   requireApproval: boolean;
   /** Access code for `private` events. */
   accessCode: string;
+  /** Optional custom ticket appearance; `null` uses the default design. */
+  ticketDesign: TicketTemplate | null;
   scheduleMode: ScheduleMode;
   sessions: SessionDraft[];
   recurrence: RecurrenceDraft;
@@ -102,6 +105,22 @@ export const EVENT_CATEGORIES = [
   "کسب‌وکار",
   "سایر",
 ] as const;
+
+/** A neutral starting ticket design when the organizer opts to customize. */
+export function defaultTicketDesign(): TicketTemplate {
+  return {
+    accent: "#111111",
+    surface: "light",
+    bgColor: null,
+    bgImage: null,
+    logo: null,
+    showCategory: true,
+    showSeat: false,
+    showDate: true,
+    showVenue: true,
+    note: "این بلیت را هنگام ورود ارائه دهید.",
+  };
+}
 
 export function emptySession(id: string): SessionDraft {
   return { id, date: "", startTime: "", endTime: "" };
@@ -149,6 +168,7 @@ export const initialDraft: CreateDraft = {
   visibility: "public",
   requireApproval: false,
   accessCode: "",
+  ticketDesign: null,
   scheduleMode: "single",
   sessions: [emptySession("session-1")],
   recurrence: { frequency: "weekly", interval: "1", byDay: [], count: "8" },

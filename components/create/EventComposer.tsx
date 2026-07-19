@@ -25,9 +25,11 @@ import { SectionCard, Toggle, Stepper } from "@/components/create/ui";
 import { TemplatePicker } from "@/components/create/TemplatePicker";
 import type { ComposerTemplate } from "@/lib/create/templates";
 import { MediaSection } from "@/components/create/MediaSection";
+import { TicketDesignSection } from "@/components/create/TicketDesignSection";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
 import { EventPreview } from "@/components/create/EventPreview";
+import type { TicketSample } from "@/components/tickets/TicketPreview";
 import {
   LOCATION_LABELS,
   VISIBILITY_LABELS,
@@ -130,6 +132,18 @@ export function EventComposer() {
           .filter((s) => s.date)
           .map((s) => ({ id: s.id, label: formatJalaliDate(`${s.date}T00:00:00.000Z`) }))
       : [];
+
+  const ticketSample: TicketSample = {
+    eventTitle: draft.title.trim() || "عنوان رویداد",
+    holder: "سارا محمدی",
+    category: draft.ticketTypes[0]?.name.trim() || "عمومی",
+    seat: "ردیف A · صندلی ۱۲",
+    date: expanded[0]?.date
+      ? formatJalaliDate(`${expanded[0].date}T00:00:00.000Z`)
+      : "تاریخ رویداد",
+    venue:
+      draft.location.venueName.trim() || draft.location.city.trim() || "مکان رویداد",
+  };
 
   // --- schedule handlers ---
   function setScheduleMode(mode: ScheduleMode) {
@@ -488,6 +502,17 @@ export function EventComposer() {
               افزودن نوع بلیت
             </button>
           </div>
+        </SectionCard>
+
+        <SectionCard
+          title="طراحی بلیت"
+          description="اختیاری — ظاهر بلیت صادرشده را با برند خود هماهنگ کنید."
+        >
+          <TicketDesignSection
+            design={draft.ticketDesign}
+            sample={ticketSample}
+            onChange={(d) => patch({ ticketDesign: d })}
+          />
         </SectionCard>
 
         <SectionCard title="حریم خصوصی">
