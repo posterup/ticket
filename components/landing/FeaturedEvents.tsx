@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { MapPin, CalendarDays, ArrowLeft, BadgeCheck } from "lucide-react";
+import { MapPin, CalendarDays, ArrowLeft, BadgeCheck, Users } from "lucide-react";
 
 import {
   listEvents,
   listTickets,
   getWorkspaceByEvent,
+  getEventEngagement,
 } from "@/lib/server";
-import { formatJalaliDate, formatToman } from "@/lib/format";
+import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
 
 function fromPrice(eventId: string): string | null {
@@ -53,6 +54,7 @@ export function FeaturedEvents() {
           const price = fromPrice(event.id);
           const firstSession = event.sessions[0];
           const organizer = getWorkspaceByEvent(event.id);
+          const going = getEventEngagement(event.id).going;
           return (
             <Link
               key={event.id}
@@ -90,6 +92,12 @@ export function FeaturedEvents() {
                   <MapPin className="size-4 text-faint" aria-hidden />
                   {event.venue.name}، {event.venue.city}
                 </span>
+                {going > 0 ? (
+                  <span className="flex items-center gap-2">
+                    <Users className="size-4 text-faint" aria-hidden />
+                    {formatNumber(going)} نفر می‌روند
+                  </span>
+                ) : null}
               </div>
               {price ? (
                 <span className="mt-4 border-t border-border pt-3 text-sm font-medium text-foreground">
