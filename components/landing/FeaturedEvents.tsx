@@ -9,6 +9,7 @@ import {
 } from "@/lib/server";
 import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
+import { EventCover } from "@/components/events/EventCover";
 
 function fromPrice(eventId: string): string | null {
   const prices = listTickets(eventId).map((t) => t.price);
@@ -59,8 +60,10 @@ export function FeaturedEvents() {
             <Link
               key={event.id}
               href={`/events/${event.id}`}
-              className="flex flex-col rounded-lg border border-border bg-card p-5 transition-colors hover:border-border-strong"
+              className="flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-border-strong"
             >
+              <EventCover seed={event.id} tags={event.tags} className="aspect-video" />
+              <div className="flex flex-1 flex-col p-5">
               {organizer ? (
                 <span className="mb-3 flex items-center gap-2 text-xs text-muted">
                   <span className="grid size-6 place-items-center rounded-full bg-foreground text-[0.625rem] font-bold text-background">
@@ -100,10 +103,11 @@ export function FeaturedEvents() {
                 ) : null}
               </div>
               {price ? (
-                <span className="mt-4 border-t border-border pt-3 text-sm font-medium text-foreground">
+                <span className="mt-auto border-t border-border pt-3 text-sm font-medium text-foreground">
                   {price}
                 </span>
               ) : null}
+              </div>
             </Link>
           );
         })}

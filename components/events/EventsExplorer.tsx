@@ -7,6 +7,7 @@ import { MapPin, CalendarDays, Search, X, BadgeCheck, Users } from "lucide-react
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { formatNumber } from "@/lib/format";
+import { EventCover } from "@/components/events/EventCover";
 
 export interface DiscoverEvent {
   id: string;
@@ -146,8 +147,10 @@ export function EventsExplorer({ events }: { events: DiscoverEvent[] }) {
             <Link
               key={e.id}
               href={`/events/${e.id}`}
-              className="flex flex-col rounded-lg border border-border bg-card p-5 transition-colors hover:border-border-strong"
+              className="flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-border-strong"
             >
+              <EventCover seed={e.id} tags={e.tags} className="aspect-video" />
+              <div className="flex flex-1 flex-col p-5">
               {e.org ? (
                 <span className="mb-3 flex items-center gap-2 text-xs text-muted">
                   <span className="grid size-6 place-items-center rounded-full bg-foreground text-[0.625rem] font-bold text-background">
@@ -182,10 +185,11 @@ export function EventsExplorer({ events }: { events: DiscoverEvent[] }) {
                 ) : null}
               </div>
               {e.price ? (
-                <span className="mt-4 border-t border-border pt-3 text-sm font-medium text-foreground">
+                <span className="mt-auto border-t border-border pt-3 text-sm font-medium text-foreground">
                   {e.price}
                 </span>
               ) : null}
+              </div>
             </Link>
           ))}
         </div>
