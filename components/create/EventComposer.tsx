@@ -11,6 +11,7 @@ import {
   Lock,
   ArrowRight,
   ArrowLeft,
+  ChevronDown,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -79,6 +80,7 @@ export function EventComposer() {
   const [createdTitle, setCreatedTitle] = useState("");
   const [template, setTemplate] = useState<string | null>(null);
   const [step, setStep] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
 
   function goNext() {
     const errs = validateDraft(draft);
@@ -580,11 +582,27 @@ export function EventComposer() {
         </div>
       </div>
 
-      {/* Live preview */}
-      <div className="lg:order-1">
+      {/* Live preview — collapsible at the top on mobile, sticky sidebar on desktop */}
+      <div className="order-first lg:order-1">
         <div className="lg:sticky lg:top-8">
-          <p className="mb-3 text-sm font-medium text-muted">پیش‌نمایش</p>
-          <EventPreview draft={draft} sessions={expanded} />
+          <button
+            type="button"
+            onClick={() => setShowPreview((v) => !v)}
+            aria-expanded={showPreview}
+            className="mb-3 flex w-full items-center justify-between gap-2 text-sm font-medium text-muted lg:pointer-events-none lg:mb-3"
+          >
+            پیش‌نمایش
+            <ChevronDown
+              className={cn(
+                "size-4 transition-transform lg:hidden",
+                showPreview && "rotate-180",
+              )}
+              aria-hidden
+            />
+          </button>
+          <div className={cn("lg:block", showPreview ? "block" : "hidden")}>
+            <EventPreview draft={draft} sessions={expanded} />
+          </div>
         </div>
       </div>
       </div>

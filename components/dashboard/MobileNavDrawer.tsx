@@ -63,7 +63,7 @@ export function MobileNavDrawer() {
               onClick={() => setOpen(false)}
             />
             <motion.aside
-              className="absolute inset-y-0 end-0 flex w-72 max-w-[85vw] flex-col border-s border-border bg-card px-4 py-5 shadow-xl"
+              className="absolute inset-y-0 start-0 flex w-72 max-w-[85vw] flex-col border-e border-border bg-card px-4 py-5 shadow-xl"
               initial={reduce ? false : { x: "100%" }}
               animate={{ x: 0 }}
               exit={reduce ? undefined : { x: "100%" }}
