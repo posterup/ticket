@@ -21,11 +21,17 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
     e.onlineUrl = "نشانی آنلاین الزامی است.";
   }
 
-  const sessions = expandSessions(draft);
-  if (sessions.length === 0) {
-    e.sessions = "حداقل یک تاریخ برای رویداد تعیین کنید.";
-  } else if (draft.sessions.some((s) => s.date && (!s.startTime || !s.endTime))) {
-    e.sessions = "برای هر جلسه ساعت شروع و پایان را کامل کنید.";
+  const { calendar, startDate, endDate, byDay, slots } = draft.schedule;
+  if (!startDate) {
+    e.schedule = "تاریخ شروع را تعیین کنید.";
+  } else if (endDate && endDate < startDate) {
+    e.schedule = "تاریخ پایان نباید پیش از تاریخ شروع باشد.";
+  } else if (!slots.some((s) => s.startTime)) {
+    e.schedule = "حداقل یک سانس با ساعت شروع تعریف کنید.";
+  } else if (slots.some((s) => s.startTime && !s.endTime)) {
+    e.schedule = "برای هر سانس ساعت پایان را هم مشخص کنید.";
+  } else if (calendar && byDay.length > 0 && expandSessions(draft).length === 0) {
+    e.schedule = "در بازهٔ انتخابی روزی با روزهای اجرا هم‌خوانی ندارد.";
   }
 
   if (draft.visibility === "private" && !draft.requireApproval && !draft.accessCode.trim()) {

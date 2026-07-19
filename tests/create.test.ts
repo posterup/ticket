@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 
 import {
   initialDraft,
-  emptySession,
   emptyTicket,
   expandSessions,
   type CreateDraft,
+  type ScheduleDraft,
 } from "@/lib/create/types";
 import { validateDraft } from "@/lib/create/validation";
 
@@ -13,62 +13,85 @@ function draft(overrides: Partial<CreateDraft> = {}): CreateDraft {
   return { ...initialDraft, ...overrides };
 }
 
-function session(id: string, date: string, start = "18:00", end = "20:00") {
-  return { ...emptySession(id), date, startTime: start, endTime: end };
+function schedule(o: Partial<ScheduleDraft> = {}): ScheduleDraft {
+  return {
+    calendar: false,
+    startDate: "2026-09-01",
+    endDate: "",
+    byDay: [],
+    slots: [{ id: "slot-1", startTime: "18:00", endTime: "20:00" }],
+    daySlots: {},
+    exceptions: [],
+    ...o,
+  };
 }
 
 describe("expandSessions", () => {
-  it("single mode returns the one dated session", () => {
-    const d = draft({ scheduleMode: "single", sessions: [session("s1", "2026-09-01")] });
-    expect(expandSessions(d)).toHaveLength(1);
+  it("a single day + one سانس yields one session", () => {
+    expect(expandSessions(draft({ schedule: schedule() }))).toHaveLength(1);
   });
 
-  it("single mode drops undated sessions", () => {
-    const d = draft({ scheduleMode: "single", sessions: [emptySession("s1")] });
-    expect(expandSessions(d)).toHaveLength(0);
+  it("no start date yields nothing", () => {
+    expect(expandSessions(draft({ schedule: schedule({ startDate: "" }) }))).toHaveLength(0);
   });
 
-  it("multi mode keeps every dated سانس", () => {
-    const d = draft({
-      scheduleMode: "multi",
-      sessions: [session("s1", "2026-09-01"), session("s2", "2026-09-02")],
-    });
-    expect(expandSessions(d)).toHaveLength(2);
+  it("no timed سانس yields nothing", () => {
+    const s = schedule({ slots: [{ id: "slot-1", startTime: "", endTime: "" }] });
+    expect(expandSessions(draft({ schedule: s }))).toHaveLength(0);
   });
 
-  it("recurring repeats a single سانس across occurrences", () => {
-    const d = draft({
-      scheduleMode: "recurring",
-      sessions: [session("s1", "2026-09-01")],
-      recurrence: { frequency: "weekly", interval: "1", byDay: [], count: "4" },
-    });
-    const out = expandSessions(d);
-    expect(out).toHaveLength(4);
-    // weekly, +7 days each
-    expect(out[0].date).toBe("2026-09-01");
-    expect(out[1].date).toBe("2026-09-08");
-    expect(out[3].date).toBe("2026-09-22");
-  });
-
-  it("recurring repeats MULTIPLE سانس per occurrence (count × سانس)", () => {
-    const d = draft({
-      scheduleMode: "recurring",
-      sessions: [
-        session("s1", "2026-09-01", "18:00", "20:00"),
-        session("s2", "2026-09-01", "21:00", "23:00"),
+  it("a date range × سانس‌ها = days × slots", () => {
+    const s = schedule({
+      startDate: "2026-09-01",
+      endDate: "2026-09-03", // 3 days
+      slots: [
+        { id: "a", startTime: "18:00", endTime: "20:00" },
+        { id: "b", startTime: "21:00", endTime: "23:00" },
       ],
-      recurrence: { frequency: "weekly", interval: "1", byDay: [], count: "3" },
     });
-    expect(expandSessions(d)).toHaveLength(6); // 3 نوبت × 2 سانس
+    expect(expandSessions(draft({ schedule: s }))).toHaveLength(6); // 3 × 2
   });
 
-  it("recurring clamps count to a sane maximum", () => {
-    const d = draft({
-      scheduleMode: "recurring",
-      sessions: [session("s1", "2026-09-01")],
-      recurrence: { frequency: "daily", interval: "1", byDay: [], count: "999" },
+  it("calendar mode filters the range to the chosen weekdays", () => {
+    // 2026-09-01 is a Tuesday; keep only Saturdays in a one-week range.
+    const s = schedule({
+      calendar: true,
+      startDate: "2026-09-01",
+      endDate: "2026-09-07",
+      byDay: ["SA"],
     });
-    expect(expandSessions(d).length).toBeLessThanOrEqual(60);
+    const out = expandSessions(draft({ schedule: s }));
+    expect(out).toHaveLength(1);
+    expect(out[0].date).toBe("2026-09-05"); // the Saturday
+  });
+
+  it("caps a very wide range", () => {
+    const s = schedule({ startDate: "2026-01-01", endDate: "2030-01-01" });
+    expect(expandSessions(draft({ schedule: s })).length).toBeLessThanOrEqual(366);
+  });
+
+  it("skips exception dates", () => {
+    const s = schedule({
+      startDate: "2026-09-01",
+      endDate: "2026-09-03",
+      exceptions: ["2026-09-02"],
+    });
+    const out = expandSessions(draft({ schedule: s }));
+    expect(out).toHaveLength(2); // 3 days minus 1 exception
+    expect(out.map((x) => x.date)).not.toContain("2026-09-02");
+  });
+
+  it("adds a weekday's extra سانس in calendar mode", () => {
+    // 2026-09-05 is a Saturday.
+    const s = schedule({
+      calendar: true,
+      startDate: "2026-09-05",
+      endDate: "2026-09-05",
+      byDay: ["SA"],
+      slots: [{ id: "g", startTime: "18:00", endTime: "20:00" }],
+      daySlots: { SA: [{ id: "sa-extra", startTime: "21:00", endTime: "23:00" }] },
+    });
+    expect(expandSessions(draft({ schedule: s }))).toHaveLength(2); // global + extra
   });
 });
 
@@ -77,8 +100,7 @@ describe("validateDraft", () => {
     draft({
       title: "رویداد",
       location: { mode: "in-person", venueName: "سالن", city: "تهران", address: "", onlineUrl: "", lat: null, lng: null },
-      scheduleMode: "single",
-      sessions: [session("s1", "2026-09-01")],
+      schedule: schedule(),
       ticketTypes: [{ ...emptyTicket("t1"), name: "بلیت", kind: "paid", price: "100000" }],
     });
 
@@ -105,8 +127,13 @@ describe("validateDraft", () => {
     expect(e.onlineUrl).toBeTruthy();
   });
 
-  it("requires at least one dated session", () => {
-    expect(validateDraft(draft({ ...ok(), sessions: [emptySession("s1")] })).sessions).toBeTruthy();
+  it("requires a start date", () => {
+    expect(validateDraft(draft({ ...ok(), schedule: schedule({ startDate: "" }) })).schedule).toBeTruthy();
+  });
+
+  it("requires a سانس with a start time", () => {
+    const s = schedule({ slots: [{ id: "x", startTime: "", endTime: "" }] });
+    expect(validateDraft(draft({ ...ok(), schedule: s })).schedule).toBeTruthy();
   });
 
   it("requires a price for paid tickets", () => {

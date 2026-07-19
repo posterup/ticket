@@ -1,20 +1,9 @@
-import type {
-  LocationMode,
-  ScheduleMode,
-  TicketKind,
-  Visibility,
-} from "./types";
+import type { LocationMode, TicketKind, Visibility } from "./types";
 
 export const LOCATION_LABELS: Record<LocationMode, string> = {
   "in-person": "حضوری",
   online: "آنلاین",
   hybrid: "ترکیبی",
-};
-
-export const SCHEDULE_LABELS: Record<ScheduleMode, string> = {
-  single: "یک جلسه",
-  recurring: "تکرارشونده",
-  multi: "چند سانس",
 };
 
 export const VISIBILITY_LABELS: Record<Visibility, string> = {
