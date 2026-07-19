@@ -7,9 +7,9 @@ import {
   MapPin,
   Star,
   Check,
-  Compass,
   Users,
   BadgeCheck,
+  LayoutDashboard,
 } from "lucide-react";
 
 import { getRsvps, type RsvpMap, type RsvpState } from "@/lib/rsvp";
@@ -73,19 +73,19 @@ export function MyEventsClient({ events }: { events: MeEvent[] }) {
           </span>
         </Link>
         <Link
-          href="/events"
+          href="/dashboard"
           className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-border-strong"
         >
           <span className="flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-md bg-subtle text-foreground">
-              <Compass className="size-5" aria-hidden />
+              <LayoutDashboard className="size-5" aria-hidden />
             </span>
             <span>
               <span className="block text-sm font-medium text-foreground">
-                کشف رویدادها
+                داشبورد برگزارکننده
               </span>
               <span className="block text-xs text-muted">
-                رویدادهای تازه را ببینید
+                رویدادها، بلیت‌ها و ابزار مدیریت
               </span>
             </span>
           </span>

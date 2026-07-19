@@ -5,6 +5,8 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 
+import { AppBottomNav } from "@/components/AppBottomNav";
+
 export const metadata: Metadata = {
   title: "پوستر | پلتفرم برگزاری و بلیت‌فروشی تجربه و رویداد",
   description:
@@ -25,7 +27,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl">
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Clears the fixed app bottom nav so content isn't hidden behind it. */}
+        <div className="h-16 lg:hidden" aria-hidden />
+        <AppBottomNav />
+      </body>
     </html>
   );
 }
