@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { SectionCard, Toggle } from "@/components/create/ui";
+import { TemplatePicker } from "@/components/create/TemplatePicker";
+import type { ComposerTemplate } from "@/lib/create/templates";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
 import { EventPreview } from "@/components/create/EventPreview";
@@ -56,6 +58,20 @@ export function EventComposer() {
   const [status, setStatus] = useState<Status>("idle");
   const [submitError, setSubmitError] = useState("");
   const [createdTitle, setCreatedTitle] = useState("");
+  const [template, setTemplate] = useState<string | null>(null);
+
+  const applyTemplate = (t: ComposerTemplate) => {
+    const seeded = t.build();
+    // Keep a title the user may have already typed.
+    setDraft((d) => ({ ...seeded, title: d.title || seeded.title }));
+    setErrors({});
+    setTemplate(t.id);
+  };
+  const clearTemplate = () => {
+    setDraft((d) => ({ ...initialDraft, title: d.title }));
+    setErrors({});
+    setTemplate(null);
+  };
 
   const patch = (p: Partial<CreateDraft>) => setDraft((d) => ({ ...d, ...p }));
   const patchLocation = (p: Partial<CreateDraft["location"]>) =>
@@ -219,6 +235,7 @@ export function EventComposer() {
     setStatus("idle");
     setSubmitError("");
     setCreatedTitle("");
+    setTemplate(null);
   }
 
   if (status === "success") {
@@ -247,7 +264,14 @@ export function EventComposer() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+    <div className="flex flex-col gap-6">
+      <TemplatePicker
+        selected={template}
+        onSelect={applyTemplate}
+        onBlank={clearTemplate}
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       {/* Form */}
       <div className="flex flex-col gap-6">
         <SectionCard title="مشخصات رویداد">
@@ -477,6 +501,7 @@ export function EventComposer() {
           <p className="mb-3 text-sm font-medium text-muted">پیش‌نمایش</p>
           <EventPreview draft={draft} sessions={expanded} />
         </div>
+      </div>
       </div>
     </div>
   );
