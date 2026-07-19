@@ -7,3 +7,4 @@
 export * from "./events";
 export * from "./tickets";
 export * from "./attendees";
+export * from "./workspaces";
