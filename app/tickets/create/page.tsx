@@ -3,19 +3,19 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { Logo } from "@/components/Logo";
-import { CreateTicketWizard } from "@/components/wizard/CreateTicketWizard";
+import { EventComposer } from "@/components/create/EventComposer";
 
 export const metadata: Metadata = {
-  title: "ساخت بلیت | پوستر",
+  title: "ساخت رویداد | پوستر",
   description:
-    "رویداد خود را در سه مرحله بسازید: اطلاعات رویداد، زمان‌بندی و انواع بلیت.",
+    "رویداد خود را بسازید: مکان، سانس‌ها، انواع بلیت و تنظیمات حریم خصوصی.",
 };
 
 export default function CreateTicketPage() {
   return (
     <div className="min-h-[100dvh]">
       <header className="border-b border-border">
-        <div className="mx-auto flex h-18 max-w-3xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-18 max-w-5xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"
             aria-label="پوستر، صفحه اصلی"
@@ -33,18 +33,18 @@ export default function CreateTicketPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
+      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            ساخت بلیت جدید
+            ساخت رویداد
           </h1>
           <p className="mt-2 text-sm text-muted">
-            رویداد خود را در سه مرحله بسازید: اطلاعات رویداد، زمان‌بندی و انواع
-            بلیت.
+            مکان، سانس‌ها، انواع بلیت و حریم خصوصی را در یک صفحه تنظیم کنید و
+            پیش‌نمایش زنده را ببینید.
           </p>
         </div>
 
-        <CreateTicketWizard />
+        <EventComposer />
       </main>
     </div>
   );
