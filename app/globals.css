@@ -109,3 +109,77 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+  react-multi-date-picker: monochrome theme override, token-driven so it
+  adapts to light/dark. Colors use !important to win over the library's
+  runtime-injected base styles.
+*/
+.rmdp-wrapper {
+  background-color: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.08) !important;
+}
+.rmdp-wrapper,
+.rmdp-wrapper * {
+  font-family: var(--font-sans);
+}
+.rmdp-ep-arrow::after {
+  background-color: var(--card) !important;
+  box-shadow: none !important;
+}
+.rmdp-ep-arrow[direction="top"] {
+  border-bottom-color: var(--border) !important;
+}
+.rmdp-ep-arrow[direction="bottom"] {
+  border-top-color: var(--border) !important;
+}
+.rmdp-header-values,
+.rmdp-header-values span {
+  color: var(--foreground) !important;
+  font-weight: 600;
+}
+.rmdp-week-day {
+  color: var(--faint) !important;
+  font-weight: 500;
+}
+.rmdp-day span {
+  color: var(--foreground);
+  border-radius: var(--radius-sm);
+}
+.rmdp-day.rmdp-deactive span,
+.rmdp-day.rmdp-disabled span {
+  color: var(--faint) !important;
+}
+.rmdp-day.rmdp-today span {
+  background-color: var(--subtle) !important;
+  color: var(--foreground) !important;
+}
+.rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: var(--foreground) !important;
+  color: var(--background) !important;
+  box-shadow: none !important;
+}
+.rmdp-day:not(.rmdp-day-hidden) span:hover {
+  background-color: var(--subtle) !important;
+  color: var(--foreground) !important;
+}
+.rmdp-arrow {
+  border-color: var(--muted) !important;
+}
+.rmdp-arrow-container:hover {
+  background-color: var(--subtle) !important;
+  box-shadow: none !important;
+}
+.rmdp-arrow-container:hover .rmdp-arrow {
+  border-color: var(--foreground) !important;
+}
+.rmdp-time-picker div input {
+  color: var(--foreground) !important;
+  font-family: var(--font-sans);
+}
+.rmdp-time-picker div .e-title,
+.rmdp-time-picker div .dw {
+  color: var(--muted) !important;
+}

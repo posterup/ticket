@@ -6,6 +6,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DateField } from "@/components/ui/date-field";
 import type { TicketTypeForm } from "@/lib/wizard/types";
 import type { Errors } from "@/lib/wizard/validation";
 import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/wizard/labels";
@@ -168,12 +169,11 @@ function TicketTypeCard({
           required
           error={errors[`${id}.salesStart`]}
         >
-          <Input
+          <DateField
             id={`${id}-salesStart`}
-            type="date"
             value={ticket.salesStartDate}
-            onChange={(e) => onUpdate(id, { salesStartDate: e.target.value })}
-            aria-invalid={Boolean(errors[`${id}.salesStart`])}
+            onChange={(v) => onUpdate(id, { salesStartDate: v })}
+            invalid={Boolean(errors[`${id}.salesStart`])}
           />
         </Field>
 
@@ -183,12 +183,11 @@ function TicketTypeCard({
           required
           error={errors[`${id}.salesEnd`]}
         >
-          <Input
+          <DateField
             id={`${id}-salesEnd`}
-            type="date"
             value={ticket.salesEndDate}
-            onChange={(e) => onUpdate(id, { salesEndDate: e.target.value })}
-            aria-invalid={Boolean(errors[`${id}.salesEnd`])}
+            onChange={(v) => onUpdate(id, { salesEndDate: v })}
+            invalid={Boolean(errors[`${id}.salesEnd`])}
           />
         </Field>
 
