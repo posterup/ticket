@@ -63,6 +63,9 @@ export interface TicketTypeDraft {
   /** Hidden ticket, unlocked by an access code (private/VIP). */
   hidden: boolean;
   accessCode: string;
+  /** «دربستی»: one order of ≥ `buyoutMin` tickets books out the whole type. */
+  buyout: boolean;
+  buyoutMin: string;
   description: string;
 }
 
@@ -146,6 +149,8 @@ export function emptyTicket(id: string, kind: TicketKind = "paid"): TicketTypeDr
     sessionIds: [],
     hidden: false,
     accessCode: "",
+    buyout: false,
+    buyoutMin: "",
     description: "",
   };
 }
