@@ -1,54 +1,32 @@
 @import "tailwindcss";
 
 /*
-  Design tokens for Poster, per DESIGN.md.
-  Monochrome brand (black/white + neutral grays). Color is reserved for
-  meaning only: blue (#2563EB) is the semantic "Info" and the logo mark;
-  success/warning/danger communicate state. Light is default; dark inverts
-  the neutral scale and is honored via prefers-color-scheme.
+  Cyberpunk-neon theme for Poster. Deep violet-black base with a hot-pink
+  neon accent and translucent glass cards over fixed pink glow circles.
+  Always dark — the aesthetic is inherently nocturnal.
 */
 :root {
-  --background: #ffffff;
-  --foreground: #111111; /* primary text */
-  --muted: #525252; /* secondary text */
-  --faint: #a3a3a3; /* muted text / captions */
-  --subtle: #f5f5f5; /* subtle surface */
-  --border: #e5e5e5;
-  --border-strong: #d4d4d4;
-  --card: #ffffff;
+  --background: #070510; /* deep violet-black */
+  --foreground: #f3efff; /* near-white, cool */
+  --muted: #b6a6d8; /* secondary text (lavender) */
+  --faint: #7d6ba6; /* captions */
+  --subtle: #17102a; /* subtle surface */
+  --border: #2b2044;
+  --border-strong: #49356e;
+  --card: rgba(17, 11, 30, 0.72); /* glass over the glow */
 
-  --accent: #2563eb; /* Info + logo only, never brand fill */
-  --accent-soft: #eff6ff;
+  --accent: #ff2e97; /* neon pink */
+  --accent-soft: #2a0d1f;
   --accent-foreground: #ffffff;
 
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
+  --success: #21e6a0; /* neon green */
+  --warning: #ffcf33; /* neon amber */
+  --danger: #ff415f; /* neon red */
 
-  --ring: #111111;
-}
+  --ring: #ff2e97; /* pink glow ring */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
-    --muted: #a3a3a3;
-    --faint: #737373;
-    --subtle: #1f1f1f;
-    --border: #2f2f2f;
-    --border-strong: #404040;
-    --card: #111111;
-
-    --accent: #3b82f6;
-    --accent-soft: #172554;
-    --accent-foreground: #ffffff;
-
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-
-    --ring: #fafafa;
-  }
+  /* Reusable neon glow shadow. */
+  --glow: 0 0 24px -4px var(--accent);
 }
 
 @theme inline {
@@ -93,6 +71,26 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  position: relative;
+  min-height: 100dvh;
+}
+
+/*
+  Pink glow circle backgrounds: a fixed layer of soft neon radial "orbs"
+  in pink/magenta/purple/cyan behind everything. Non-interactive, sits at
+  z-index -1 so all content stacks above it.
+*/
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38rem 38rem at 15% -5%, rgba(255, 46, 151, 0.22), transparent 60%),
+    radial-gradient(34rem 34rem at 92% 8%, rgba(157, 78, 255, 0.20), transparent 62%),
+    radial-gradient(30rem 30rem at 78% 92%, rgba(0, 214, 255, 0.14), transparent 60%),
+    radial-gradient(32rem 32rem at 8% 88%, rgba(255, 46, 151, 0.16), transparent 62%);
 }
 
 :where(input, textarea) {
@@ -157,9 +155,9 @@ body {
   color: var(--foreground) !important;
 }
 .rmdp-day.rmdp-selected span:not(.highlight) {
-  background-color: var(--foreground) !important;
-  color: var(--background) !important;
-  box-shadow: none !important;
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  box-shadow: var(--glow) !important;
 }
 .rmdp-day:not(.rmdp-day-hidden) span:hover {
   background-color: var(--subtle) !important;
@@ -184,9 +182,9 @@ body {
   color: var(--muted) !important;
 }
 
-/* Monochrome map tiles (Leaflet) to match the design language. */
+/* Dark, inverted map tiles (Leaflet) to match the cyberpunk-neon language. */
 .poster-map .leaflet-tile-pane {
-  filter: grayscale(1) contrast(1.03);
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.7);
 }
 .poster-map .leaflet-control-attribution {
   font-size: 10px;

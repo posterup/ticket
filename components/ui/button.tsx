@@ -13,9 +13,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-foreground text-background shadow-sm hover:opacity-90 active:translate-y-px",
+          "bg-accent text-accent-foreground shadow-[0_0_24px_-4px_var(--accent)] hover:brightness-110 hover:shadow-[0_0_32px_-2px_var(--accent)] active:translate-y-px",
         secondary:
-          "bg-card text-foreground border border-border shadow-sm hover:border-border-strong active:translate-y-px",
+          "bg-card text-foreground border border-border shadow-sm hover:border-accent hover:shadow-[0_0_18px_-6px_var(--accent)] active:translate-y-px",
         ghost: "text-foreground hover:bg-subtle active:translate-y-px",
       },
       size: {
