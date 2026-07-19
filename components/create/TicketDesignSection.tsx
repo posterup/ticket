@@ -1,11 +1,11 @@
 "use client";
 
-import { Upload, X } from "lucide-react";
+import { Upload, X, RotateCcw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Toggle } from "@/components/create/ui";
+import { Disclosure } from "@/components/create/ui";
 import {
   TicketPreview,
   type TicketTemplate,
@@ -38,7 +38,6 @@ export function TicketDesignSection({
   sample: TicketSample;
   onChange: (design: TicketTemplate | null) => void;
 }) {
-  const enabled = design !== null;
   const t = design;
 
   const patch = (p: Partial<TicketTemplate>) => {
@@ -53,15 +52,13 @@ export function TicketDesignSection({
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <Toggle
-        label="سفارشی‌سازی ظاهر بلیت"
-        hint="رنگ برند، زمینه، لوگو و یادداشت روی بلیت را تنظیم کنید."
-        checked={enabled}
-        onChange={(v) => onChange(v ? defaultTicketDesign() : null)}
-      />
-
-      {enabled && t ? (
+    <Disclosure
+      label="طراحی ظاهر بلیت (اختیاری)"
+      onOpenChange={(open) => {
+        if (open && !design) onChange(defaultTicketDesign());
+      }}
+    >
+      {t ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
@@ -146,6 +143,15 @@ export function TicketDesignSection({
                 onChange={(e) => patch({ note: e.target.value })}
               />
             </Field>
+
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="inline-flex w-fit items-center gap-1.5 text-sm text-muted hover:text-foreground"
+            >
+              <RotateCcw className="size-4" aria-hidden />
+              بازگشت به طرح پیش‌فرض
+            </button>
           </div>
 
           <div>
@@ -154,6 +160,6 @@ export function TicketDesignSection({
           </div>
         </div>
       ) : null}
-    </div>
+    </Disclosure>
   );
 }
