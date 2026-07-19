@@ -30,13 +30,15 @@ function iconForTags(tags: string[]): LucideIcon {
   return CalendarDays;
 }
 
-// Neutral, monochrome gradient pairs (on-brand: no branding color).
+// Neutral, monochrome gradient pairs (on-brand: no branding color). In dark
+// mode they lighten so the cover stays distinct from the ~#111 card instead of
+// sinking into the page background.
 const GRADIENTS = [
-  "from-neutral-800 to-neutral-950",
-  "from-neutral-900 to-neutral-700",
-  "from-neutral-700 to-neutral-900",
-  "from-neutral-950 to-neutral-600",
-  "from-neutral-600 to-neutral-900",
+  "from-neutral-800 to-neutral-950 dark:from-neutral-700 dark:to-neutral-900",
+  "from-neutral-900 to-neutral-700 dark:from-neutral-800 dark:to-neutral-600",
+  "from-neutral-700 to-neutral-900 dark:from-neutral-600 dark:to-neutral-800",
+  "from-neutral-950 to-neutral-600 dark:from-neutral-800 dark:to-neutral-500",
+  "from-neutral-600 to-neutral-900 dark:from-neutral-500 dark:to-neutral-800",
 ];
 
 function hash(seed: string): number {
