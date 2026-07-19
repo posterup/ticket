@@ -317,27 +317,6 @@ export function TicketEditor({
             ) : null}
           </div>
         ) : null}
-
-        {/* Hidden / access-code */}
-        <div className="flex flex-col gap-3">
-          <Toggle
-            label="بلیت پنهان (با کد دسترسی)"
-            hint="در صفحهٔ رویداد نمایش داده نمی‌شود؛ فقط با کد قابل خرید است."
-            checked={t.hidden}
-            onChange={(v) => onChange({ hidden: v })}
-          />
-          {t.hidden ? (
-            <Field id={`code-${t.id}`} label="کد دسترسی بلیت">
-              <Input
-                id={`code-${t.id}`}
-                value={t.accessCode}
-                onChange={(e) => onChange({ accessCode: e.target.value })}
-                dir="ltr"
-                placeholder="مثلاً VIP2026"
-              />
-            </Field>
-          ) : null}
-        </div>
       </Disclosure>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
