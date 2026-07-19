@@ -7,6 +7,7 @@ import { CalendarDays, MapPin, BadgeCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getFollowedSlugs } from "@/lib/follow";
 import { FollowChip } from "@/components/workspace/FollowChip";
+import { EventCover } from "@/components/events/EventCover";
 
 export interface FeedEvent {
   id: string;
@@ -15,6 +16,7 @@ export interface FeedEvent {
   venue: string;
   dateLabel: string;
   price: string | null;
+  tags: string[];
   wsSlug: string;
   wsName: string;
   wsAvatar: string;
@@ -76,6 +78,11 @@ export function FeedClient({
           </div>
 
           <Link href={`/events/${e.id}`} className="mt-4 block">
+            <EventCover
+              seed={e.id}
+              tags={e.tags}
+              className="mb-4 aspect-[16/7] rounded-lg"
+            />
             <span className="text-xs text-faint">{e.modeLabel}</span>
             <h2 className="mt-1 text-base font-semibold text-foreground hover:underline">
               {e.title}

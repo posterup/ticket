@@ -35,6 +35,7 @@ export default function MePage() {
         venueName: event.venue.name,
         dateLabel: firstSession ? formatJalaliDate(firstSession.startAt) : "",
         price: fromPrice(event.id),
+        tags: event.tags,
         org: org
           ? { name: org.name, avatar: org.avatar, verified: Boolean(org.verified) }
           : null,

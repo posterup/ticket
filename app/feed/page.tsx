@@ -36,6 +36,7 @@ export default function FeedPage() {
         venue: `${e.venue.name}، ${e.venue.city}`,
         dateLabel: e.sessions[0] ? formatJalaliDate(e.sessions[0].startAt) : "",
         price: fromPrice(e.id),
+        tags: e.tags,
         wsSlug: w.slug,
         wsName: w.name,
         wsAvatar: w.avatar,
