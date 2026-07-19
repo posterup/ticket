@@ -1,4 +1,4 @@
-# Product Vision: Gishe (گیشه)
+# Product Vision: Poster (پوستر)
 
 > The HubSpot of Events for the Persian-speaking market.
 
@@ -8,13 +8,13 @@ Give event organizers in the Persian-speaking market a single, professional
 platform to run the full lifecycle of an event: plan it, sell tickets for it,
 understand the people who attend it, and grow the relationship over time.
 
-Gishe replaces the scattered toolset that organizers cobble together today
+Poster replaces the scattered toolset that organizers cobble together today
 (spreadsheets, ad-hoc payment links, messaging apps, paper guest lists) with
 one system of record that treats the attendee, not the ticket, as the asset.
 
 ## Positioning
 
-**Gishe is a CRM for Events.** Ticketing is one capability inside it, not the
+**Poster is a CRM for Events.** Ticketing is one capability inside it, not the
 whole product.
 
 - It is **not** an event marketplace.
@@ -32,13 +32,13 @@ browse once.
 Every ticketing tool ends the relationship at checkout. The valuable asset an
 organizer builds over years is not a pile of transactions; it is the audience.
 Who came, how often, what they bought, which segment they belong to, and how to
-reach them again. Gishe is built around that asset. Selling a ticket is the
+reach them again. Poster is built around that asset. Selling a ticket is the
 event that creates or enriches a contact record, and everything else (marketing,
 operations, analytics, finance) hangs off the CRM.
 
 ## Target customer segments
 
-Gishe serves organizations that run events as part of how they operate:
+Poster serves organizations that run events as part of how they operate:
 
 - Event and production companies
 - Conference and summit organizers
@@ -118,7 +118,7 @@ Capabilities are grouped by area. Each item is tagged:
 
 1. **The attendee is the asset.** Every feature should either build the contact
    record or act on it. Ticketing is the acquisition channel, not the goal.
-2. **Professional, not playful.** Gishe is business software. Calm, spacious,
+2. **Professional, not playful.** Poster is business software. Calm, spacious,
    and precise beats loud and decorative. The UI should earn a team's trust.
 3. **Persian-first and RTL-native.** The product renders right-to-left with
    Persian copy and Persian numerals. RTL is the default design case, never an

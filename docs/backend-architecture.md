@@ -1,6 +1,6 @@
 # Backend Architecture
 
-This document describes the backend layer of **گیشه (Gishe)** — a Persian-first
+This document describes the backend layer of **پوستر (Poster)** - a Persian-first
 Event CRM & ticketing platform built on Next.js 15 (App Router), React 19 and
 strict TypeScript.
 
@@ -9,14 +9,14 @@ strict TypeScript.
 The App Router lets frontend and backend live in one Next.js project while
 staying cleanly separated by directory and runtime:
 
-- **Frontend** — React Server/Client Components under `app/` (pages, layouts,
+- **Frontend** - React Server/Client Components under `app/` (pages, layouts,
   UI). Delivered on a separate branch.
-- **Backend** — three server-only concerns, none of which import UI:
-  - `types/` — the shared domain model (also consumed by the frontend for
+- **Backend** - three server-only concerns, none of which import UI:
+  - `types/` - the shared domain model (also consumed by the frontend for
     type-safety across the wire).
-  - `lib/server/` — the data-access layer. Currently an **in-memory mock**;
+  - `lib/server/` - the data-access layer. Currently an **in-memory mock**;
     designed to be swapped for a real datastore without touching call sites.
-  - `app/api/**/route.ts` — HTTP Route Handlers that validate input and return
+  - `app/api/**/route.ts` - HTTP Route Handlers that validate input and return
     a consistent JSON envelope.
 
 Data flows one way: `route handler → lib/server → store`. Route handlers never
@@ -48,12 +48,12 @@ app/api/
 
 An **Event** owns two independent axes, mirroring the 3-step creation wizard:
 
-1. **Event info** — `title`, `description`, `venue`, `tags`, `status`.
-2. **Schedule** — an `EventMode` of `one-time`, `recurring`, or `multi-session`.
+1. **Event info** - `title`, `description`, `venue`, `tags`, `status`.
+2. **Schedule** - an `EventMode` of `one-time`, `recurring`, or `multi-session`.
    `recurring` events additionally carry a `RecurrenceRule`
    (`frequency: daily | weekly | monthly | weekday`, `interval`, `byDay`, and a
    bound of either `until` or `count`). Concrete occurrences are `EventSession`s.
-3. **Ticket types** — an unbounded list of `TicketType`s per event, each with a
+3. **Ticket types** - an unbounded list of `TicketType`s per event, each with a
    `price` (integer Toman), `capacity`, sales window, and a `TicketCategory`
    (`general | vip | student | early-bird | backstage | group`).
 
@@ -147,15 +147,15 @@ Response `201 Created`: `{ "data": { "id": "…", "eventId": "b6d2…", … } }`
 
 ## Future work
 
-- **Real datastore** — replace `lib/server/store.ts` and the array operations in
+- **Real datastore** - replace `lib/server/store.ts` and the array operations in
   `events.ts` / `tickets.ts` with a database (e.g. Postgres via Prisma or
   Drizzle). Call sites and types stay unchanged.
-- **Authentication & authorization** — add session/organisation scoping so
+- **Authentication & authorization** - add session/organisation scoping so
   events and attendees are tenant-isolated; protect the `POST` handlers.
-- **Server Actions for the wizard** — back the 3-step creation flow with typed
+- **Server Actions for the wizard** - back the 3-step creation flow with typed
   Server Actions (progressive enhancement) in addition to the JSON API.
-- **Richer validation** — introduce a schema validator (e.g. Zod) and surface
+- **Richer validation** - introduce a schema validator (e.g. Zod) and surface
   field-level error details in the `error` envelope.
-- **Ticket issuance & check-in** — endpoints to issue `Ticket`s, generate
+- **Ticket issuance & check-in** - endpoints to issue `Ticket`s, generate
   `qrToken`s, and transition `TicketStatus` at the door.
 ```

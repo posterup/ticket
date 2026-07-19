@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /*
-  Button primitive in the shadcn/ui spirit, tuned to the Gishe design language:
+  Button primitive in the shadcn/ui spirit, tuned to the Poster design language:
   soft radius, tactile press, calm accent. Intentionally not the default shadcn skin.
 */
 const buttonVariants = cva(

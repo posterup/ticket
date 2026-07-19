@@ -1,6 +1,6 @@
 # Information Architecture
 
-This document describes the surfaces of the Gishe platform: what exists today
+This document describes the surfaces of the Poster platform: what exists today
 (the public landing page and the ticket-creation wizard) and the anticipated
 future dashboard. All UI is Persian and renders right-to-left.
 
@@ -51,7 +51,7 @@ current work stays consistent with where the product is heading.
 The landing page is the marketing front door for prospective organizers. It is
 composed of three structural regions:
 
-- **Header** - brand mark (گیشه), primary navigation, and a primary call to
+- **Header** - brand mark (پوستر), primary navigation, and a primary call to
   action that leads organizers toward getting started.
 - **Hero** - the core value proposition ("professional event management and
   ticketing for organizations") with the primary CTA and supporting motion.

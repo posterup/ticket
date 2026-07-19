@@ -11,7 +11,7 @@ wizard from Phase 1. Everything past that is forward-looking.
 ## Phase 0 - Landing and brand
 
 **Goal:** Establish the brand and the marketing front door that explains what
-Gishe is to prospective organizers.
+Poster is to prospective organizers.
 
 **Key features:**
 

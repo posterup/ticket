@@ -1,6 +1,6 @@
 # Design System
 
-The Gishe design language is calm, premium, and professional. The reference
+The Poster design language is calm, premium, and professional. The reference
 points are Stripe, Linear, Vercel, and Notion: minimal surfaces, a single
 restrained accent, generous whitespace, and confident typography. This document
 is the working reference for building future dashboard pages and should stay

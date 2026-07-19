@@ -1,7 +1,7 @@
 # Frontend Architecture
 
 The frontend is a Next.js 15 App Router application rendering a Persian-first
-(RTL) landing page for the Gishe Event CRM. It is intentionally structured so
+(RTL) landing page for the Poster Event CRM. It is intentionally structured so
 that the same conventions scale to the future organizer dashboard.
 
 ## Principles
