@@ -3,7 +3,6 @@ import Link from "next/link";
 import { listWorkspaces } from "@/lib/server";
 import { Logo } from "@/components/Logo";
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { BottomNav } from "@/components/dashboard/BottomNav";
 import { MobileNavDrawer } from "@/components/dashboard/MobileNavDrawer";
 import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 
@@ -33,11 +32,10 @@ export default function DashboardLayout({
             <WorkspaceSwitcher workspaces={workspaces} />
           </div>
         </header>
-        <main className="mx-auto max-w-5xl px-4 py-6 pb-28 sm:px-6 lg:py-8 lg:pb-10">
+        <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
           {children}
         </main>
       </div>
-      <BottomNav />
     </div>
   );
 }
