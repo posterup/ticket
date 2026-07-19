@@ -19,6 +19,12 @@ export function PublicHeader() {
 
         <nav className="hidden items-center gap-1 sm:flex">
           <Link
+            href="/feed"
+            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+          >
+            دنبال‌شده‌ها
+          </Link>
+          <Link
             href="/events"
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
           >

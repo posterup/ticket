@@ -72,6 +72,7 @@ export default async function WorkspacePage({ params }: Params) {
           ) : null}
 
           <WorkspaceFollow
+            slug={workspace.slug}
             followers={workspace.followers}
             following={workspace.following}
           />
