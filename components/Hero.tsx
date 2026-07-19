@@ -18,7 +18,7 @@ export function Hero() {
         variants={staggerContainer}
         initial="hidden"
         animate="visible"
-        className="mx-auto flex min-h-[100dvh] max-w-6xl flex-col items-center px-4 pt-32 pb-24 text-center sm:px-6 sm:pt-36"
+        className="mx-auto flex max-w-6xl flex-col items-center px-4 pt-32 pb-20 text-center sm:px-6 sm:pt-36"
       >
         <motion.h1
           variants={fadeUpItem}
