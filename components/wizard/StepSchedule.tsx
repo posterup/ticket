@@ -2,6 +2,8 @@ import { cn } from "@/lib/utils";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { DateField } from "@/components/ui/date-field";
+import { TimeField } from "@/components/ui/time-field";
 import type {
   OneTimeForm,
   RecurringForm,
@@ -85,12 +87,11 @@ export function StepSchedule({
       {mode === "one-time" ? (
         <div className="grid gap-6 sm:grid-cols-3">
           <Field id="date" label="تاریخ" required error={errors.date}>
-            <Input
+            <DateField
               id="date"
-              type="date"
               value={oneTime.date}
-              onChange={(e) => onOneTimeChange({ date: e.target.value })}
-              aria-invalid={Boolean(errors.date)}
+              onChange={(v) => onOneTimeChange({ date: v })}
+              invalid={Boolean(errors.date)}
             />
           </Field>
           <Field
@@ -99,21 +100,19 @@ export function StepSchedule({
             required
             error={errors.startTime}
           >
-            <Input
+            <TimeField
               id="startTime"
-              type="time"
               value={oneTime.startTime}
-              onChange={(e) => onOneTimeChange({ startTime: e.target.value })}
-              aria-invalid={Boolean(errors.startTime)}
+              onChange={(v) => onOneTimeChange({ startTime: v })}
+              invalid={Boolean(errors.startTime)}
             />
           </Field>
           <Field id="endTime" label="زمان پایان" required error={errors.endTime}>
-            <Input
+            <TimeField
               id="endTime"
-              type="time"
               value={oneTime.endTime}
-              onChange={(e) => onOneTimeChange({ endTime: e.target.value })}
-              aria-invalid={Boolean(errors.endTime)}
+              onChange={(v) => onOneTimeChange({ endTime: v })}
+              invalid={Boolean(errors.endTime)}
             />
           </Field>
         </div>
@@ -194,12 +193,11 @@ export function StepSchedule({
               required
               error={errors.recDate}
             >
-              <Input
+              <DateField
                 id="recDate"
-                type="date"
                 value={recurring.date}
-                onChange={(e) => onRecurringChange({ date: e.target.value })}
-                aria-invalid={Boolean(errors.recDate)}
+                onChange={(v) => onRecurringChange({ date: v })}
+                invalid={Boolean(errors.recDate)}
               />
             </Field>
             <Field
@@ -208,14 +206,11 @@ export function StepSchedule({
               required
               error={errors.recStartTime}
             >
-              <Input
+              <TimeField
                 id="recStartTime"
-                type="time"
                 value={recurring.startTime}
-                onChange={(e) =>
-                  onRecurringChange({ startTime: e.target.value })
-                }
-                aria-invalid={Boolean(errors.recStartTime)}
+                onChange={(v) => onRecurringChange({ startTime: v })}
+                invalid={Boolean(errors.recStartTime)}
               />
             </Field>
             <Field
@@ -224,14 +219,11 @@ export function StepSchedule({
               required
               error={errors.recEndTime}
             >
-              <Input
+              <TimeField
                 id="recEndTime"
-                type="time"
                 value={recurring.endTime}
-                onChange={(e) =>
-                  onRecurringChange({ endTime: e.target.value })
-                }
-                aria-invalid={Boolean(errors.recEndTime)}
+                onChange={(v) => onRecurringChange({ endTime: v })}
+                invalid={Boolean(errors.recEndTime)}
               />
             </Field>
           </div>
@@ -243,12 +235,11 @@ export function StepSchedule({
             error={errors.recUntil}
             className="sm:max-w-xs"
           >
-            <Input
+            <DateField
               id="recUntil"
-              type="date"
               value={recurring.until}
-              onChange={(e) => onRecurringChange({ until: e.target.value })}
-              aria-invalid={Boolean(errors.recUntil)}
+              onChange={(v) => onRecurringChange({ until: v })}
+              invalid={Boolean(errors.recUntil)}
             />
           </Field>
         </div>
