@@ -122,8 +122,8 @@ export function TicketEditor({
         ) : null}
       </div>
 
-      {/* Availability — capacity + sales window (visible, not advanced) */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Capacity + description (visible, not advanced) */}
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field id={`cap-${t.id}`} label="ظرفیت">
           <Input
             id={`cap-${t.id}`}
@@ -135,31 +135,15 @@ export function TicketEditor({
             placeholder="نامحدود"
           />
         </Field>
-        <Field id={`ss-${t.id}`} label="شروع فروش">
-          <DateField
-            id={`ss-${t.id}`}
-            value={t.salesStart}
-            onChange={(v) => onChange({ salesStart: v })}
-          />
-        </Field>
-        <Field id={`se-${t.id}`} label="پایان فروش">
-          <DateField
-            id={`se-${t.id}`}
-            value={t.salesEnd}
-            onChange={(v) => onChange({ salesEnd: v })}
+        <Field id={`desc-${t.id}`} label="توضیحات">
+          <Textarea
+            id={`desc-${t.id}`}
+            rows={2}
+            value={t.description}
+            onChange={(e) => onChange({ description: e.target.value })}
           />
         </Field>
       </div>
-
-      {/* Description (visible, not advanced) */}
-      <Field id={`desc-${t.id}`} label="توضیحات">
-        <Textarea
-          id={`desc-${t.id}`}
-          rows={2}
-          value={t.description}
-          onChange={(e) => onChange({ description: e.target.value })}
-        />
-      </Field>
 
       {/* Advanced */}
       <Disclosure label="گزینه‌های پیشرفته">
@@ -186,26 +170,110 @@ export function TicketEditor({
           </Field>
         </div>
 
-        {/* دربستی — one large order books out the whole ticket type */}
+        {/* Sales window */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field id={`ss-${t.id}`} label="شروع فروش">
+            <DateField
+              id={`ss-${t.id}`}
+              value={t.salesStart}
+              onChange={(v) => onChange({ salesStart: v })}
+            />
+          </Field>
+          <Field id={`se-${t.id}`} label="پایان فروش">
+            <DateField
+              id={`se-${t.id}`}
+              value={t.salesEnd}
+              onChange={(v) => onChange({ salesEnd: v })}
+            />
+          </Field>
+        </div>
+
+        {/* Early bird — a lower price before a cutoff date */}
+        <div className="flex flex-col gap-3">
+          <Toggle
+            label="فروش زودهنگام"
+            hint="خریدهای پیش از تاریخ تعیین‌شده با قیمت کمتری ثبت می‌شوند."
+            checked={t.earlyBird}
+            onChange={(v) => onChange({ earlyBird: v })}
+          />
+          {t.earlyBird ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id={`eb-price-${t.id}`} label="قیمت زودهنگام (تومان)">
+                <Input
+                  id={`eb-price-${t.id}`}
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={t.earlyBirdPrice}
+                  onChange={(e) => onChange({ earlyBirdPrice: e.target.value })}
+                />
+              </Field>
+              <Field id={`eb-until-${t.id}`} label="تا تاریخ">
+                <DateField
+                  id={`eb-until-${t.id}`}
+                  value={t.earlyBirdUntil}
+                  onChange={(v) => onChange({ earlyBirdUntil: v })}
+                />
+              </Field>
+            </div>
+          ) : null}
+        </div>
+
+        {/* دربستی — charter/whole booking: base price + per-person fee, min–max people */}
         <div className="flex flex-col gap-3">
           <Toggle
             label="فروش دربستی"
-            hint="اگر یک خرید دست‌کم به تعداد تعیین‌شده باشد، این بلیت کامل فروخته‌شده می‌شود."
+            hint="رزرو یک‌جای رویداد با قیمت پایه ثابت و هزینهٔ اضافه به‌ازای هر نفر."
             checked={t.buyout}
             onChange={(v) => onChange({ buyout: v })}
           />
           {t.buyout ? (
-            <Field id={`buyout-${t.id}`} label="حداقل تعداد برای دربست">
-              <Input
-                id={`buyout-${t.id}`}
-                type="number"
-                min={1}
-                inputMode="numeric"
-                value={t.buyoutMin}
-                onChange={(e) => onChange({ buyoutMin: e.target.value })}
-                placeholder="مثلاً ۵۰"
-              />
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id={`buyout-base-${t.id}`} label="قیمت پایهٔ دربست (تومان)">
+                <Input
+                  id={`buyout-base-${t.id}`}
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={t.buyoutBasePrice}
+                  onChange={(e) => onChange({ buyoutBasePrice: e.target.value })}
+                  placeholder="مثلاً ۱۰٬۰۰۰٬۰۰۰"
+                />
+              </Field>
+              <Field id={`buyout-pp-${t.id}`} label="هزینه به‌ازای هر نفر (تومان)">
+                <Input
+                  id={`buyout-pp-${t.id}`}
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={t.buyoutPerPerson}
+                  onChange={(e) => onChange({ buyoutPerPerson: e.target.value })}
+                  placeholder="مثلاً ۲۰۰٬۰۰۰"
+                />
+              </Field>
+              <Field id={`buyout-min-${t.id}`} label="حداقل نفرات">
+                <Input
+                  id={`buyout-min-${t.id}`}
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  value={t.buyoutMin}
+                  onChange={(e) => onChange({ buyoutMin: e.target.value })}
+                  placeholder="مثلاً ۲۰"
+                />
+              </Field>
+              <Field id={`buyout-max-${t.id}`} label="حداکثر نفرات">
+                <Input
+                  id={`buyout-max-${t.id}`}
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  value={t.buyoutMax}
+                  onChange={(e) => onChange({ buyoutMax: e.target.value })}
+                  placeholder="مثلاً ۱۰۰"
+                />
+              </Field>
+            </div>
           ) : null}
         </div>
 
