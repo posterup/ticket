@@ -141,33 +141,41 @@ export const initialDraft: CreateDraft = {
   ticketTypes: [{ ...emptyTicket("ticket-1"), name: "بلیت عمومی" }],
 };
 
+/** Shift a `YYYY-MM-DD` date by `n` occurrences of the recurrence frequency. */
+function shiftDate(date: string, n: number, rec: RecurrenceDraft): string {
+  const interval = Math.max(Number.parseInt(rec.interval, 10) || 1, 1);
+  const d = new Date(`${date}T00:00:00Z`);
+  if (rec.frequency === "daily") d.setUTCDate(d.getUTCDate() + n * interval);
+  else if (rec.frequency === "weekly") d.setUTCDate(d.getUTCDate() + n * interval * 7);
+  else if (rec.frequency === "monthly") d.setUTCMonth(d.getUTCMonth() + n * interval);
+  else d.setUTCDate(d.getUTCDate() + n); // weekday: daily step (approximation)
+  return d.toISOString().slice(0, 10);
+}
+
 /**
- * Resolve the draft's schedule into concrete sessions. `single`/`multi` return
- * their explicit sessions; `recurring` expands the first session across the
- * recurrence rule (client-side preview + submit share this).
+ * Resolve the draft's schedule into concrete sessions.
+ * - `single` / `multi`: the explicit dated sessions.
+ * - `recurring`: repeats the *whole* set of base سانس‌ها (which may be more than
+ *   one showtime per occurrence) across `count` occurrences.
+ * Client preview and submit share this.
  */
 export function expandSessions(draft: CreateDraft): SessionDraft[] {
   if (draft.scheduleMode !== "recurring") {
     return draft.sessions.filter((s) => s.date);
   }
-  const base = draft.sessions[0];
-  if (!base?.date) return [];
+  const bases = draft.sessions.filter((s) => s.date);
+  if (bases.length === 0) return [];
   const count = Math.min(Math.max(Number.parseInt(draft.recurrence.count, 10) || 1, 1), 60);
-  const interval = Math.max(Number.parseInt(draft.recurrence.interval, 10) || 1, 1);
-  const start = new Date(`${base.date}T00:00:00Z`);
   const out: SessionDraft[] = [];
   for (let i = 0; i < count; i++) {
-    const d = new Date(start);
-    if (draft.recurrence.frequency === "daily") d.setUTCDate(d.getUTCDate() + i * interval);
-    else if (draft.recurrence.frequency === "weekly") d.setUTCDate(d.getUTCDate() + i * interval * 7);
-    else if (draft.recurrence.frequency === "monthly") d.setUTCMonth(d.getUTCMonth() + i * interval);
-    else d.setUTCDate(d.getUTCDate() + i); // weekday: daily step (approximation)
-    out.push({
-      id: `${base.id}-r${i}`,
-      date: d.toISOString().slice(0, 10),
-      startTime: base.startTime,
-      endTime: base.endTime,
-    });
+    for (const base of bases) {
+      out.push({
+        id: `${base.id}-r${i}`,
+        date: shiftDate(base.date, i, draft.recurrence),
+        startTime: base.startTime,
+        endTime: base.endTime,
+      });
+    }
   }
   return out;
 }
