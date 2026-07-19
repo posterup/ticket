@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, Upload, X, ImageIcon } from "lucide-react";
+import { Check, Upload, X, ImageIcon, Download, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { downloadNodeAsPng, ticketFileName } from "@/lib/tickets/export";
 import {
   TicketPreview,
   type TicketTemplate,
@@ -55,8 +56,24 @@ export function TicketDesigner() {
   });
   const [saved, setSaved] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const logoInput = useRef<HTMLInputElement>(null);
   const bgInput = useRef<HTMLInputElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  async function handleExport() {
+    if (!previewRef.current) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      await downloadNodeAsPng(previewRef.current, ticketFileName(SAMPLE.eventTitle));
+    } catch {
+      setExportError("خطا در ساخت تصویر بلیت. دوباره تلاش کنید.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const patch = (p: Partial<TicketTemplate>) => {
     setTemplate((t) => ({ ...t, ...p }));
@@ -263,7 +280,27 @@ export function TicketDesigner() {
       <div className="lg:order-2">
         <div className="lg:sticky lg:top-8">
           <p className="mb-4 text-sm font-medium text-muted">پیش‌نمایش زنده</p>
-          <TicketPreview template={template} sample={SAMPLE} />
+          <div ref={previewRef}>
+            <TicketPreview template={template} sample={SAMPLE} />
+          </div>
+          <div className="mt-5 flex flex-col items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleExport}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <Download aria-hidden />
+              )}
+              {exporting ? "در حال ساخت تصویر…" : "دانلود بلیت (PNG)"}
+            </Button>
+            {exportError ? (
+              <p className="text-sm text-danger">{exportError}</p>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
