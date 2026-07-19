@@ -26,6 +26,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { EventRsvp } from "@/components/events/EventRsvp";
+import { EventCover } from "@/components/events/EventCover";
 import type { Event } from "@/types";
 
 interface Params {
@@ -71,7 +72,13 @@ export default async function PublicEventDetail({ params }: Params) {
           همه رویدادها
         </Link>
 
-        <div className="mt-4">
+        <EventCover
+          seed={event.id}
+          tags={event.tags}
+          className="mt-4 aspect-[16/6] rounded-xl"
+        />
+
+        <div className="mt-6">
           <span className="text-xs text-faint">{MODE_LABELS[event.mode]}</span>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             {event.title}
