@@ -7,6 +7,8 @@ import { ArrowLeft, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { WizardStepper } from "@/components/wizard/WizardStepper";
+import { TemplatePicker } from "@/components/wizard/TemplatePicker";
+import type { EventTemplate } from "@/lib/wizard/templates";
 import { StepEventInfo } from "@/components/wizard/StepEventInfo";
 import { StepSchedule } from "@/components/wizard/StepSchedule";
 import { StepTicketTypes } from "@/components/wizard/StepTicketTypes";
@@ -37,6 +39,24 @@ export function CreateTicketWizard() {
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [submitError, setSubmitError] = useState("");
   const [createdTitle, setCreatedTitle] = useState("");
+  const [template, setTemplate] = useState<string | null>(null);
+
+  // --- templates -----------------------------------------------------------
+  const applyTemplate = (t: EventTemplate) => {
+    const seeded = t.build();
+    // Preserve a title the user may have already typed.
+    setState((s) => ({
+      ...seeded,
+      event: { ...seeded.event, title: s.event.title || seeded.event.title },
+    }));
+    setErrors({});
+    setTemplate(t.id);
+  };
+  const clearTemplate = () => {
+    setState((s) => ({ ...initialWizardState, event: { ...initialWizardState.event, title: s.event.title } }));
+    setErrors({});
+    setTemplate(null);
+  };
 
   // --- state updates -------------------------------------------------------
   const updateEvent = (patch: Partial<EventInfoForm>) =>
@@ -148,6 +168,7 @@ export function CreateTicketWizard() {
     setSubmitError("");
     setCreatedTitle("");
     setStep(0);
+    setTemplate(null);
   }
 
   if (status === "success") {
@@ -161,8 +182,17 @@ export function CreateTicketWizard() {
     : { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const };
 
   return (
-    <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
-      <WizardStepper steps={STEP_TITLES} current={step} />
+    <div>
+      {step === 0 ? (
+        <TemplatePicker
+          selected={template}
+          onSelect={applyTemplate}
+          onBlank={clearTemplate}
+        />
+      ) : null}
+
+      <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
+        <WizardStepper steps={STEP_TITLES} current={step} />
 
       <div className="mt-8">
         <AnimatePresence mode="wait" initial={false}>
@@ -239,6 +269,7 @@ export function CreateTicketWizard() {
             : "مرحله بعد"}
           {!isLast ? <ArrowLeft aria-hidden /> : null}
         </Button>
+      </div>
       </div>
     </div>
   );
