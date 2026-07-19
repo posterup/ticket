@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MapPin, Clock, Repeat, ChevronLeft } from "lucide-react";
 
-import { getEventById, listTickets } from "@/lib/server";
+import { getEventById, listTickets, getWorkspaceByEvent } from "@/lib/server";
 import {
   formatJalaliDate,
   formatTime,
@@ -50,6 +50,7 @@ export default async function PublicEventDetail({ params }: Params) {
   if (!event) notFound();
   const tickets = listTickets(id);
   const recurrence = recurrenceText(event);
+  const organizer = getWorkspaceByEvent(id);
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -71,6 +72,17 @@ export default async function PublicEventDetail({ params }: Params) {
           {event.description ? (
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
               {event.description}
+            </p>
+          ) : null}
+          {organizer ? (
+            <p className="mt-3 text-sm text-muted">
+              برگزارکننده:{" "}
+              <Link
+                href={`/w/${organizer.slug}`}
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                {organizer.name}
+              </Link>
             </p>
           ) : null}
         </div>
