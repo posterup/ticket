@@ -4,4 +4,5 @@ export * from "./workspace";
 export * from "./campaign";
 export * from "./event";
 export * from "./ticket";
+export * from "./discount";
 export * from "./attendee";

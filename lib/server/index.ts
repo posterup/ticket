@@ -6,6 +6,7 @@
  */
 export * from "./events";
 export * from "./tickets";
+export * from "./discounts";
 export * from "./attendees";
 export * from "./workspaces";
 export * from "./campaigns";

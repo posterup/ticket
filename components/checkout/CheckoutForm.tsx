@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Tag, X, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { formatToman, formatNumber } from "@/lib/format";
 import { CATEGORY_LABELS } from "@/lib/wizard/labels";
-import type { TicketCategory } from "@/types";
+import type { DiscountKind, DiscountValidation, TicketCategory } from "@/types";
 
 export interface CheckoutTicket {
   id: string;
@@ -27,6 +27,22 @@ interface CheckoutFormProps {
   initialTicketId: string;
 }
 
+interface AppliedDiscount {
+  code: string;
+  kind: DiscountKind;
+  value: number;
+}
+
+/** Recompute the discount for the current subtotal (mirrors the server rule). */
+function discountFor(applied: AppliedDiscount | null, subtotal: number): number {
+  if (!applied || subtotal <= 0) return 0;
+  const raw =
+    applied.kind === "percent"
+      ? Math.floor((subtotal * applied.value) / 100)
+      : applied.value;
+  return Math.max(0, Math.min(raw, subtotal));
+}
+
 export function CheckoutForm({
   eventId,
   eventTitle,
@@ -41,10 +57,50 @@ export function CheckoutForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [orderCode, setOrderCode] = useState<string | null>(null);
 
+  const [promo, setPromo] = useState("");
+  const [applied, setApplied] = useState<AppliedDiscount | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+
   const ticket = tickets.find((t) => t.id === ticketId) ?? tickets[0];
   const maxQty = Math.min(ticket.capacity, 10);
   const qtyNum = Number.parseInt(quantity, 10) || 0;
-  const total = ticket.price * (qtyNum > 0 ? qtyNum : 0);
+  const subtotal = ticket.price * (qtyNum > 0 ? qtyNum : 0);
+  const discountAmount = discountFor(applied, subtotal);
+  const total = subtotal - discountAmount;
+
+  async function applyPromo() {
+    const code = promo.trim();
+    if (!code) return;
+    setPromoLoading(true);
+    setPromoError(null);
+    try {
+      const res = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, eventId, subtotal }),
+      });
+      const json = (await res.json()) as { data?: DiscountValidation };
+      const result = json.data;
+      if (result && result.ok) {
+        setApplied({ code: result.code, kind: result.kind, value: result.value });
+        setPromoError(null);
+      } else {
+        setApplied(null);
+        setPromoError(result?.reason ?? "کد تخفیف معتبر نیست.");
+      }
+    } catch {
+      setPromoError("خطا در بررسی کد تخفیف. دوباره تلاش کنید.");
+    } finally {
+      setPromoLoading(false);
+    }
+  }
+
+  function removePromo() {
+    setApplied(null);
+    setPromo("");
+    setPromoError(null);
+  }
 
   function submit() {
     const next: Record<string, string> = {};
@@ -71,6 +127,11 @@ export function CheckoutForm({
         <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
           {`کد پیگیری: ${orderCode} — بلیت «${ticket.name}» برای «${eventTitle}».`}
         </p>
+        {applied ? (
+          <p className="mx-auto mt-1 max-w-sm text-xs text-success">
+            {`کد تخفیف «${applied.code}» اعمال شد؛ مبلغ پرداختی ${formatToman(total)}.`}
+          </p>
+        ) : null}
         <p className="mx-auto mt-1 max-w-sm text-xs text-faint">
           این نسخه نمایشی است؛ درگاه پرداخت آنلاین به‌زودی افزوده می‌شود.
         </p>
@@ -152,7 +213,64 @@ export function CheckoutForm({
 
       <aside className="flex h-fit flex-col gap-4 rounded-lg border border-border bg-subtle p-6">
         <h2 className="text-sm font-semibold text-foreground">خلاصه سفارش</h2>
-        <dl className="flex flex-col gap-2 text-sm">
+
+        {/* Promo code */}
+        <div className="flex flex-col gap-2">
+          {applied ? (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-success">
+                <Tag className="size-4" aria-hidden />
+                {applied.code}
+              </span>
+              <button
+                type="button"
+                onClick={removePromo}
+                className="text-success/80 hover:text-success"
+                aria-label="حذف کد تخفیف"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-stretch gap-2">
+              <Input
+                id="promo"
+                value={promo}
+                onChange={(e) => {
+                  setPromo(e.target.value);
+                  if (promoError) setPromoError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void applyPromo();
+                  }
+                }}
+                placeholder="کد تخفیف"
+                aria-label="کد تخفیف"
+                aria-invalid={Boolean(promoError)}
+                className="uppercase"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void applyPromo()}
+                disabled={promoLoading || !promo.trim()}
+              >
+                {promoLoading ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  "اعمال"
+                )}
+              </Button>
+            </div>
+          )}
+          {promoError ? (
+            <p className="text-xs text-danger">{promoError}</p>
+          ) : null}
+        </div>
+
+        <dl className="flex flex-col gap-2 border-t border-border pt-4 text-sm">
           <div className="flex justify-between">
             <dt className="text-muted">بلیت</dt>
             <dd className="text-foreground">{ticket.name}</dd>
@@ -165,6 +283,18 @@ export function CheckoutForm({
             <dt className="text-muted">تعداد</dt>
             <dd className="text-foreground">{formatNumber(qtyNum)}</dd>
           </div>
+          {discountAmount > 0 ? (
+            <>
+              <div className="flex justify-between">
+                <dt className="text-muted">جمع جزء</dt>
+                <dd className="text-foreground">{formatToman(subtotal)}</dd>
+              </div>
+              <div className="flex justify-between text-success">
+                <dt>تخفیف{applied ? ` (${applied.code})` : ""}</dt>
+                <dd>−{formatToman(discountAmount)}</dd>
+              </div>
+            </>
+          ) : null}
         </dl>
         <div className="flex justify-between border-t border-border pt-3 text-sm font-semibold">
           <span className="text-muted">مبلغ کل</span>
