@@ -55,7 +55,7 @@ export function MyEventsClient({ events }: { events: MeEvent[] }) {
       {/* Quick links */}
       <div className="grid gap-3 sm:grid-cols-2">
         <Link
-          href="/feed"
+          href="/pages"
           className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-border-strong"
         >
           <span className="flex items-center gap-3">
@@ -64,7 +64,7 @@ export function MyEventsClient({ events }: { events: MeEvent[] }) {
             </span>
             <span>
               <span className="block text-sm font-medium text-foreground">
-                دنبال‌شده‌ها
+                صفحه‌ها
               </span>
               <span className="block text-xs text-muted">
                 {formatNumber(followCount)} صفحه دنبال می‌کنید
