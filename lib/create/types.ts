@@ -57,15 +57,29 @@ export interface TicketTypeDraft {
   /** Optional sales window (Gregorian `YYYY-MM-DD`). */
   salesStart: string;
   salesEnd: string;
+  /** «فروش زودهنگام»: a lower price for purchases before `earlyBirdUntil`. */
+  earlyBird: boolean;
+  earlyBirdPrice: string;
+  earlyBirdUntil: string;
   /** When true the ticket applies to every session; else to `sessionIds`. */
   appliesToAll: boolean;
   sessionIds: string[];
   /** Hidden ticket, unlocked by an access code (private/VIP). */
   hidden: boolean;
   accessCode: string;
-  /** «دربستی»: one order of ≥ `buyoutMin` tickets books out the whole type. */
+  /**
+   * «دربستی» (charter / whole booking): a fixed base price plus a per-person
+   * fee, for between `buyoutMin` and `buyoutMax` people.
+   */
   buyout: boolean;
+  /** Fixed base price of the charter, in Toman. */
+  buyoutBasePrice: string;
+  /** Extra fee per person, in Toman. */
+  buyoutPerPerson: string;
+  /** Minimum number of people. */
   buyoutMin: string;
+  /** Maximum number of people. */
+  buyoutMax: string;
   description: string;
 }
 
@@ -145,12 +159,18 @@ export function emptyTicket(id: string, kind: TicketKind = "paid"): TicketTypeDr
     maxPerOrder: "10",
     salesStart: "",
     salesEnd: "",
+    earlyBird: false,
+    earlyBirdPrice: "",
+    earlyBirdUntil: "",
     appliesToAll: true,
     sessionIds: [],
     hidden: false,
     accessCode: "",
     buyout: false,
+    buyoutBasePrice: "",
+    buyoutPerPerson: "",
     buyoutMin: "",
+    buyoutMax: "",
     description: "",
   };
 }

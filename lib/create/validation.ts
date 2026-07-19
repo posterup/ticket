@@ -67,10 +67,23 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
       e[`ticket-${t.id}`] = "حداکثر تعداد نباید کمتر از حداقل باشد.";
       continue;
     }
+    if (t.earlyBird) {
+      const p = Number(t.earlyBirdPrice);
+      if (!Number.isFinite(p) || p < 0) {
+        e[`ticket-${t.id}`] = "قیمت زودهنگام نامعتبر است.";
+      } else if (!t.earlyBirdUntil) {
+        e[`ticket-${t.id}`] = "تاریخ پایان فروش زودهنگام را تعیین کنید.";
+      }
+    }
     if (t.buyout) {
-      const n = Number(t.buyoutMin);
-      if (!Number.isInteger(n) || n < 1) {
-        e[`ticket-${t.id}`] = "حداقل تعداد برای دربست باید عددی مثبت باشد.";
+      const base = Number(t.buyoutBasePrice);
+      const perPerson = Number(t.buyoutPerPerson);
+      const bMin = Number(t.buyoutMin);
+      const bMax = Number(t.buyoutMax);
+      if (!Number.isFinite(base) || base < 0 || !Number.isFinite(perPerson) || perPerson < 0) {
+        e[`ticket-${t.id}`] = "قیمت‌های دربستی نامعتبر است.";
+      } else if (!Number.isInteger(bMin) || bMin < 1 || !Number.isInteger(bMax) || bMax < bMin) {
+        e[`ticket-${t.id}`] = "حداقل و حداکثر نفرات دربستی نامعتبر است.";
       }
     }
   }
