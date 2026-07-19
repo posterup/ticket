@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Compass, Rss, Users, User, type LucideIcon } from "lucide-react";
+import { Home, Compass, Rss, User, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,11 +12,13 @@ interface PublicNavItem {
   icon: LucideIcon;
 }
 
+// Four focused destinations: a home hub, discovery, the following feed, and a
+// personal space. Organizer pages (/pages) are reached from home, the feed, and
+// the «من» hub rather than taking their own tab.
 const ITEMS: PublicNavItem[] = [
   { href: "/", label: "خانه", icon: Home },
   { href: "/events", label: "رویدادها", icon: Compass },
   { href: "/feed", label: "دنبال‌شده‌ها", icon: Rss },
-  { href: "/pages", label: "صفحه‌ها", icon: Users },
   { href: "/me", label: "من", icon: User },
 ];
 
