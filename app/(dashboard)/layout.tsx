@@ -4,6 +4,7 @@ import { listWorkspaces } from "@/lib/server";
 import { Logo } from "@/components/Logo";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { BottomNav } from "@/components/dashboard/BottomNav";
+import { MobileNavDrawer } from "@/components/dashboard/MobileNavDrawer";
 import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 
 export default function DashboardLayout({
@@ -18,14 +19,17 @@ export default function DashboardLayout({
       <Sidebar workspaces={workspaces} />
       <div className="min-h-[100dvh] flex-1">
         <header className="flex h-16 items-center justify-between gap-3 border-b border-border px-4 lg:hidden">
-          <Link
-            href="/"
-            aria-label="پوستر، صفحه اصلی"
-            className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-          >
-            <Logo />
-          </Link>
-          <div className="w-48">
+          <div className="flex items-center gap-2.5">
+            <MobileNavDrawer />
+            <Link
+              href="/"
+              aria-label="پوستر، صفحه اصلی"
+              className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              <Logo />
+            </Link>
+          </div>
+          <div className="w-44">
             <WorkspaceSwitcher workspaces={workspaces} />
           </div>
         </header>
