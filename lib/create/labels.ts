@@ -9,13 +9,11 @@ export const LOCATION_LABELS: Record<LocationMode, string> = {
 export const VISIBILITY_LABELS: Record<Visibility, string> = {
   public: "عمومی",
   unlisted: "با لینک",
-  private: "خصوصی",
 };
 
 export const VISIBILITY_HINTS: Record<Visibility, string> = {
   public: "در کشف رویدادها و صفحهٔ شما نمایش داده می‌شود.",
   unlisted: "فقط با لینک مستقیم قابل دسترسی است؛ در فهرست‌ها دیده نمی‌شود.",
-  private: "فقط با دعوت یا کد دسترسی. برای ورود تأیید لازم است (اختیاری).",
 };
 
 export const TICKET_KIND_LABELS: Record<TicketKind, string> = {
