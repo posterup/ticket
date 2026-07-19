@@ -13,6 +13,7 @@ import { MODE_LABELS } from "@/lib/events/labels";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { WorkspaceFollow } from "@/components/workspace/WorkspaceFollow";
+import { EventCover } from "@/components/events/EventCover";
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -95,34 +96,41 @@ export default async function WorkspacePage({ params }: Params) {
                   <Link
                     key={event.id}
                     href={`/events/${event.id}`}
-                    className="flex flex-col rounded-lg border border-border bg-card p-5 transition-colors hover:border-border-strong"
+                    className="flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-border-strong"
                   >
-                    <span className="text-xs text-faint">
-                      {MODE_LABELS[event.mode]}
-                    </span>
-                    <h3 className="mt-1 text-base font-semibold text-foreground">
-                      {event.title}
-                    </h3>
-                    <div className="mt-4 flex flex-col gap-2 text-sm text-muted">
-                      {first ? (
+                    <EventCover
+                      seed={event.id}
+                      tags={event.tags}
+                      className="aspect-video"
+                    />
+                    <div className="flex flex-1 flex-col p-5">
+                      <span className="text-xs text-faint">
+                        {MODE_LABELS[event.mode]}
+                      </span>
+                      <h3 className="mt-1 text-base font-semibold text-foreground">
+                        {event.title}
+                      </h3>
+                      <div className="mt-4 flex flex-col gap-2 text-sm text-muted">
+                        {first ? (
+                          <span className="flex items-center gap-2">
+                            <CalendarDays
+                              className="size-4 text-faint"
+                              aria-hidden
+                            />
+                            {formatJalaliDate(first.startAt)}
+                          </span>
+                        ) : null}
                         <span className="flex items-center gap-2">
-                          <CalendarDays
-                            className="size-4 text-faint"
-                            aria-hidden
-                          />
-                          {formatJalaliDate(first.startAt)}
+                          <MapPin className="size-4 text-faint" aria-hidden />
+                          {event.venue.name}، {event.venue.city}
+                        </span>
+                      </div>
+                      {price ? (
+                        <span className="mt-auto border-t border-border pt-3 text-sm font-medium text-foreground">
+                          {price}
                         </span>
                       ) : null}
-                      <span className="flex items-center gap-2">
-                        <MapPin className="size-4 text-faint" aria-hidden />
-                        {event.venue.name}، {event.venue.city}
-                      </span>
                     </div>
-                    {price ? (
-                      <span className="mt-4 border-t border-border pt-3 text-sm font-medium text-foreground">
-                        {price}
-                      </span>
-                    ) : null}
                   </Link>
                 );
               })}
