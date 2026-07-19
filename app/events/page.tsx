@@ -4,6 +4,7 @@ import {
   listEvents,
   listTickets,
   getWorkspaceByEvent,
+  getEventEngagement,
 } from "@/lib/server";
 import { formatJalaliDate, formatToman } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
@@ -43,6 +44,7 @@ export default function PublicEventsPage() {
           dateLabel: firstSession ? formatJalaliDate(firstSession.startAt) : "",
           sortKey: firstSession?.startAt ?? "",
           price: fromPrice(event.id),
+          going: getEventEngagement(event.id).going,
           tags: event.tags,
           org: org
             ? {

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { MapPin, CalendarDays, Search, X, BadgeCheck } from "lucide-react";
+import { MapPin, CalendarDays, Search, X, BadgeCheck, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ export interface DiscoverEvent {
   dateLabel: string;
   sortKey: string;
   price: string | null;
+  going: number;
   tags: string[];
   org: { slug: string; name: string; avatar: string; verified: boolean } | null;
 }
@@ -173,6 +174,12 @@ export function EventsExplorer({ events }: { events: DiscoverEvent[] }) {
                   <MapPin className="size-4 text-faint" aria-hidden />
                   {e.venueName}، {e.city}
                 </span>
+                {e.going > 0 ? (
+                  <span className="flex items-center gap-2">
+                    <Users className="size-4 text-faint" aria-hidden />
+                    {formatNumber(e.going)} نفر می‌روند
+                  </span>
+                ) : null}
               </div>
               {e.price ? (
                 <span className="mt-4 border-t border-border pt-3 text-sm font-medium text-foreground">

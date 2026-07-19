@@ -3,7 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MapPin, Clock, Repeat, ChevronLeft } from "lucide-react";
 
-import { getEventById, listTickets, getWorkspaceByEvent } from "@/lib/server";
+import {
+  getEventById,
+  listTickets,
+  getWorkspaceByEvent,
+  getEventEngagement,
+} from "@/lib/server";
 import {
   formatJalaliDate,
   formatTime,
@@ -52,6 +57,7 @@ export default async function PublicEventDetail({ params }: Params) {
   const tickets = listTickets(id);
   const recurrence = recurrenceText(event);
   const organizer = getWorkspaceByEvent(id);
+  const engagement = getEventEngagement(id);
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -89,7 +95,11 @@ export default async function PublicEventDetail({ params }: Params) {
         </div>
 
         <div className="mt-5">
-          <EventRsvp eventId={event.id} />
+          <EventRsvp
+            eventId={event.id}
+            baseGoing={engagement.going}
+            baseInterested={engagement.interested}
+          />
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
