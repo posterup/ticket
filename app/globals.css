@@ -183,3 +183,11 @@ body {
 .rmdp-time-picker div .dw {
   color: var(--muted) !important;
 }
+
+/* Monochrome map tiles (Leaflet) to match the design language. */
+.poster-map .leaflet-tile-pane {
+  filter: grayscale(1) contrast(1.03);
+}
+.poster-map .leaflet-control-attribution {
+  font-size: 10px;
+}

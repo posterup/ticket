@@ -77,9 +77,11 @@ export function EventPreview({
       </div>
 
       <div className="p-5">
-        <span className="inline-flex rounded-full border border-border bg-subtle px-2.5 py-0.5 text-xs text-muted">
-          {draft.category}
-        </span>
+        {draft.category ? (
+          <span className="inline-flex rounded-full border border-border bg-subtle px-2.5 py-0.5 text-xs text-muted">
+            {draft.category}
+          </span>
+        ) : null}
         <h3 className="mt-3 text-lg font-bold text-foreground">
           {draft.title.trim() || "عنوان رویداد"}
         </h3>

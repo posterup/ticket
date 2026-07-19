@@ -81,6 +81,9 @@ export interface CreateDraft {
     city: string;
     address: string;
     onlineUrl: string;
+    /** Dropped pin coordinates (null until the organizer places one). */
+    lat: number | null;
+    lng: number | null;
   };
   visibility: Visibility;
   requireApproval: boolean;
@@ -155,7 +158,7 @@ export function emptyTicket(id: string, kind: TicketKind = "paid"): TicketTypeDr
 export const initialDraft: CreateDraft = {
   title: "",
   description: "",
-  category: "موسیقی",
+  category: "",
   poster: null,
   gallery: [],
   location: {
@@ -164,6 +167,8 @@ export const initialDraft: CreateDraft = {
     city: "",
     address: "",
     onlineUrl: "",
+    lat: null,
+    lng: null,
   },
   visibility: "public",
   requireApproval: false,
