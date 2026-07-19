@@ -1,32 +1,32 @@
 @import "tailwindcss";
 
 /*
-  Cyberpunk-neon theme for Poster. Deep violet-black base with a hot-pink
-  neon accent and translucent glass cards over fixed pink glow circles.
-  Always dark — the aesthetic is inherently nocturnal.
+  Clean white-neon theme for Poster. A bright, airy base with a hot-pink
+  neon accent and translucent glass cards floating over soft pink glow
+  circles. Light by design — the neon reads as fresh, not nocturnal.
 */
 :root {
-  --background: #070510; /* deep violet-black */
-  --foreground: #f3efff; /* near-white, cool */
-  --muted: #b6a6d8; /* secondary text (lavender) */
-  --faint: #7d6ba6; /* captions */
-  --subtle: #17102a; /* subtle surface */
-  --border: #2b2044;
-  --border-strong: #49356e;
-  --card: rgba(17, 11, 30, 0.72); /* glass over the glow */
+  --background: #fdfcff; /* near-white, faint cool */
+  --foreground: #14101f; /* near-black ink */
+  --muted: #5b5470; /* secondary text */
+  --faint: #8b83a3; /* captions */
+  --subtle: #f4f1fb; /* subtle lavender surface */
+  --border: #e8e3f2;
+  --border-strong: #d3cce6;
+  --card: rgba(255, 255, 255, 0.72); /* glass over the glow */
 
-  --accent: #ff2e97; /* neon pink */
-  --accent-soft: #2a0d1f;
+  --accent: #ec0e83; /* neon pink */
+  --accent-soft: #ffe6f4;
   --accent-foreground: #ffffff;
 
-  --success: #21e6a0; /* neon green */
-  --warning: #ffcf33; /* neon amber */
-  --danger: #ff415f; /* neon red */
+  --success: #0aa06e; /* green */
+  --warning: #c77a08; /* amber */
+  --danger: #e5484d; /* red */
 
-  --ring: #ff2e97; /* pink glow ring */
+  --ring: #ec0e83; /* pink glow ring */
 
-  /* Reusable neon glow shadow. */
-  --glow: 0 0 24px -4px var(--accent);
+  /* Reusable neon glow shadow — soft on the light base. */
+  --glow: 0 0 24px -6px var(--accent);
 }
 
 @theme inline {
@@ -78,7 +78,8 @@ body {
 /*
   Pink glow circle backgrounds: a fixed layer of soft neon radial "orbs"
   in pink/magenta/purple/cyan behind everything. Non-interactive, sits at
-  z-index -1 so all content stacks above it.
+  z-index -1 so all content stacks above it. Kept light so the page reads
+  clean and bright rather than washed out.
 */
 body::before {
   content: "";
@@ -87,10 +88,10 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(38rem 38rem at 15% -5%, rgba(255, 46, 151, 0.22), transparent 60%),
-    radial-gradient(34rem 34rem at 92% 8%, rgba(157, 78, 255, 0.20), transparent 62%),
-    radial-gradient(30rem 30rem at 78% 92%, rgba(0, 214, 255, 0.14), transparent 60%),
-    radial-gradient(32rem 32rem at 8% 88%, rgba(255, 46, 151, 0.16), transparent 62%);
+    radial-gradient(38rem 38rem at 15% -5%, rgba(236, 14, 131, 0.12), transparent 60%),
+    radial-gradient(34rem 34rem at 92% 8%, rgba(157, 78, 255, 0.10), transparent 62%),
+    radial-gradient(30rem 30rem at 78% 92%, rgba(0, 190, 255, 0.08), transparent 60%),
+    radial-gradient(32rem 32rem at 8% 88%, rgba(236, 14, 131, 0.09), transparent 62%);
 }
 
 :where(input, textarea) {
@@ -182,9 +183,9 @@ body::before {
   color: var(--muted) !important;
 }
 
-/* Dark, inverted map tiles (Leaflet) to match the cyberpunk-neon language. */
+/* Light, softly desaturated map tiles (Leaflet) to match the clean theme. */
 .poster-map .leaflet-tile-pane {
-  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.7);
+  filter: grayscale(0.25) brightness(1.03) contrast(0.96);
 }
 .poster-map .leaflet-control-attribution {
   font-size: 10px;

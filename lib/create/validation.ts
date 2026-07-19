@@ -12,10 +12,10 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
 
   if (!draft.title.trim()) e.title = "عنوان رویداد الزامی است.";
 
-  const { mode, venueName, city, onlineUrl } = draft.location;
+  const { mode, province, city, onlineUrl } = draft.location;
   if (mode !== "online") {
-    if (!venueName.trim()) e.venueName = "نام محل الزامی است.";
-    if (!city.trim()) e.city = "شهر الزامی است.";
+    if (!province.trim()) e.province = "استان را انتخاب کنید.";
+    if (!city.trim()) e.city = "شهر را انتخاب کنید.";
   }
   if (mode !== "in-person" && !onlineUrl.trim()) {
     e.onlineUrl = "نشانی آنلاین الزامی است.";

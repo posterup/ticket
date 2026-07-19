@@ -109,7 +109,7 @@ describe("validateDraft", () => {
   const ok = (): CreateDraft =>
     draft({
       title: "رویداد",
-      location: { mode: "in-person", venueName: "سالن", city: "تهران", address: "", onlineUrl: "", lat: null, lng: null },
+      location: { mode: "in-person", province: "تهران", city: "تهران", venueName: "سالن", address: "", onlineUrl: "", lat: null, lng: null, hideAddress: false },
       schedule: schedule(),
       ticketTypes: [{ ...emptyTicket("t1"), name: "بلیت", kind: "paid", price: "100000" }],
     });
@@ -122,17 +122,26 @@ describe("validateDraft", () => {
     expect(validateDraft(draft({ ...ok(), title: "  " })).title).toBeTruthy();
   });
 
-  it("requires venue + city for in-person events", () => {
+  it("requires province + city for in-person events", () => {
     const e = validateDraft(
-      draft({ ...ok(), location: { mode: "in-person", venueName: "", city: "", address: "", onlineUrl: "", lat: null, lng: null } }),
+      draft({ ...ok(), location: { mode: "in-person", province: "", city: "", venueName: "", address: "", onlineUrl: "", lat: null, lng: null, hideAddress: false } }),
     );
-    expect(e.venueName).toBeTruthy();
+    expect(e.province).toBeTruthy();
     expect(e.city).toBeTruthy();
+  });
+
+  it("does not require a venue name for in-person events", () => {
+    const e = validateDraft(
+      draft({ ...ok(), location: { mode: "in-person", province: "تهران", city: "تهران", venueName: "", address: "", onlineUrl: "", lat: null, lng: null, hideAddress: false } }),
+    );
+    expect(e.venueName).toBeUndefined();
+    expect(e.province).toBeUndefined();
+    expect(e.city).toBeUndefined();
   });
 
   it("requires an online url for online events", () => {
     const e = validateDraft(
-      draft({ ...ok(), location: { mode: "online", venueName: "", city: "", address: "", onlineUrl: "", lat: null, lng: null } }),
+      draft({ ...ok(), location: { mode: "online", province: "", city: "", venueName: "", address: "", onlineUrl: "", lat: null, lng: null, hideAddress: false } }),
     );
     expect(e.onlineUrl).toBeTruthy();
   });
