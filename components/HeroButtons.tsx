@@ -46,7 +46,7 @@ export function HeroButtons() {
       >
         <Calendar aria-hidden />
         مشاهده رویدادها
-        <Badge variant="accent" size="sm" className="me-1">
+        <Badge variant="neutral" size="sm" className="me-1">
           به‌زودی
         </Badge>
       </button>

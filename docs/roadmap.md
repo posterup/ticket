@@ -16,8 +16,8 @@ Poster is to prospective organizers.
 **Key features:**
 
 - Public landing page: header, hero, feature and segment sections, footer.
-- Brand foundation: Vazirmatn typography, cobalt accent, RTL layout, light and
-  dark themes.
+- Brand foundation: Vazirmatn typography, monochrome palette (blue reserved for
+  logo and semantic Info), RTL layout, light and dark themes.
 - Design tokens and base component primitives (`Button`, `Badge`).
 
 **Dependencies:** none. This is the starting point.

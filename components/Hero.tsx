@@ -14,9 +14,6 @@ import { HeroIllustration } from "@/components/HeroIllustration";
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* Calm background: a single soft accent glow at the top center */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[36rem] bg-[radial-gradient(60%_60%_at_50%_0%,var(--color-accent-soft)_0%,transparent_70%)] opacity-70" />
-
       <motion.div
         variants={staggerContainer}
         initial="hidden"
