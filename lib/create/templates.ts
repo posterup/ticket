@@ -8,9 +8,10 @@ import {
 
 import {
   initialDraft,
-  emptySession,
+  emptySlot,
   emptyTicket,
   type CreateDraft,
+  type ScheduleDraft,
   type TicketTypeDraft,
 } from "./types";
 
@@ -26,8 +27,21 @@ export interface ComposerTemplate {
   build: () => CreateDraft;
 }
 
-function session(startTime: string, endTime: string) {
-  return { ...emptySession(crypto.randomUUID()), startTime, endTime };
+function schedule(
+  startTime: string,
+  endTime: string,
+  extra: Partial<ScheduleDraft> = {},
+): ScheduleDraft {
+  return {
+    calendar: false,
+    startDate: "",
+    endDate: "",
+    byDay: [],
+    slots: [{ ...emptySlot(crypto.randomUUID()), startTime, endTime }],
+    daySlots: {},
+    exceptions: [],
+    ...extra,
+  };
 }
 
 function ticket(partial: Partial<TicketTypeDraft>): TicketTypeDraft {
@@ -46,8 +60,7 @@ export const COMPOSER_TEMPLATES: ComposerTemplate[] = [
       description:
         "اجرای زندهٔ موسیقی به همراه گروه نوازندگان؛ شبی به‌یادماندنی از موسیقی زنده.",
       location: { ...initialDraft.location, city: "تهران" },
-      scheduleMode: "single",
-      sessions: [session("18:30", "21:00")],
+      schedule: schedule("18:30", "21:00"),
       ticketTypes: [
         ticket({ name: "بلیت عادی", kind: "paid" }),
         ticket({ name: "بلیت ویژه (VIP)", kind: "paid" }),
@@ -65,9 +78,7 @@ export const COMPOSER_TEMPLATES: ComposerTemplate[] = [
       description:
         "دورهٔ عملی و کارگاهی با ظرفیت محدود؛ شامل تمرین‌های میدانی و گواهی پایان دوره.",
       location: { ...initialDraft.location, city: "تهران" },
-      scheduleMode: "recurring",
-      sessions: [session("16:00", "19:00")],
-      recurrence: { frequency: "weekly", interval: "1", byDay: ["SA"], count: "8" },
+      schedule: schedule("16:00", "19:00", { calendar: true, byDay: ["SA"] }),
       ticketTypes: [
         ticket({ name: "بلیت دوره", kind: "paid" }),
         ticket({ name: "بلیت دانشجویی", kind: "paid" }),
@@ -85,8 +96,7 @@ export const COMPOSER_TEMPLATES: ComposerTemplate[] = [
       description:
         "همایش تخصصی با حضور سخنرانان و کارشناسان؛ به همراه پنل‌های پرسش و پاسخ و شبکه‌سازی.",
       location: { ...initialDraft.location, city: "تهران" },
-      scheduleMode: "single",
-      sessions: [session("09:00", "17:00")],
+      schedule: schedule("09:00", "17:00"),
       ticketTypes: [
         ticket({ name: "بلیت زودهنگام", kind: "paid" }),
         ticket({ name: "بلیت حضوری", kind: "paid" }),
@@ -105,8 +115,7 @@ export const COMPOSER_TEMPLATES: ComposerTemplate[] = [
       description:
         "گردهمایی دوستانه و رایگان برای علاقه‌مندان؛ فرصتی برای گفت‌وگو و آشنایی.",
       location: { ...initialDraft.location, city: "تهران" },
-      scheduleMode: "single",
-      sessions: [session("17:00", "20:00")],
+      schedule: schedule("17:00", "20:00"),
       ticketTypes: [ticket({ name: "ثبت‌نام رایگان", kind: "free" })],
     }),
   },

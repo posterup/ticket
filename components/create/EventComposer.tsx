@@ -37,12 +37,13 @@ import {
 } from "@/lib/create/labels";
 import {
   initialDraft,
-  emptySession,
+  emptySlot,
   emptyTicket,
   expandSessions,
   type CreateDraft,
   type LocationMode,
-  type ScheduleMode,
+  type ScheduleDraft,
+  type TimeSlot,
   type Visibility,
   type TicketTypeDraft,
 } from "@/lib/create/types";
@@ -59,7 +60,7 @@ const STEP_TITLES = ["رویداد", "زمان‌بندی", "بلیت‌ها"];
 /** Error keys owned by each step, so Next validates only that step. */
 function stepErrorKeys(step: number, draft: CreateDraft): string[] {
   if (step === 0) return ["title", "venueName", "city", "onlineUrl"];
-  if (step === 1) return ["sessions"];
+  if (step === 1) return ["schedule"];
   return ["privacy", "tickets", ...draft.ticketTypes.map((t) => `ticket-${t.id}`)];
 }
 
@@ -127,11 +128,15 @@ export function EventComposer() {
     setDraft((d) => ({ ...d, location: { ...d.location, ...p } }));
 
   const expanded = useMemo(() => expandSessions(draft), [draft]);
+  // Tickets can attach to specific سانس (time-slots) when there's more than one.
   const sessionOptions: SessionOption[] =
-    draft.scheduleMode === "multi"
-      ? draft.sessions
-          .filter((s) => s.date)
-          .map((s) => ({ id: s.id, label: formatJalaliDate(`${s.date}T00:00:00.000Z`) }))
+    draft.schedule.slots.length > 1
+      ? draft.schedule.slots
+          .filter((s) => s.startTime)
+          .map((s) => ({
+            id: s.id,
+            label: s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime,
+          }))
       : [];
 
   const ticketSample: TicketSample = {
@@ -147,47 +152,89 @@ export function EventComposer() {
   };
 
   // --- schedule handlers ---
-  function setScheduleMode(mode: ScheduleMode) {
+  const scheduleChange = (p: Partial<ScheduleDraft>) =>
+    setDraft((d) => ({ ...d, schedule: { ...d.schedule, ...p } }));
+  const addSlot = () =>
     setDraft((d) => ({
       ...d,
-      scheduleMode: mode,
-      sessions:
-        mode === "single" || mode === "recurring"
-          ? [d.sessions[0] ?? emptySession("session-1")]
-          : d.sessions,
+      schedule: {
+        ...d.schedule,
+        slots: [...d.schedule.slots, emptySlot(crypto.randomUUID())],
+      },
     }));
-  }
-  const addSession = () =>
-    setDraft((d) => ({ ...d, sessions: [...d.sessions, emptySession(crypto.randomUUID())] }));
-  const removeSession = (id: string) =>
+  const removeSlot = (id: string) =>
     setDraft((d) => ({
       ...d,
-      sessions: d.sessions.length > 1 ? d.sessions.filter((s) => s.id !== id) : d.sessions,
+      schedule: {
+        ...d.schedule,
+        slots:
+          d.schedule.slots.length > 1
+            ? d.schedule.slots.filter((s) => s.id !== id)
+            : d.schedule.slots,
+      },
       ticketTypes: d.ticketTypes.map((t) => ({
         ...t,
         sessionIds: t.sessionIds.filter((sid) => sid !== id),
       })),
     }));
-  const sessionChange = (id: string, p: Partial<CreateDraft["sessions"][number]>) =>
+  const slotChange = (id: string, p: Partial<TimeSlot>) =>
     setDraft((d) => ({
       ...d,
-      sessions: d.sessions.map((s) => (s.id === id ? { ...s, ...p } : s)),
+      schedule: {
+        ...d.schedule,
+        slots: d.schedule.slots.map((s) => (s.id === id ? { ...s, ...p } : s)),
+      },
     }));
-  const recurrenceChange = (p: Partial<CreateDraft["recurrence"]>) =>
-    setDraft((d) => ({ ...d, recurrence: { ...d.recurrence, ...p } }));
   const toggleDay = (day: WeekDay) =>
     setDraft((d) => {
-      const has = d.recurrence.byDay.includes(day);
+      const has = d.schedule.byDay.includes(day);
       return {
         ...d,
-        recurrence: {
-          ...d.recurrence,
+        schedule: {
+          ...d.schedule,
           byDay: has
-            ? d.recurrence.byDay.filter((x) => x !== day)
-            : [...d.recurrence.byDay, day],
+            ? d.schedule.byDay.filter((x) => x !== day)
+            : [...d.schedule.byDay, day],
         },
       };
     });
+  const patchDaySlots = (
+    day: WeekDay,
+    fn: (slots: TimeSlot[]) => TimeSlot[],
+  ) =>
+    setDraft((d) => ({
+      ...d,
+      schedule: {
+        ...d.schedule,
+        daySlots: { ...d.schedule.daySlots, [day]: fn(d.schedule.daySlots[day] ?? []) },
+      },
+    }));
+  const addDaySlot = (day: WeekDay) =>
+    patchDaySlots(day, (s) => [...s, emptySlot(crypto.randomUUID())]);
+  const removeDaySlot = (day: WeekDay, id: string) =>
+    patchDaySlots(day, (s) => s.filter((x) => x.id !== id));
+  const daySlotChange = (day: WeekDay, id: string, p: Partial<TimeSlot>) =>
+    patchDaySlots(day, (s) => s.map((x) => (x.id === id ? { ...x, ...p } : x)));
+  const addException = (date: string) =>
+    setDraft((d) =>
+      !date || d.schedule.exceptions.includes(date)
+        ? d
+        : {
+            ...d,
+            schedule: {
+              ...d.schedule,
+              exceptions: [...d.schedule.exceptions, date].sort(),
+            },
+          },
+    );
+  const removeException = (date: string) =>
+    setDraft((d) => ({
+      ...d,
+      schedule: {
+        ...d.schedule,
+        exceptions: d.schedule.exceptions.filter((x) => x !== date),
+      },
+    }));
 
   // --- ticket handlers ---
   const addTicket = () =>
@@ -217,9 +264,9 @@ export function EventComposer() {
     setSubmitError("");
     try {
       const mode =
-        draft.scheduleMode === "recurring"
+        draft.schedule.calendar && draft.schedule.byDay.length > 0
           ? "recurring"
-          : draft.scheduleMode === "multi"
+          : expanded.length > 1
             ? "multi-session"
             : "one-time";
       const payload = {
@@ -242,13 +289,12 @@ export function EventComposer() {
           startAt: iso(s.date, s.startTime),
           endAt: iso(s.date, s.endTime || s.startTime),
         })),
-        ...(draft.scheduleMode === "recurring"
+        ...(mode === "recurring"
           ? {
               recurrence: {
-                frequency: draft.recurrence.frequency,
-                interval: Math.max(1, Number(draft.recurrence.interval) || 1),
-                byDay: draft.recurrence.byDay,
-                count: Math.max(1, Number(draft.recurrence.count) || 1),
+                frequency: "weekly" as const,
+                interval: 1,
+                byDay: draft.schedule.byDay,
               },
             }
           : {}),
@@ -456,20 +502,22 @@ export function EventComposer() {
         {step === 1 ? (
         <SectionCard
           title="زمان‌بندی"
-          description="یک جلسه، مجموعه‌ای تکرارشونده، یا چند سانس با ساعت‌های مختلف."
+          description="بازهٔ تاریخ و سانس‌ها را تعیین کنید؛ برای اجرای تکرارشونده «زمان‌بندی تقویمی» را فعال کنید."
         >
           <SessionsEditor
-            scheduleMode={draft.scheduleMode}
-            sessions={draft.sessions}
-            recurrence={draft.recurrence}
+            schedule={draft.schedule}
             generatedCount={expanded.length}
-            error={errors.sessions}
-            onModeChange={setScheduleMode}
-            onSessionChange={sessionChange}
-            onAddSession={addSession}
-            onRemoveSession={removeSession}
-            onRecurrenceChange={recurrenceChange}
+            error={errors.schedule}
+            onScheduleChange={scheduleChange}
+            onSlotChange={slotChange}
+            onAddSlot={addSlot}
+            onRemoveSlot={removeSlot}
             onToggleDay={toggleDay}
+            onAddDaySlot={addDaySlot}
+            onRemoveDaySlot={removeDaySlot}
+            onDaySlotChange={daySlotChange}
+            onAddException={addException}
+            onRemoveException={removeException}
           />
         </SectionCard>
         ) : null}

@@ -7,7 +7,7 @@
  * on submit.
  */
 
-import type { RecurrenceFrequency, WeekDay } from "@/types";
+import type { WeekDay } from "@/types";
 import type { TicketTemplate } from "@/components/tickets/TicketPreview";
 
 export type LocationMode = "in-person" | "online" | "hybrid";
@@ -20,12 +20,11 @@ export interface MediaItem {
   name: string;
 }
 export type Visibility = "public" | "unlisted" | "private";
-export type ScheduleMode = "single" | "recurring" | "multi";
 
 /** The kind of a ticket type — drives which fields/rules apply. */
 export type TicketKind = "paid" | "free" | "donation" | "group" | "addon";
 
-/** A concrete showtime / سانس. Dates are stored Gregorian `YYYY-MM-DD`. */
+/** A concrete showtime produced by {@link expandSessions}. */
 export interface SessionDraft {
   id: string;
   date: string;
@@ -33,12 +32,30 @@ export interface SessionDraft {
   endTime: string;
 }
 
-export interface RecurrenceDraft {
-  frequency: RecurrenceFrequency;
-  interval: string;
+/** A سانس (show time-slot) the organizer defines. */
+export interface TimeSlot {
+  id: string;
+  startTime: string;
+  endTime: string;
+}
+
+/**
+ * The event schedule, driven by one toggle (`calendar`):
+ * - `calendar` off: a plain date range `[startDate, endDate]`.
+ * - `calendar` on: performance weekdays (`byDay`) within `[startDate, endDate]`.
+ * Both models define one or more سانس time-slots (`slots`).
+ */
+export interface ScheduleDraft {
+  calendar: boolean;
+  startDate: string;
+  endDate: string;
   byDay: WeekDay[];
-  /** Number of occurrences to generate. */
-  count: string;
+  /** Default سانس‌ها applied to every performance day. */
+  slots: TimeSlot[];
+  /** Extra سانس‌ها for a specific weekday (calendar model). */
+  daySlots: Partial<Record<WeekDay, TimeSlot[]>>;
+  /** Dates (`YYYY-MM-DD`) to skip — e.g. public holidays. */
+  exceptions: string[];
 }
 
 export interface TicketTypeDraft {
@@ -108,9 +125,7 @@ export interface CreateDraft {
   accessCode: string;
   /** Optional custom ticket appearance; `null` uses the default design. */
   ticketDesign: TicketTemplate | null;
-  scheduleMode: ScheduleMode;
-  sessions: SessionDraft[];
-  recurrence: RecurrenceDraft;
+  schedule: ScheduleDraft;
   ticketTypes: TicketTypeDraft[];
 }
 
@@ -142,8 +157,8 @@ export function defaultTicketDesign(): TicketTemplate {
   };
 }
 
-export function emptySession(id: string): SessionDraft {
-  return { id, date: "", startTime: "", endTime: "" };
+export function emptySlot(id: string): TimeSlot {
+  return { id, startTime: "", endTime: "" };
 }
 
 export function emptyTicket(id: string, kind: TicketKind = "paid"): TicketTypeDraft {
@@ -199,47 +214,61 @@ export const initialDraft: CreateDraft = {
   requireApproval: false,
   accessCode: "",
   ticketDesign: null,
-  scheduleMode: "single",
-  sessions: [emptySession("session-1")],
-  recurrence: { frequency: "weekly", interval: "1", byDay: [], count: "8" },
+  schedule: {
+    calendar: false,
+    startDate: "",
+    endDate: "",
+    byDay: [],
+    slots: [emptySlot("slot-1")],
+    daySlots: {},
+    exceptions: [],
+  },
   ticketTypes: [{ ...emptyTicket("ticket-1"), name: "بلیت عمومی" }],
 };
 
-/** Shift a `YYYY-MM-DD` date by `n` occurrences of the recurrence frequency. */
-function shiftDate(date: string, n: number, rec: RecurrenceDraft): string {
-  const interval = Math.max(Number.parseInt(rec.interval, 10) || 1, 1);
-  const d = new Date(`${date}T00:00:00Z`);
-  if (rec.frequency === "daily") d.setUTCDate(d.getUTCDate() + n * interval);
-  else if (rec.frequency === "weekly") d.setUTCDate(d.getUTCDate() + n * interval * 7);
-  else if (rec.frequency === "monthly") d.setUTCMonth(d.getUTCMonth() + n * interval);
-  else d.setUTCDate(d.getUTCDate() + n); // weekday: daily step (approximation)
-  return d.toISOString().slice(0, 10);
-}
+/** iCalendar weekday code for a `getUTCDay()` index (0 = Sunday). */
+const WEEKDAY_OF: WeekDay[] = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+
+/** Guard so a wide range × many slots can't explode the session list. */
+const MAX_SESSIONS = 366;
 
 /**
- * Resolve the draft's schedule into concrete sessions.
- * - `single` / `multi`: the explicit dated sessions.
- * - `recurring`: repeats the *whole* set of base سانس‌ها (which may be more than
- *   one showtime per occurrence) across `count` occurrences.
- * Client preview and submit share this.
+ * Resolve the draft's schedule into concrete sessions. Every day in
+ * `[startDate, endDate]` (filtered to `byDay` when `calendar` is on) is paired
+ * with each defined سانس time-slot. Client preview and submit share this.
  */
 export function expandSessions(draft: CreateDraft): SessionDraft[] {
-  if (draft.scheduleMode !== "recurring") {
-    return draft.sessions.filter((s) => s.date);
+  const { calendar, startDate, endDate, byDay, slots, daySlots, exceptions } =
+    draft.schedule;
+  if (!startDate) return [];
+  const baseSlots = slots.filter((s) => s.startTime);
+  if (baseSlots.length === 0) return [];
+
+  const start = new Date(`${startDate}T00:00:00Z`);
+  const end = endDate ? new Date(`${endDate}T00:00:00Z`) : start;
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return [];
   }
-  const bases = draft.sessions.filter((s) => s.date);
-  if (bases.length === 0) return [];
-  const count = Math.min(Math.max(Number.parseInt(draft.recurrence.count, 10) || 1, 1), 60);
+  const skip = new Set(exceptions);
+
   const out: SessionDraft[] = [];
-  for (let i = 0; i < count; i++) {
-    for (const base of bases) {
-      out.push({
-        id: `${base.id}-r${i}`,
-        date: shiftDate(base.date, i, draft.recurrence),
-        startTime: base.startTime,
-        endTime: base.endTime,
-      });
+  const cursor = new Date(start);
+  while (cursor <= end && out.length < MAX_SESSIONS) {
+    const date = cursor.toISOString().slice(0, 10);
+    const weekday = WEEKDAY_OF[cursor.getUTCDay()];
+    const include = !calendar || byDay.length === 0 || byDay.includes(weekday);
+    if (include && !skip.has(date)) {
+      const extra = calendar ? (daySlots[weekday] ?? []).filter((s) => s.startTime) : [];
+      for (const slot of [...baseSlots, ...extra]) {
+        out.push({
+          id: `${date}-${slot.id}`,
+          date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+        });
+      }
     }
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return out;
 }
