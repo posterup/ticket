@@ -347,8 +347,10 @@ function ToggleRow({
       >
         <span
           className={cn(
-            "inline-block size-5 rounded-full bg-background shadow-sm transition-transform",
-            checked ? "translate-x-0.5" : "translate-x-[1.375rem]",
+            // Logical start inset + direction-aware transform so the knob
+            // travels correctly under both dir=rtl and dir=ltr.
+            "absolute top-0.5 start-0.5 size-5 rounded-full bg-background shadow-sm transition-transform",
+            checked ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0",
           )}
         />
       </button>
