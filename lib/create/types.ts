@@ -10,6 +10,14 @@
 import type { RecurrenceFrequency, WeekDay } from "@/types";
 
 export type LocationMode = "in-person" | "online" | "hybrid";
+
+/** An uploaded gallery item (image or video), stored as a data URL. */
+export interface MediaItem {
+  id: string;
+  type: "image" | "video";
+  url: string;
+  name: string;
+}
 export type Visibility = "public" | "unlisted" | "private";
 export type ScheduleMode = "single" | "recurring" | "multi";
 
@@ -62,6 +70,10 @@ export interface CreateDraft {
   description: string;
   /** Discovery category label (also used as the primary tag). */
   category: string;
+  /** Cover image (data URL) shown as the event poster. */
+  poster: string | null;
+  /** Additional images/videos for the event page. */
+  gallery: MediaItem[];
   location: {
     mode: LocationMode;
     venueName: string;
@@ -125,6 +137,8 @@ export const initialDraft: CreateDraft = {
   title: "",
   description: "",
   category: "موسیقی",
+  poster: null,
+  gallery: [],
   location: {
     mode: "in-person",
     venueName: "",
