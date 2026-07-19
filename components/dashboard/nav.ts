@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   CalendarDays,
+  Ticket,
   Users,
   User,
   type LucideIcon,
@@ -16,6 +17,7 @@ export interface NavItem {
 export const SIDEBAR_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
   { href: "/dashboard/events", label: "رویدادها", icon: CalendarDays },
+  { href: "/dashboard/tickets/customize", label: "قالب بلیت", icon: Ticket },
   { href: "/dashboard/customers", label: "مشتریان", icon: Users },
   { href: "/dashboard/profile", label: "پروفایل", icon: User },
 ];
