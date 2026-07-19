@@ -36,6 +36,12 @@ export function PublicHeader() {
           >
             برگزارکنندگان
           </Link>
+          <Link
+            href="/me"
+            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+          >
+            من
+          </Link>
         </nav>
 
         <Link

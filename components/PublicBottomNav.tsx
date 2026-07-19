@@ -17,7 +17,7 @@ const ITEMS: PublicNavItem[] = [
   { href: "/events", label: "رویدادها", icon: Compass },
   { href: "/feed", label: "دنبال‌شده‌ها", icon: Rss },
   { href: "/pages", label: "صفحه‌ها", icon: Users },
-  { href: "/login", label: "ورود", icon: User },
+  { href: "/me", label: "من", icon: User },
 ];
 
 function isActive(pathname: string, href: string): boolean {

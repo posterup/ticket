@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
+import { EventRsvp } from "@/components/events/EventRsvp";
 import type { Event } from "@/types";
 
 interface Params {
@@ -85,6 +86,10 @@ export default async function PublicEventDetail({ params }: Params) {
               </Link>
             </p>
           ) : null}
+        </div>
+
+        <div className="mt-5">
+          <EventRsvp eventId={event.id} />
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
