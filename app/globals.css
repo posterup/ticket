@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/*
+  Design tokens for the Gishe Event CRM landing page.
+  Calm, premium B2B SaaS palette: neutral slate base + a single cobalt accent.
+  Light is the default; dark mode is honored via prefers-color-scheme.
+*/
+:root {
+  --background: oklch(0.99 0.002 264);
+  --foreground: oklch(0.21 0.02 264);
+  --muted: oklch(0.55 0.02 264);
+  --subtle: oklch(0.96 0.004 264);
+  --border: oklch(0.92 0.006 264);
+  --card: oklch(1 0 0);
+  --accent: oklch(0.54 0.2 262);
+  --accent-foreground: oklch(0.99 0.002 264);
+  --accent-soft: oklch(0.95 0.03 262);
+  --ring: oklch(0.54 0.2 262);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.17 0.015 264);
+    --foreground: oklch(0.96 0.004 264);
+    --muted: oklch(0.68 0.02 264);
+    --subtle: oklch(0.22 0.02 264);
+    --border: oklch(0.28 0.02 264);
+    --card: oklch(0.21 0.02 264);
+    --accent: oklch(0.62 0.19 262);
+    --accent-foreground: oklch(0.15 0.02 264);
+    --accent-soft: oklch(0.28 0.05 262);
+    --ring: oklch(0.62 0.19 262);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Persian digits and better numeral rendering for RTL context */
+:where(input, textarea) {
+  font-family: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
