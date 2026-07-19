@@ -25,25 +25,24 @@ export function Hero() {
       >
         <motion.h1
           variants={fadeUpItem}
-          className="mx-auto max-w-[44rem] text-4xl font-bold leading-[1.25] tracking-tight text-foreground sm:text-5xl sm:leading-[1.2]"
+          className="mx-auto max-w-[44rem] text-5xl font-bold leading-[1.15] tracking-tight text-foreground sm:text-6xl"
         >
-          مدیریت حرفه‌ای رویداد، فروش آسان بلیت
+          پوستر
         </motion.h1>
 
         <motion.p
           variants={fadeUpItem}
-          className="mx-auto mt-6 max-w-[38rem] text-lg text-muted sm:text-xl"
+          className="mx-auto mt-6 max-w-[40rem] text-xl font-medium text-foreground sm:text-2xl"
         >
-          همه ابزارهای موردنیاز برای ایجاد، مدیریت و فروش بلیت رویدادها در یک
-          پلتفرم واحد.
+          پلتفرم برگزاری و بلیت‌فروشی تجربه و رویداد
         </motion.p>
 
         <motion.p
           variants={fadeUpItem}
-          className="mx-auto mt-4 max-w-[36rem] text-base leading-relaxed text-muted"
+          className="mx-auto mt-4 max-w-[38rem] text-base leading-relaxed text-muted sm:text-lg"
         >
-          کسب‌وکارها و سازمان‌ها می‌توانند رویدادها، مخاطبان، فروش بلیت و عملیات
-          ورود را از یک داشبورد واحد مدیریت کنند. ساده، سریع و حرفه‌ای.
+          تجربه‌ها و رویدادهای جذاب اطرافتان را کشف کنید؛ و به کمک پوستر،
+          رویدادهای خود را به‌سادگی بسازید، بلیت بفروشید و برگزار کنید.
         </motion.p>
 
         <div className="mt-9">

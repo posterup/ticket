@@ -14,7 +14,7 @@ export function Logo({ className }: LogoProps) {
         <Ticket className="size-5" strokeWidth={2} aria-hidden />
       </span>
       <span className="text-lg font-bold tracking-tight text-foreground">
-        گیشه
+        پوستر
       </span>
     </span>
   );
