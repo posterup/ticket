@@ -38,7 +38,7 @@ export function Header() {
         <Link
           href="/"
           className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          aria-label="گیشه، صفحه اصلی"
+          aria-label="پوستر، صفحه اصلی"
         >
           <Logo />
         </Link>

@@ -1,35 +1,53 @@
 @import "tailwindcss";
 
 /*
-  Design tokens for the Gishe Event CRM landing page.
-  Calm, premium B2B SaaS palette: neutral slate base + a single cobalt accent.
-  Light is the default; dark mode is honored via prefers-color-scheme.
+  Design tokens for Poster, per DESIGN.md.
+  Monochrome brand (black/white + neutral grays). Color is reserved for
+  meaning only: blue (#2563EB) is the semantic "Info" and the logo mark;
+  success/warning/danger communicate state. Light is default; dark inverts
+  the neutral scale and is honored via prefers-color-scheme.
 */
 :root {
-  --background: oklch(0.99 0.002 264);
-  --foreground: oklch(0.21 0.02 264);
-  --muted: oklch(0.55 0.02 264);
-  --subtle: oklch(0.96 0.004 264);
-  --border: oklch(0.92 0.006 264);
-  --card: oklch(1 0 0);
-  --accent: oklch(0.54 0.2 262);
-  --accent-foreground: oklch(0.99 0.002 264);
-  --accent-soft: oklch(0.95 0.03 262);
-  --ring: oklch(0.54 0.2 262);
+  --background: #ffffff;
+  --foreground: #111111; /* primary text */
+  --muted: #525252; /* secondary text */
+  --faint: #a3a3a3; /* muted text / captions */
+  --subtle: #f5f5f5; /* subtle surface */
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
+  --card: #ffffff;
+
+  --accent: #2563eb; /* Info + logo only, never brand fill */
+  --accent-soft: #eff6ff;
+  --accent-foreground: #ffffff;
+
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  --ring: #111111;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(0.17 0.015 264);
-    --foreground: oklch(0.96 0.004 264);
-    --muted: oklch(0.68 0.02 264);
-    --subtle: oklch(0.22 0.02 264);
-    --border: oklch(0.28 0.02 264);
-    --card: oklch(0.21 0.02 264);
-    --accent: oklch(0.62 0.19 262);
-    --accent-foreground: oklch(0.15 0.02 264);
-    --accent-soft: oklch(0.28 0.05 262);
-    --ring: oklch(0.62 0.19 262);
+    --background: #0a0a0a;
+    --foreground: #fafafa;
+    --muted: #a3a3a3;
+    --faint: #737373;
+    --subtle: #1f1f1f;
+    --border: #2f2f2f;
+    --border-strong: #404040;
+    --card: #111111;
+
+    --accent: #3b82f6;
+    --accent-soft: #172554;
+    --accent-foreground: #ffffff;
+
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+
+    --ring: #fafafa;
   }
 }
 
@@ -37,20 +55,28 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-subtle: var(--subtle);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-card: var(--card);
+
   --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
   --color-ring: var(--ring);
 
   --font-sans: "Vazirmatn Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
+  /* Large rounded corners per DESIGN.md */
+  --radius-sm: 0.5rem; /* 8px */
+  --radius-md: 0.75rem; /* 12px - button, input */
+  --radius-lg: 1rem; /* 16px - card */
+  --radius-xl: 1.25rem; /* 20px - modal, dialog */
 }
 
 * {
@@ -69,7 +95,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Persian digits and better numeral rendering for RTL context */
 :where(input, textarea) {
   font-family: inherit;
 }

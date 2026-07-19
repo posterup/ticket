@@ -1,4 +1,4 @@
-# گیشه — Event CRM & Ticketing Platform
+# پوستر - Event CRM & Ticketing Platform
 
 A Persian-first (RTL) Event CRM and ticketing SaaS for organizations. This
 repository currently contains the marketing **landing page** plus the

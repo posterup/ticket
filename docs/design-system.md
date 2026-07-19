@@ -1,51 +1,58 @@
 # Design System
 
-The Gishe design language is calm, premium, and professional. The reference
-points are Stripe, Linear, Vercel, and Notion: minimal surfaces, a single
-restrained accent, generous whitespace, and confident typography. This document
-is the working reference for building future dashboard pages and should stay
-accurate to the tokens defined in `app/globals.css`.
+The Poster design language is calm, professional, and monochrome. The reference
+points are Linear, Notion, Vercel, Stripe Dashboard, and Apple: minimal
+surfaces, generous whitespace, and confident typography. `DESIGN.md` at the
+repository root is the authoritative brand and design specification; this
+document maps that system onto the implemented tokens in `app/globals.css` and
+is the working reference for building future dashboard pages.
 
-All values below are the actual implemented tokens. Colors use the `oklch`
-color space. Light is the default; dark mode is honored via
-`prefers-color-scheme`. There is no pure black or pure white in the palette.
+The brand is monochrome (black/white plus a neutral gray scale). Color is
+reserved for meaning: blue (`#2563EB`, the semantic "Info") is used only for the
+logo mark and informational states, and success/warning/danger communicate
+state. Never use a semantic color as a brand fill. Light is the default; dark
+mode inverts the neutral scale via `prefers-color-scheme`.
 
 ## Color roles
 
 Every color is exposed as a CSS custom property and mapped to a Tailwind color
 via `@theme inline` (for example `--color-background` -> `bg-background`).
 
-| Role | Token | Light (oklch) | Dark (oklch) |
+| Role | Token | Light | Dark |
 | --- | --- | --- | --- |
-| Page background | `--background` | `0.99 0.002 264` | `0.17 0.015 264` |
-| Foreground text | `--foreground` | `0.21 0.02 264` | `0.96 0.004 264` |
-| Muted text | `--muted` | `0.55 0.02 264` | `0.68 0.02 264` |
-| Subtle surface | `--subtle` | `0.96 0.004 264` | `0.22 0.02 264` |
-| Border | `--border` | `0.92 0.006 264` | `0.28 0.02 264` |
-| Card surface | `--card` | `1 0 0` | `0.21 0.02 264` |
-| Accent | `--accent` | `0.54 0.2 262` | `0.62 0.19 262` |
-| Accent foreground | `--accent-foreground` | `0.99 0.002 264` | `0.15 0.02 264` |
-| Accent soft (tint) | `--accent-soft` | `0.95 0.03 262` | `0.28 0.05 262` |
-| Focus ring | `--ring` | `0.54 0.2 262` | `0.62 0.19 262` |
+| Page background | `--background` | `#FFFFFF` | `#0A0A0A` |
+| Foreground (primary text) | `--foreground` | `#111111` | `#FAFAFA` |
+| Secondary text | `--muted` | `#525252` | `#A3A3A3` |
+| Muted text / captions | `--faint` | `#A3A3A3` | `#737373` |
+| Subtle surface | `--subtle` | `#F5F5F5` | `#1F1F1F` |
+| Border | `--border` | `#E5E5E5` | `#2F2F2F` |
+| Border (strong / hover) | `--border-strong` | `#D4D4D4` | `#404040` |
+| Card surface | `--card` | `#FFFFFF` | `#111111` |
+| Info / logo accent | `--accent` | `#2563EB` | `#3B82F6` |
+| Success | `--success` | `#16A34A` | `#22C55E` |
+| Warning | `--warning` | `#D97706` | `#F59E0B` |
+| Danger | `--danger` | `#DC2626` | `#EF4444` |
+| Focus ring | `--ring` | `#111111` | `#FAFAFA` |
 
 Usage notes:
 
-- **One accent, used sparingly.** The cobalt blue accent marks the single most
-  important action or state on a view. Overuse dilutes it.
-- **`accent-soft`** is the low-emphasis tint of the accent, for backgrounds of
-  badges, highlighted rows, and quiet emphasis.
-- **`muted`** is for secondary text and metadata; keep body copy on
-  `foreground`.
+- **Monochrome brand.** Primary actions and emphasis are carried by
+  `foreground`/`background` (near-black and white), not by color.
+- **Blue is semantic, not brand.** `--accent` (Info blue) appears only on the
+  logo mark and to mark informational state. `--accent-soft` is its
+  low-emphasis tint for info backgrounds.
+- **Semantic colors communicate meaning only** (`success`, `warning`,
+  `danger`) - for example an active status dot or a positive-change indicator.
+- **`muted`** is secondary text, **`faint`** is captions and metadata; keep body
+  copy on `foreground`.
 - **`subtle`** is the quiet fill for panels and grouped areas that sit on the
   page background without a full card.
-- Neutrals are slate-based (hue ~264) so the whole surface reads as a cool,
-  professional gray rather than a warm or pure gray.
 
 ## Typography
 
-- **Typeface: Vazirmatn**, loaded via `next/font/google` and exposed as the CSS
-  variable `--font-vazirmatn`. It is the sole UI face, wired into
-  `--font-sans` with `ui-sans-serif, system-ui, sans-serif` as fallbacks.
+- **Typeface: Vazirmatn**, self-hosted via `@fontsource-variable/vazirmatn` and
+  wired into `--font-sans` with `ui-sans-serif, system-ui, sans-serif` as
+  fallbacks. It is the sole UI face (no external font fetch at build time).
 - **Direction: RTL.** The document is `<html lang="fa" dir="rtl">`. All layout,
   alignment, and iconography assume right-to-left as the default.
 - **Persian only in the UI.** Product-facing copy and numerals are Persian.
@@ -84,7 +91,7 @@ primary tool for the premium feel, not an afterthought.
 | `--radius-sm` | `0.5rem` | Inputs, small controls, badges |
 | `--radius-md` | `0.75rem` | Buttons, inline elements |
 | `--radius-lg` | `1rem` | Cards, panels |
-| `--radius-xl` | `1.5rem` | Hero surfaces, large containers |
+| `--radius-xl` | `1.25rem` | Modals, dialogs, large containers |
 
 Corners are soft. Pair rounded surfaces with the soft `border` token rather than
 hard, high-contrast outlines.
@@ -116,17 +123,18 @@ elevated overlays.
 ## Accessibility
 
 - **Focus rings:** every interactive element shows a visible focus state built
-  on the `--ring` token (the accent). Do not remove outlines without providing
-  an equally visible replacement.
+  on the `--ring` token (neutral foreground). Do not remove outlines without
+  providing an equally visible replacement.
 - **Semantic HTML:** use real landmarks and elements (`header`, `nav`, `main`,
   `footer`, `button`, `label`, headings in order). This is the foundation for
   both accessibility and RTL correctness.
 - **ARIA:** add ARIA only to fill gaps native semantics cannot, for example
   wizard step state, live regions for async status, and labels for icon-only
   controls. Prefer native semantics first.
-- **Contrast:** the `foreground` on `background` and `accent-foreground` on
-  `accent` pairings are chosen for readable contrast in both themes. Verify any
-  new pairing meets WCAG AA, especially text on `accent-soft` and on `muted`.
+- **Contrast:** the `foreground` on `background` pairing, and the inverted
+  primary button (`background` on `foreground`), are chosen for readable
+  contrast in both themes. Verify any new pairing meets WCAG AA, especially text
+  on `muted`/`faint` and on `accent-soft`.
 - **RTL:** mirror layout, not glyphs that must stay stable (for example logos
   and Persian numerals). Test every view in RTL as the primary case.
 
@@ -140,10 +148,10 @@ helper (`lib/utils.ts`).
 
 Variants:
 
-- **primary** - solid `accent` fill with `accent-foreground` text. The single
-  most important action on a view.
-- **secondary** - `subtle` or `card` surface with a `border` and `foreground`
-  text. Standard, non-primary actions.
+- **primary** - solid `foreground` fill with `background` text (near-black in
+  light, white in dark). The single most important action on a view.
+- **secondary** - `card` surface with a `border` and `foreground` text; the
+  border darkens to `border-strong` on hover. Standard, non-primary actions.
 - **ghost** - transparent, `foreground` text, subtle hover fill. Low-emphasis
   and toolbar actions.
 
@@ -154,10 +162,10 @@ visible focus ring on `--ring`, and expose a disabled state at reduced opacity.
 
 Variants:
 
-- **accent** - `accent-soft` background with accent-toned text. Highlights a
-  status or category tied to the primary action color.
-- **neutral** - `subtle` background with `muted` or `foreground` text. Quiet
-  labels and metadata.
+- **accent** - `accent-soft` background with Info-blue text, for informational
+  status only. Used sparingly, never as branding.
+- **neutral** - `subtle` background with `muted` or `foreground` text and a
+  hairline border. Quiet labels, metadata, and "coming soon" tags.
 
 Badges use `--radius-sm`, `text-xs`, medium weight, and compact padding. Use
 them for ticket-type tags (for example عمومی, وی‌آی‌پی, دانشجویی), statuses, and
