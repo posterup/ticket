@@ -1,4 +1,10 @@
-import { LayoutDashboard, Users, User, type LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Users,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -9,6 +15,7 @@ export interface NavItem {
 /** Primary destinations in the organizer dashboard (desktop sidebar order). */
 export const SIDEBAR_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
+  { href: "/dashboard/events", label: "رویدادها", icon: CalendarDays },
   { href: "/dashboard/customers", label: "مشتریان", icon: Users },
   { href: "/dashboard/profile", label: "پروفایل", icon: User },
 ];
