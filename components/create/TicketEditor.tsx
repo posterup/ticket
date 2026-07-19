@@ -170,22 +170,32 @@ export function TicketEditor({
           </Field>
         </div>
 
-        {/* Sales window */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field id={`ss-${t.id}`} label="شروع فروش">
-            <DateField
-              id={`ss-${t.id}`}
-              value={t.salesStart}
-              onChange={(v) => onChange({ salesStart: v })}
-            />
-          </Field>
-          <Field id={`se-${t.id}`} label="پایان فروش">
-            <DateField
-              id={`se-${t.id}`}
-              value={t.salesEnd}
-              onChange={(v) => onChange({ salesEnd: v })}
-            />
-          </Field>
+        {/* Sales window — gated by a toggle */}
+        <div className="flex flex-col gap-3">
+          <Toggle
+            label="زمان‌بندی فروش"
+            hint="بازهٔ زمانی فروش این بلیت را مشخص کنید؛ در غیر این صورت فروش باز است."
+            checked={t.salesSchedule}
+            onChange={(v) => onChange({ salesSchedule: v })}
+          />
+          {t.salesSchedule ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id={`ss-${t.id}`} label="شروع فروش">
+                <DateField
+                  id={`ss-${t.id}`}
+                  value={t.salesStart}
+                  onChange={(v) => onChange({ salesStart: v })}
+                />
+              </Field>
+              <Field id={`se-${t.id}`} label="پایان فروش">
+                <DateField
+                  id={`se-${t.id}`}
+                  value={t.salesEnd}
+                  onChange={(v) => onChange({ salesEnd: v })}
+                />
+              </Field>
+            </div>
+          ) : null}
         </div>
 
         {/* Early bird — a lower price before a cutoff date */}
@@ -317,27 +327,6 @@ export function TicketEditor({
             ) : null}
           </div>
         ) : null}
-
-        {/* Hidden / access-code */}
-        <div className="flex flex-col gap-3">
-          <Toggle
-            label="بلیت پنهان (با کد دسترسی)"
-            hint="در صفحهٔ رویداد نمایش داده نمی‌شود؛ فقط با کد قابل خرید است."
-            checked={t.hidden}
-            onChange={(v) => onChange({ hidden: v })}
-          />
-          {t.hidden ? (
-            <Field id={`code-${t.id}`} label="کد دسترسی بلیت">
-              <Input
-                id={`code-${t.id}`}
-                value={t.accessCode}
-                onChange={(e) => onChange({ accessCode: e.target.value })}
-                dir="ltr"
-                placeholder="مثلاً VIP2026"
-              />
-            </Field>
-          ) : null}
-        </div>
       </Disclosure>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}

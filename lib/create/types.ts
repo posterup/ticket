@@ -76,6 +76,8 @@ export interface TicketTypeDraft {
   capacity: string;
   minPerOrder: string;
   maxPerOrder: string;
+  /** «زمان‌بندی فروش»: when off, sales are open with no window. */
+  salesSchedule: boolean;
   /** Optional sales window (Gregorian `YYYY-MM-DD`). */
   salesStart: string;
   salesEnd: string;
@@ -177,6 +179,7 @@ export function emptyTicket(id: string, kind: TicketKind = "paid"): TicketTypeDr
     capacity: "",
     minPerOrder: "1",
     maxPerOrder: "10",
+    salesSchedule: false,
     salesStart: "",
     salesEnd: "",
     earlyBird: false,
