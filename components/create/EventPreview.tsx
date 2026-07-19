@@ -53,6 +53,21 @@ export function EventPreview({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      {draft.poster ? (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={draft.poster}
+            alt="پوستر رویداد"
+            className="aspect-video w-full object-cover"
+          />
+          {draft.gallery.length > 0 ? (
+            <span className="absolute end-2 bottom-2 rounded-md bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur">
+              +{formatNumber(draft.gallery.length)} رسانه
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-subtle px-5 py-2.5">
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted">
           <VisIcon className="size-3.5" aria-hidden />

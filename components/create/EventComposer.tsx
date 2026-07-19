@@ -23,6 +23,7 @@ import { Select } from "@/components/ui/select";
 import { SectionCard, Toggle, Stepper } from "@/components/create/ui";
 import { TemplatePicker } from "@/components/create/TemplatePicker";
 import type { ComposerTemplate } from "@/lib/create/templates";
+import { MediaSection } from "@/components/create/MediaSection";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
 import { EventPreview } from "@/components/create/EventPreview";
@@ -421,6 +422,18 @@ export function EventComposer() {
               </Field>
             ) : null}
           </div>
+        </SectionCard>
+
+        <SectionCard
+          title="پوستر و رسانه"
+          description="یک پوستر و در صورت تمایل گالری تصاویر و ویدیو برای صفحهٔ رویداد."
+        >
+          <MediaSection
+            poster={draft.poster}
+            gallery={draft.gallery}
+            onPosterChange={(url) => patch({ poster: url })}
+            onGalleryChange={(items) => patch({ gallery: items })}
+          />
         </SectionCard>
         </>
         ) : null}
