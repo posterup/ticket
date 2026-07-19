@@ -76,7 +76,7 @@ describe("validateDraft", () => {
   const ok = (): CreateDraft =>
     draft({
       title: "رویداد",
-      location: { mode: "in-person", venueName: "سالن", city: "تهران", address: "", onlineUrl: "" },
+      location: { mode: "in-person", venueName: "سالن", city: "تهران", address: "", onlineUrl: "", lat: null, lng: null },
       scheduleMode: "single",
       sessions: [session("s1", "2026-09-01")],
       ticketTypes: [{ ...emptyTicket("t1"), name: "بلیت", kind: "paid", price: "100000" }],
@@ -92,7 +92,7 @@ describe("validateDraft", () => {
 
   it("requires venue + city for in-person events", () => {
     const e = validateDraft(
-      draft({ ...ok(), location: { mode: "in-person", venueName: "", city: "", address: "", onlineUrl: "" } }),
+      draft({ ...ok(), location: { mode: "in-person", venueName: "", city: "", address: "", onlineUrl: "", lat: null, lng: null } }),
     );
     expect(e.venueName).toBeTruthy();
     expect(e.city).toBeTruthy();
@@ -100,7 +100,7 @@ describe("validateDraft", () => {
 
   it("requires an online url for online events", () => {
     const e = validateDraft(
-      draft({ ...ok(), location: { mode: "online", venueName: "", city: "", address: "", onlineUrl: "" } }),
+      draft({ ...ok(), location: { mode: "online", venueName: "", city: "", address: "", onlineUrl: "", lat: null, lng: null } }),
     );
     expect(e.onlineUrl).toBeTruthy();
   });

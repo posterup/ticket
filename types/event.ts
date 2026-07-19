@@ -28,6 +28,9 @@ export interface Venue {
   capacity: number;
   /** Present for online or hybrid venues. */
   onlineUrl?: string;
+  /** Dropped-pin coordinates, when the organizer placed one. */
+  lat?: number;
+  lng?: number;
 }
 
 /**

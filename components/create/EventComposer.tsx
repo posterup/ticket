@@ -20,8 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
 import { SectionCard, Toggle, Stepper } from "@/components/create/ui";
+import { LocationPicker } from "@/components/create/LocationPicker";
 import { TemplatePicker } from "@/components/create/TemplatePicker";
 import type { ComposerTemplate } from "@/lib/create/templates";
 import { MediaSection } from "@/components/create/MediaSection";
@@ -40,7 +40,6 @@ import {
   emptySession,
   emptyTicket,
   expandSessions,
-  EVENT_CATEGORIES,
   type CreateDraft,
   type LocationMode,
   type ScheduleMode,
@@ -51,6 +50,8 @@ import { validateDraft, type DraftErrors } from "@/lib/create/validation";
 import type { WeekDay } from "@/types";
 
 const LOCATION_MODES: LocationMode[] = ["in-person", "online", "hybrid"];
+// Only in-person is offered for now; flip to true to re-enable online/hybrid.
+const SHOW_LOCATION_MODES = false;
 const VIS_ICON = { public: Globe, unlisted: Link2, private: Lock } as const;
 
 const STEP_TITLES = ["رویداد", "زمان‌بندی", "بلیت‌ها"];
@@ -233,6 +234,9 @@ export function EventComposer() {
           ...(draft.location.mode !== "in-person" && draft.location.onlineUrl.trim()
             ? { onlineUrl: draft.location.onlineUrl.trim() }
             : {}),
+          ...(draft.location.lat != null && draft.location.lng != null
+            ? { lat: draft.location.lat, lng: draft.location.lng }
+            : {}),
         },
         sessions: expanded.map((s) => ({
           startAt: iso(s.date, s.startTime),
@@ -248,7 +252,7 @@ export function EventComposer() {
               },
             }
           : {}),
-        tags: [draft.category],
+        tags: draft.category ? [draft.category] : [],
         status: draft.visibility === "public" ? "published" : "draft",
       };
 
@@ -349,53 +353,41 @@ export function EventComposer() {
                 aria-invalid={Boolean(errors.title)}
               />
             </Field>
-            <div className="grid gap-4 sm:grid-cols-[1fr_12rem]">
-              <Field id="desc" label="توضیحات">
-                <Textarea
-                  id="desc"
-                  rows={3}
-                  value={draft.description}
-                  onChange={(e) => patch({ description: e.target.value })}
-                  placeholder="دربارهٔ رویداد، برنامه و مخاطبان…"
-                />
-              </Field>
-              <Field id="category" label="دسته">
-                <Select
-                  id="category"
-                  value={draft.category}
-                  onChange={(e) => patch({ category: e.target.value })}
-                >
-                  {EVENT_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
+            <Field id="desc" label="توضیحات">
+              <Textarea
+                id="desc"
+                rows={3}
+                value={draft.description}
+                onChange={(e) => patch({ description: e.target.value })}
+                placeholder="دربارهٔ رویداد، برنامه و مخاطبان…"
+              />
+            </Field>
           </div>
         </SectionCard>
 
         <SectionCard title="مکان">
           <div className="flex flex-col gap-4">
-            <div className="grid max-w-sm grid-cols-3 gap-2">
-              {LOCATION_MODES.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  aria-pressed={draft.location.mode === m}
-                  onClick={() => patchLocation({ mode: m })}
-                  className={cn(
-                    "rounded-md border px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
-                    draft.location.mode === m
-                      ? "border-foreground bg-subtle text-foreground"
-                      : "border-border text-muted hover:border-border-strong",
-                  )}
-                >
-                  {LOCATION_LABELS[m]}
-                </button>
-              ))}
-            </div>
+            {/* Only in-person for now; the mode toggle is kept but hidden. */}
+            {SHOW_LOCATION_MODES ? (
+              <div className="grid max-w-sm grid-cols-3 gap-2">
+                {LOCATION_MODES.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={draft.location.mode === m}
+                    onClick={() => patchLocation({ mode: m })}
+                    className={cn(
+                      "rounded-md border px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                      draft.location.mode === m
+                        ? "border-foreground bg-subtle text-foreground"
+                        : "border-border text-muted hover:border-border-strong",
+                    )}
+                  >
+                    {LOCATION_LABELS[m]}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             {draft.location.mode !== "online" ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field id="venue" label="نام محل" required error={errors.venueName}>
@@ -422,6 +414,13 @@ export function EventComposer() {
                       onChange={(e) => patchLocation({ address: e.target.value })}
                     />
                   </Field>
+                </div>
+                <div className="sm:col-span-2">
+                  <LocationPicker
+                    lat={draft.location.lat}
+                    lng={draft.location.lng}
+                    onChange={(lat, lng) => patchLocation({ lat, lng })}
+                  />
                 </div>
               </div>
             ) : null}
