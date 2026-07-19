@@ -7,10 +7,12 @@ import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { buttonVariants } from "@/components/ui/button";
+import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 import { SIDEBAR_ITEMS, CREATE_HREF, isActive } from "@/components/dashboard/nav";
+import type { Workspace } from "@/types";
 
 /** Desktop sidebar navigation (hidden on mobile, where BottomNav takes over). */
-export function Sidebar() {
+export function Sidebar({ workspaces }: { workspaces: Workspace[] }) {
   const pathname = usePathname();
 
   return (
@@ -25,9 +27,13 @@ export function Sidebar() {
         </Link>
       </div>
 
+      <div className="mt-5">
+        <WorkspaceSwitcher workspaces={workspaces} />
+      </div>
+
       <Link
         href={CREATE_HREF}
-        className={cn(buttonVariants({ variant: "primary", size: "md" }), "mt-8")}
+        className={cn(buttonVariants({ variant: "primary", size: "md" }), "mt-4")}
       >
         <Plus aria-hidden />
         ساخت رویداد
