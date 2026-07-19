@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 export function PublicHeader() {
   return (
     <header className="border-b border-border bg-card">
-      <div className="mx-auto flex h-18 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-18 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"
           aria-label="پوستر، صفحه اصلی"
@@ -16,6 +16,22 @@ export function PublicHeader() {
         >
           <Logo />
         </Link>
+
+        <nav className="hidden items-center gap-1 sm:flex">
+          <Link
+            href="/events"
+            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+          >
+            رویدادها
+          </Link>
+          <Link
+            href="/pages"
+            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+          >
+            برگزارکنندگان
+          </Link>
+        </nav>
+
         <Link
           href="/login"
           className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
