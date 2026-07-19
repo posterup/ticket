@@ -7,12 +7,10 @@ import { ArrowLeft, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fadeUpItem } from "@/lib/motion";
 import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 /**
- * Hero call-to-action pair. Primary routes to the ticket creation wizard;
- * the secondary "view events" action is intentionally disabled and flagged
- * as coming soon.
+ * Hero call-to-action pair: create a ticket (primary) or browse public
+ * events (secondary).
  */
 export function HeroButtons() {
   return (
@@ -34,22 +32,13 @@ export function HeroButtons() {
         />
       </Link>
 
-      <button
-        type="button"
-        disabled
-        aria-disabled="true"
-        aria-label="مشاهده رویدادها، به‌زودی در دسترس"
-        className={cn(
-          buttonVariants({ variant: "secondary", size: "lg" }),
-          "cursor-not-allowed opacity-60",
-        )}
+      <Link
+        href="/events"
+        className={cn(buttonVariants({ variant: "secondary", size: "lg" }))}
       >
         <Calendar aria-hidden />
         مشاهده رویدادها
-        <Badge variant="neutral" size="sm" className="me-1">
-          به‌زودی
-        </Badge>
-      </button>
+      </Link>
     </motion.div>
   );
 }
