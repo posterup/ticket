@@ -45,7 +45,7 @@
   --color-accent-soft: var(--accent-soft);
   --color-ring: var(--ring);
 
-  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Vazirmatn Variable", ui-sans-serif, system-ui, sans-serif;
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
