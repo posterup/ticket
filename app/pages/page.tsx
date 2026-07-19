@@ -94,7 +94,7 @@ function WorkspaceCard({
           {formatNumber(w.followers)} دنبال‌کننده · {formatNumber(eventCount)}{" "}
           رویداد
         </span>
-        <FollowChip name={w.name} />
+        <FollowChip slug={w.slug} name={w.name} />
       </div>
     </div>
   );
