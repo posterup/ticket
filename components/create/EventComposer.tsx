@@ -8,7 +8,6 @@ import {
   AlertCircle,
   Globe,
   Link2,
-  Lock,
   ArrowRight,
   ArrowLeft,
   ChevronDown,
@@ -51,7 +50,7 @@ import type { WeekDay } from "@/types";
 const LOCATION_MODES: LocationMode[] = ["in-person", "online", "hybrid"];
 // Only in-person is offered for now; flip to true to re-enable online/hybrid.
 const SHOW_LOCATION_MODES = false;
-const VIS_ICON = { public: Globe, unlisted: Link2, private: Lock } as const;
+const VIS_ICON = { public: Globe, unlisted: Link2 } as const;
 
 const STEP_TITLES = ["رویداد", "زمان‌بندی", "بلیت‌ها"];
 
@@ -59,7 +58,7 @@ const STEP_TITLES = ["رویداد", "زمان‌بندی", "بلیت‌ها"];
 function stepErrorKeys(step: number, draft: CreateDraft): string[] {
   if (step === 0) return ["title", "venueName", "city", "onlineUrl"];
   if (step === 1) return ["schedule"];
-  return ["privacy", "tickets", ...draft.ticketTypes.map((t) => `ticket-${t.id}`)];
+  return ["tickets", ...draft.ticketTypes.map((t) => `ticket-${t.id}`)];
 }
 
 type Status = "idle" | "submitting" | "success" | "error";
@@ -484,6 +483,36 @@ export function EventComposer() {
             onGalleryChange={(items) => patch({ gallery: items })}
           />
         </SectionCard>
+
+        <SectionCard title="حریم خصوصی">
+          <div className="flex flex-col gap-4">
+            <div className="grid max-w-md gap-2 sm:grid-cols-2">
+              {(["public", "unlisted"] as Visibility[]).map((v) => {
+                const Icon = VIS_ICON[v];
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={draft.visibility === v}
+                    onClick={() => patch({ visibility: v })}
+                    className={cn(
+                      "flex flex-col items-start gap-1.5 rounded-md border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                      draft.visibility === v
+                        ? "border-foreground bg-subtle"
+                        : "border-border hover:border-border-strong",
+                    )}
+                  >
+                    <Icon className="size-4 text-foreground" aria-hidden />
+                    <span className="text-sm font-medium text-foreground">
+                      {VISIBILITY_LABELS[v]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted">{VISIBILITY_HINTS[draft.visibility]}</p>
+          </div>
+        </SectionCard>
         </>
         ) : null}
 
@@ -542,57 +571,6 @@ export function EventComposer() {
               sample={ticketSample}
               onChange={(d) => patch({ ticketDesign: d })}
             />
-          </div>
-        </SectionCard>
-
-        <SectionCard title="حریم خصوصی">
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-2 sm:grid-cols-3">
-              {(["public", "unlisted", "private"] as Visibility[]).map((v) => {
-                const Icon = VIS_ICON[v];
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    aria-pressed={draft.visibility === v}
-                    onClick={() => patch({ visibility: v })}
-                    className={cn(
-                      "flex flex-col items-start gap-1.5 rounded-md border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
-                      draft.visibility === v
-                        ? "border-foreground bg-subtle"
-                        : "border-border hover:border-border-strong",
-                    )}
-                  >
-                    <Icon className="size-4 text-foreground" aria-hidden />
-                    <span className="text-sm font-medium text-foreground">
-                      {VISIBILITY_LABELS[v]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-xs text-muted">{VISIBILITY_HINTS[draft.visibility]}</p>
-
-            {draft.visibility === "private" ? (
-              <div className="flex flex-col gap-4 rounded-lg border border-border bg-subtle p-4">
-                <Field id="accessCode" label="کد دسترسی" error={errors.privacy}>
-                  <Input
-                    id="accessCode"
-                    dir="ltr"
-                    value={draft.accessCode}
-                    onChange={(e) => patch({ accessCode: e.target.value })}
-                    placeholder="مثلاً FRIENDS2026"
-                    aria-invalid={Boolean(errors.privacy)}
-                  />
-                </Field>
-                <Toggle
-                  label="تأیید ثبت‌نام لازم است"
-                  hint="هر درخواست ثبت‌نام پیش از تأیید شما در انتظار می‌ماند."
-                  checked={draft.requireApproval}
-                  onChange={(v) => patch({ requireApproval: v })}
-                />
-              </div>
-            ) : null}
           </div>
         </SectionCard>
         </>

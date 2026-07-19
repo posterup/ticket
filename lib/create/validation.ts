@@ -40,10 +40,6 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
     e.schedule = "در بازهٔ انتخابی روزی با روزهای اجرا هم‌خوانی ندارد.";
   }
 
-  if (draft.visibility === "private" && !draft.requireApproval && !draft.accessCode.trim()) {
-    e.privacy = "برای رویداد خصوصی، کد دسترسی بگذارید یا تأیید را فعال کنید.";
-  }
-
   if (draft.ticketTypes.length === 0) {
     e.tickets = "حداقل یک نوع بلیت اضافه کنید.";
   }

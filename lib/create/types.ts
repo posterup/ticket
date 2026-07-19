@@ -19,7 +19,7 @@ export interface MediaItem {
   url: string;
   name: string;
 }
-export type Visibility = "public" | "unlisted" | "private";
+export type Visibility = "public" | "unlisted";
 
 /** The kind of a ticket type — drives which fields/rules apply. */
 export type TicketKind = "paid" | "free" | "donation" | "group" | "addon";
@@ -127,9 +127,6 @@ export interface CreateDraft {
     lng: number | null;
   };
   visibility: Visibility;
-  requireApproval: boolean;
-  /** Access code for `private` events. */
-  accessCode: string;
   /** Optional custom ticket appearance; `null` uses the default design. */
   ticketDesign: TicketTemplate | null;
   schedule: ScheduleDraft;
@@ -219,8 +216,6 @@ export const initialDraft: CreateDraft = {
     lng: null,
   },
   visibility: "public",
-  requireApproval: false,
-  accessCode: "",
   ticketDesign: null,
   schedule: {
     calendar: false,

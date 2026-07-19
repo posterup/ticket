@@ -155,11 +155,4 @@ describe("validateDraft", () => {
     const free = { ...ok(), ticketTypes: [{ ...emptyTicket("t1"), name: "رایگان", kind: "free" as const }] };
     expect(validateDraft(draft(free))["ticket-t1"]).toBeUndefined();
   });
-
-  it("private events need an access code or approval", () => {
-    const priv = draft({ ...ok(), visibility: "private", accessCode: "", requireApproval: false });
-    expect(validateDraft(priv).privacy).toBeTruthy();
-    const withCode = draft({ ...ok(), visibility: "private", accessCode: "X", requireApproval: false });
-    expect(validateDraft(withCode).privacy).toBeUndefined();
-  });
 });
