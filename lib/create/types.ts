@@ -32,9 +32,14 @@ export interface SessionDraft {
   endTime: string;
 }
 
-/** A سانس (show time-slot) the organizer defines. */
+/**
+ * A سانس (show time-slot). In the non-calendar model each سانس carries its own
+ * `date`; in the calendar model the date is supplied by the range and `date`
+ * is ignored.
+ */
 export interface TimeSlot {
   id: string;
+  date: string;
   startTime: string;
   endTime: string;
 }
@@ -158,7 +163,7 @@ export function defaultTicketDesign(): TicketTemplate {
 }
 
 export function emptySlot(id: string): TimeSlot {
-  return { id, startTime: "", endTime: "" };
+  return { id, date: "", startTime: "", endTime: "" };
 }
 
 export function emptyTicket(id: string, kind: TicketKind = "paid"): TicketTypeDraft {
@@ -240,6 +245,19 @@ const MAX_SESSIONS = 366;
 export function expandSessions(draft: CreateDraft): SessionDraft[] {
   const { calendar, startDate, endDate, byDay, slots, daySlots, exceptions } =
     draft.schedule;
+
+  // Non-calendar: each سانس is its own dated showtime.
+  if (!calendar) {
+    return slots
+      .filter((s) => s.date && s.startTime)
+      .map((s) => ({
+        id: `${s.date}-${s.id}`,
+        date: s.date,
+        startTime: s.startTime,
+        endTime: s.endTime,
+      }));
+  }
+
   if (!startDate) return [];
   const baseSlots = slots.filter((s) => s.startTime);
   if (baseSlots.length === 0) return [];

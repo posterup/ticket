@@ -16,80 +16,90 @@ function draft(overrides: Partial<CreateDraft> = {}): CreateDraft {
 function schedule(o: Partial<ScheduleDraft> = {}): ScheduleDraft {
   return {
     calendar: false,
-    startDate: "2026-09-01",
+    startDate: "",
     endDate: "",
     byDay: [],
-    slots: [{ id: "slot-1", startTime: "18:00", endTime: "20:00" }],
+    slots: [{ id: "slot-1", date: "2026-09-01", startTime: "18:00", endTime: "20:00" }],
     daySlots: {},
     exceptions: [],
     ...o,
   };
 }
 
+/** A calendar-mode schedule (dates come from the range; slots are time-only). */
+function calSchedule(o: Partial<ScheduleDraft> = {}): ScheduleDraft {
+  return schedule({
+    calendar: true,
+    startDate: "2026-09-01",
+    slots: [{ id: "slot-1", date: "", startTime: "18:00", endTime: "20:00" }],
+    ...o,
+  });
+}
+
 describe("expandSessions", () => {
-  it("a single day + one سانس yields one session", () => {
+  it("non-calendar: one dated سانس yields one session", () => {
     expect(expandSessions(draft({ schedule: schedule() }))).toHaveLength(1);
   });
 
-  it("no start date yields nothing", () => {
-    expect(expandSessions(draft({ schedule: schedule({ startDate: "" }) }))).toHaveLength(0);
-  });
-
-  it("no timed سانس yields nothing", () => {
-    const s = schedule({ slots: [{ id: "slot-1", startTime: "", endTime: "" }] });
+  it("non-calendar: an undated سانس yields nothing", () => {
+    const s = schedule({ slots: [{ id: "slot-1", date: "", startTime: "18:00", endTime: "20:00" }] });
     expect(expandSessions(draft({ schedule: s }))).toHaveLength(0);
   });
 
-  it("a date range × سانس‌ها = days × slots", () => {
+  it("non-calendar: each سانس keeps its own date", () => {
     const s = schedule({
-      startDate: "2026-09-01",
+      slots: [
+        { id: "a", date: "2026-09-01", startTime: "18:00", endTime: "20:00" },
+        { id: "b", date: "2026-09-05", startTime: "21:00", endTime: "23:00" },
+      ],
+    });
+    const out = expandSessions(draft({ schedule: s }));
+    expect(out.map((x) => x.date)).toEqual(["2026-09-01", "2026-09-05"]);
+  });
+
+  it("calendar: no start date yields nothing", () => {
+    expect(expandSessions(draft({ schedule: calSchedule({ startDate: "" }) }))).toHaveLength(0);
+  });
+
+  it("calendar: a date range × سانس‌ها = days × slots", () => {
+    const s = calSchedule({
       endDate: "2026-09-03", // 3 days
       slots: [
-        { id: "a", startTime: "18:00", endTime: "20:00" },
-        { id: "b", startTime: "21:00", endTime: "23:00" },
+        { id: "a", date: "", startTime: "18:00", endTime: "20:00" },
+        { id: "b", date: "", startTime: "21:00", endTime: "23:00" },
       ],
     });
     expect(expandSessions(draft({ schedule: s }))).toHaveLength(6); // 3 × 2
   });
 
-  it("calendar mode filters the range to the chosen weekdays", () => {
+  it("calendar: filters the range to the chosen weekdays", () => {
     // 2026-09-01 is a Tuesday; keep only Saturdays in a one-week range.
-    const s = schedule({
-      calendar: true,
-      startDate: "2026-09-01",
-      endDate: "2026-09-07",
-      byDay: ["SA"],
-    });
+    const s = calSchedule({ endDate: "2026-09-07", byDay: ["SA"] });
     const out = expandSessions(draft({ schedule: s }));
     expect(out).toHaveLength(1);
     expect(out[0].date).toBe("2026-09-05"); // the Saturday
   });
 
-  it("caps a very wide range", () => {
-    const s = schedule({ startDate: "2026-01-01", endDate: "2030-01-01" });
+  it("calendar: caps a very wide range", () => {
+    const s = calSchedule({ startDate: "2026-01-01", endDate: "2030-01-01" });
     expect(expandSessions(draft({ schedule: s })).length).toBeLessThanOrEqual(366);
   });
 
-  it("skips exception dates", () => {
-    const s = schedule({
-      startDate: "2026-09-01",
-      endDate: "2026-09-03",
-      exceptions: ["2026-09-02"],
-    });
+  it("calendar: skips exception dates", () => {
+    const s = calSchedule({ endDate: "2026-09-03", exceptions: ["2026-09-02"] });
     const out = expandSessions(draft({ schedule: s }));
     expect(out).toHaveLength(2); // 3 days minus 1 exception
     expect(out.map((x) => x.date)).not.toContain("2026-09-02");
   });
 
-  it("adds a weekday's extra سانس in calendar mode", () => {
+  it("calendar: adds a weekday's extra سانس", () => {
     // 2026-09-05 is a Saturday.
-    const s = schedule({
-      calendar: true,
+    const s = calSchedule({
       startDate: "2026-09-05",
       endDate: "2026-09-05",
       byDay: ["SA"],
-      slots: [{ id: "g", startTime: "18:00", endTime: "20:00" }],
-      daySlots: { SA: [{ id: "sa-extra", startTime: "21:00", endTime: "23:00" }] },
+      slots: [{ id: "g", date: "", startTime: "18:00", endTime: "20:00" }],
+      daySlots: { SA: [{ id: "sa-extra", date: "", startTime: "21:00", endTime: "23:00" }] },
     });
     expect(expandSessions(draft({ schedule: s }))).toHaveLength(2); // global + extra
   });
@@ -127,12 +137,12 @@ describe("validateDraft", () => {
     expect(e.onlineUrl).toBeTruthy();
   });
 
-  it("requires a start date", () => {
-    expect(validateDraft(draft({ ...ok(), schedule: schedule({ startDate: "" }) })).schedule).toBeTruthy();
+  it("calendar mode requires a start date", () => {
+    expect(validateDraft(draft({ ...ok(), schedule: calSchedule({ startDate: "" }) })).schedule).toBeTruthy();
   });
 
-  it("requires a سانس with a start time", () => {
-    const s = schedule({ slots: [{ id: "x", startTime: "", endTime: "" }] });
+  it("non-calendar requires a dated سانس", () => {
+    const s = schedule({ slots: [{ id: "x", date: "", startTime: "", endTime: "" }] });
     expect(validateDraft(draft({ ...ok(), schedule: s })).schedule).toBeTruthy();
   });
 

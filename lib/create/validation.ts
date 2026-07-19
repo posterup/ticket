@@ -22,7 +22,13 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
   }
 
   const { calendar, startDate, endDate, byDay, slots } = draft.schedule;
-  if (!startDate) {
+  if (!calendar) {
+    if (!slots.some((s) => s.date && s.startTime)) {
+      e.schedule = "حداقل یک سانس با تاریخ و ساعت شروع تعریف کنید.";
+    } else if (slots.some((s) => s.date && s.startTime && !s.endTime)) {
+      e.schedule = "برای هر سانس ساعت پایان را هم مشخص کنید.";
+    }
+  } else if (!startDate) {
     e.schedule = "تاریخ شروع را تعیین کنید.";
   } else if (endDate && endDate < startDate) {
     e.schedule = "تاریخ پایان نباید پیش از تاریخ شروع باشد.";
@@ -30,7 +36,7 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
     e.schedule = "حداقل یک سانس با ساعت شروع تعریف کنید.";
   } else if (slots.some((s) => s.startTime && !s.endTime)) {
     e.schedule = "برای هر سانس ساعت پایان را هم مشخص کنید.";
-  } else if (calendar && byDay.length > 0 && expandSessions(draft).length === 0) {
+  } else if (byDay.length > 0 && expandSessions(draft).length === 0) {
     e.schedule = "در بازهٔ انتخابی روزی با روزهای اجرا هم‌خوانی ندارد.";
   }
 

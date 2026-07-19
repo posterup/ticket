@@ -133,10 +133,14 @@ export function EventComposer() {
     draft.schedule.slots.length > 1
       ? draft.schedule.slots
           .filter((s) => s.startTime)
-          .map((s) => ({
-            id: s.id,
-            label: s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime,
-          }))
+          .map((s) => {
+            const time = s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime;
+            const label =
+              !draft.schedule.calendar && s.date
+                ? `${formatJalaliDate(`${s.date}T00:00:00.000Z`)} · ${time}`
+                : time;
+            return { id: s.id, label };
+          })
       : [];
 
   const ticketSample: TicketSample = {
