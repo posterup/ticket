@@ -1,9 +1,73 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/format";
+
+/** Three-step progress header for the create flow. */
+export function Stepper({
+  steps,
+  current,
+  onStep,
+}: {
+  steps: string[];
+  current: number;
+  onStep: (index: number) => void;
+}) {
+  return (
+    <ol className="flex items-center gap-2">
+      {steps.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <li key={label} className="flex flex-1 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => (i <= current ? onStep(i) : undefined)}
+              aria-current={active ? "step" : undefined}
+              disabled={i > current}
+              className={cn(
+                "flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-start outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                i > current ? "cursor-default" : "cursor-pointer",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors",
+                  active
+                    ? "bg-foreground text-background"
+                    : done
+                      ? "bg-foreground/10 text-foreground"
+                      : "bg-subtle text-faint",
+                )}
+              >
+                {done ? <Check className="size-4" aria-hidden /> : formatNumber(i + 1)}
+              </span>
+              <span
+                className={cn(
+                  "truncate text-sm font-medium",
+                  active ? "text-foreground" : done ? "text-muted" : "text-faint",
+                )}
+              >
+                {label}
+              </span>
+            </button>
+            {i < steps.length - 1 ? (
+              <span
+                className={cn(
+                  "h-px flex-1",
+                  done ? "bg-foreground/30" : "bg-border",
+                )}
+              />
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 /** A titled section card used to structure the composer. */
 export function SectionCard({

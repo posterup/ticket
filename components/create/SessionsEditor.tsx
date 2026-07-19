@@ -50,8 +50,12 @@ export function SessionsEditor({
   onRecurrenceChange: (patch: Partial<RecurrenceDraft>) => void;
   onToggleDay: (day: WeekDay) => void;
 }) {
-  const showList = scheduleMode === "multi";
-  const rows = scheduleMode === "recurring" ? sessions.slice(0, 1) : sessions;
+  // Both "multi" and "recurring" support several سانس; "recurring" then
+  // repeats that whole set across occurrences.
+  const showList = scheduleMode !== "single";
+  const rows = scheduleMode === "single" ? sessions.slice(0, 1) : sessions;
+  const baseCount = rows.filter((s) => s.date).length;
+  const occurrences = Math.max(Number.parseInt(recurrence.count, 10) || 1, 1);
 
   return (
     <div className="flex flex-col gap-5">
@@ -160,7 +164,7 @@ export function SessionsEditor({
                 onChange={(e) => onRecurrenceChange({ interval: e.target.value })}
               />
             </Field>
-            <Field id="count" label="تعداد جلسات">
+            <Field id="count" label="تعداد نوبت">
               <Input
                 id="count"
                 type="number"
@@ -192,8 +196,15 @@ export function SessionsEditor({
             </div>
           ) : null}
           <p className="text-xs text-muted">
-            {formatNumber(generatedCount)} جلسه ساخته می‌شود.
+            {baseCount > 1
+              ? `${formatNumber(occurrences)} نوبت × ${formatNumber(baseCount)} سانس = ${formatNumber(generatedCount)} جلسه ساخته می‌شود.`
+              : `${formatNumber(generatedCount)} جلسه ساخته می‌شود.`}
           </p>
+          {baseCount > 1 ? (
+            <p className="text-xs text-faint">
+              همهٔ سانس‌های بالا در هر نوبت تکرار می‌شوند.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Plus, AlertCircle, Globe, Link2, Lock } from "lucide-react";
+import {
+  CheckCircle2,
+  Plus,
+  AlertCircle,
+  Globe,
+  Link2,
+  Lock,
+  ArrowRight,
+  ArrowLeft,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatJalaliDate } from "@/lib/format";
@@ -11,7 +20,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { SectionCard, Toggle } from "@/components/create/ui";
+import { SectionCard, Toggle, Stepper } from "@/components/create/ui";
 import { TemplatePicker } from "@/components/create/TemplatePicker";
 import type { ComposerTemplate } from "@/lib/create/templates";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
@@ -40,6 +49,15 @@ import type { WeekDay } from "@/types";
 const LOCATION_MODES: LocationMode[] = ["in-person", "online", "hybrid"];
 const VIS_ICON = { public: Globe, unlisted: Link2, private: Lock } as const;
 
+const STEP_TITLES = ["رویداد", "زمان‌بندی", "بلیت‌ها"];
+
+/** Error keys owned by each step, so Next validates only that step. */
+function stepErrorKeys(step: number, draft: CreateDraft): string[] {
+  if (step === 0) return ["title", "venueName", "city", "onlineUrl"];
+  if (step === 1) return ["sessions"];
+  return ["privacy", "tickets", ...draft.ticketTypes.map((t) => `ticket-${t.id}`)];
+}
+
 type Status = "idle" | "submitting" | "success" | "error";
 
 function iso(date: string, time: string): string {
@@ -59,6 +77,31 @@ export function EventComposer() {
   const [submitError, setSubmitError] = useState("");
   const [createdTitle, setCreatedTitle] = useState("");
   const [template, setTemplate] = useState<string | null>(null);
+  const [step, setStep] = useState(0);
+
+  function goNext() {
+    const errs = validateDraft(draft);
+    const keys = stepErrorKeys(step, draft);
+    const stepErrs: DraftErrors = {};
+    for (const k of keys) if (errs[k]) stepErrs[k] = errs[k];
+    if (Object.keys(stepErrs).length > 0) {
+      setErrors(stepErrs);
+      setStatus("error");
+      setSubmitError("لطفاً خطاهای این مرحله را برطرف کنید.");
+      return;
+    }
+    setErrors({});
+    setStatus("idle");
+    setSubmitError("");
+    if (step < STEP_TITLES.length - 1) setStep(step + 1);
+    else void submit();
+  }
+  function goBack() {
+    setStatus("idle");
+    setErrors({});
+    setSubmitError("");
+    setStep((s) => Math.max(0, s - 1));
+  }
 
   const applyTemplate = (t: ComposerTemplate) => {
     const seeded = t.build();
@@ -236,6 +279,7 @@ export function EventComposer() {
     setSubmitError("");
     setCreatedTitle("");
     setTemplate(null);
+    setStep(0);
   }
 
   if (status === "success") {
@@ -265,15 +309,18 @@ export function EventComposer() {
 
   return (
     <div className="flex flex-col gap-6">
-      <TemplatePicker
-        selected={template}
-        onSelect={applyTemplate}
-        onBlank={clearTemplate}
-      />
+      <Stepper steps={STEP_TITLES} current={step} onStep={setStep} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       {/* Form */}
       <div className="flex flex-col gap-6">
+        {step === 0 ? (
+        <>
+        <TemplatePicker
+          selected={template}
+          onSelect={applyTemplate}
+          onBlank={clearTemplate}
+        />
         <SectionCard title="مشخصات رویداد">
           <div className="flex flex-col gap-4">
             <Field id="title" label="عنوان" required error={errors.title}>
@@ -375,7 +422,10 @@ export function EventComposer() {
             ) : null}
           </div>
         </SectionCard>
+        </>
+        ) : null}
 
+        {step === 1 ? (
         <SectionCard
           title="زمان‌بندی"
           description="یک جلسه، مجموعه‌ای تکرارشونده، یا چند سانس با ساعت‌های مختلف."
@@ -394,7 +444,10 @@ export function EventComposer() {
             onToggleDay={toggleDay}
           />
         </SectionCard>
+        ) : null}
 
+        {step === 2 ? (
+        <>
         <SectionCard title="بلیت‌ها" description="هر نوع بلیت با قوانین خودش.">
           <div className="flex flex-col gap-4">
             {errors.tickets ? (
@@ -472,6 +525,8 @@ export function EventComposer() {
             ) : null}
           </div>
         </SectionCard>
+        </>
+        ) : null}
 
         {status === "error" ? (
           <div
@@ -483,14 +538,31 @@ export function EventComposer() {
           </div>
         ) : null}
 
-        <div>
+        <div className="flex items-center justify-between gap-3 border-t border-border pt-6">
+          {step > 0 ? (
+            <Button type="button" variant="ghost" onClick={goBack} disabled={status === "submitting"}>
+              <ArrowRight aria-hidden />
+              مرحلهٔ قبل
+            </Button>
+          ) : (
+            <span />
+          )}
           <Button
             type="button"
             size="lg"
-            onClick={submit}
+            onClick={goNext}
             disabled={status === "submitting"}
           >
-            {status === "submitting" ? "در حال ثبت…" : "ساخت رویداد"}
+            {step < STEP_TITLES.length - 1 ? (
+              <>
+                مرحلهٔ بعد
+                <ArrowLeft aria-hidden />
+              </>
+            ) : status === "submitting" ? (
+              "در حال ثبت…"
+            ) : (
+              "ساخت رویداد"
+            )}
           </Button>
         </div>
       </div>
