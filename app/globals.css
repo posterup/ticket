@@ -98,6 +98,21 @@ body::before {
   font-family: inherit;
 }
 
+/*
+  iOS Safari auto-zooms the viewport when a focused text field has a computed
+  font-size below 16px. On touch devices, bump form controls to 16px so
+  focusing an input/select/textarea no longer jumps the page — desktop keeps
+  the compact 14px sizing. Preferred over disabling user-scalable, which
+  breaks pinch-zoom accessibility.
+*/
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
