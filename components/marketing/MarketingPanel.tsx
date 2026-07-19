@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, MessageSquare, Check, Send } from "lucide-react";
+import { Mail, MessageSquare, Check, Send, CircleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,30 +32,56 @@ export function MarketingPanel({
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sentInfo, setSentInfo] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   const segment = segments.find((s) => s.id === segmentId) ?? segments[0];
   const parts = Math.max(1, Math.ceil(message.length / 70));
 
-  function send() {
+  async function send() {
     const next: Record<string, string> = {};
     if (!name.trim()) next.name = "نام کمپین الزامی است.";
     if (!message.trim()) next.message = "متن پیام الزامی است.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    const campaign: Campaign = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      channel,
-      segment: segment.label,
-      status: "sent",
-      recipients: segment.count,
-      message: message.trim(),
-    };
-    setCampaigns((prev) => [campaign, ...prev]);
-    setSentInfo(`کمپین «${campaign.name}» به ${formatNumber(segment.count)} مخاطب ارسال شد.`);
-    setName("");
-    setMessage("");
+    setSending(true);
+    setSendError(null);
+    setSentInfo(null);
+    try {
+      const endpoint = channel === "sms" ? "/api/sms/send" : "/api/email/send";
+      const payload =
+        channel === "sms"
+          ? { segmentId, message: message.trim() }
+          : { segmentId, subject: name.trim(), message: message.trim() };
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok || !("data" in json)) {
+        throw new Error(json?.error?.message ?? "ارسال ناموفق بود.");
+      }
+      const sent = Number(json.data.sent) || segment.count;
+      const campaign: Campaign = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        channel,
+        segment: segment.label,
+        status: "sent",
+        recipients: sent,
+        message: message.trim(),
+      };
+      setCampaigns((prev) => [campaign, ...prev]);
+      setSentInfo(`کمپین «${campaign.name}» به ${formatNumber(sent)} مخاطب ارسال شد.`);
+      setName("");
+      setMessage("");
+    } catch (e) {
+      setSendError(e instanceof Error ? e.message : "ارسال ناموفق بود.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -141,15 +167,23 @@ export function MarketingPanel({
           />
         </Field>
 
-        <Button type="button" onClick={send}>
+        <Button type="button" onClick={send} disabled={sending}>
           <Send aria-hidden />
-          ارسال به {formatNumber(segment?.count ?? 0)} مخاطب
+          {sending
+            ? "در حال ارسال…"
+            : `ارسال به ${formatNumber(segment?.count ?? 0)} مخاطب`}
         </Button>
 
         {sentInfo ? (
           <p className="flex items-center gap-2 text-sm text-success">
             <Check className="size-4" aria-hidden />
             {sentInfo}
+          </p>
+        ) : null}
+        {sendError ? (
+          <p className="flex items-start gap-2 text-sm text-danger">
+            <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {sendError}
           </p>
         ) : null}
       </div>

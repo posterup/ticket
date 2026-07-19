@@ -40,6 +40,24 @@ export interface Segment {
   count: number;
 }
 
+/** Attendees belonging to a segment (`all`, or a tag label). */
+function segmentAttendees(segmentId: string) {
+  if (segmentId === "all") return attendees;
+  return attendees.filter((a) => a.tags.some((t) => t.label === segmentId));
+}
+
+/** Mobile numbers for a segment (for the SMS gateway). */
+export function segmentMobiles(segmentId: string): string[] {
+  return segmentAttendees(segmentId).map((a) => a.phone);
+}
+
+/** Email addresses for a segment (for the email gateway). */
+export function segmentEmails(segmentId: string): string[] {
+  return segmentAttendees(segmentId)
+    .map((a) => a.email)
+    .filter((e): e is string => Boolean(e));
+}
+
 /** Audience segments derived from attendee tags (plus an "all" segment). */
 export function listSegments(): Segment[] {
   const byTag = new Map<string, number>();
