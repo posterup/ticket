@@ -1,13 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Vazirmatn } from "next/font/google";
 
+// Self-hosted Vazirmatn (variable). Bundled at build time so the deploy has no
+// external font dependency (avoids build-time Google Fonts fetch failures).
+import "@fontsource-variable/vazirmatn";
 import "./globals.css";
-
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
-  display: "swap",
-  variable: "--font-vazirmatn",
-});
 
 export const metadata: Metadata = {
   title: "گیشه | مدیریت حرفه‌ای رویداد و فروش بلیت",
@@ -28,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl" className={vazirmatn.variable}>
+    <html lang="fa" dir="rtl">
       <body>{children}</body>
     </html>
   );
