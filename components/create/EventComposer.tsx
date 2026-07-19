@@ -22,8 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionCard, Toggle, Stepper } from "@/components/create/ui";
 import { LocationPicker } from "@/components/create/LocationPicker";
-import { TemplatePicker } from "@/components/create/TemplatePicker";
-import type { ComposerTemplate } from "@/lib/create/templates";
 import { MediaSection } from "@/components/create/MediaSection";
 import { TicketDesignSection } from "@/components/create/TicketDesignSection";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
@@ -82,7 +80,6 @@ export function EventComposer() {
   const [status, setStatus] = useState<Status>("idle");
   const [submitError, setSubmitError] = useState("");
   const [createdTitle, setCreatedTitle] = useState("");
-  const [template, setTemplate] = useState<string | null>(null);
   const [step, setStep] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -109,19 +106,6 @@ export function EventComposer() {
     setSubmitError("");
     setStep((s) => Math.max(0, s - 1));
   }
-
-  const applyTemplate = (t: ComposerTemplate) => {
-    const seeded = t.build();
-    // Keep a title the user may have already typed.
-    setDraft((d) => ({ ...seeded, title: d.title || seeded.title }));
-    setErrors({});
-    setTemplate(t.id);
-  };
-  const clearTemplate = () => {
-    setDraft((d) => ({ ...initialDraft, title: d.title }));
-    setErrors({});
-    setTemplate(null);
-  };
 
   const patch = (p: Partial<CreateDraft>) => setDraft((d) => ({ ...d, ...p }));
   const patchLocation = (p: Partial<CreateDraft["location"]>) =>
@@ -327,8 +311,14 @@ export function EventComposer() {
               name: t.name.trim(),
               price: ticketPrice(t),
               capacity: Math.max(0, Math.floor(Number(t.capacity) || 0)),
-              salesStartAt: t.salesStart ? iso(t.salesStart, "00:00") : new Date().toISOString(),
-              salesEndAt: t.salesEnd ? iso(t.salesEnd, "23:59") : iso(firstDate, "00:00"),
+              salesStartAt:
+                t.salesSchedule && t.salesStart
+                  ? iso(t.salesStart, "00:00")
+                  : new Date().toISOString(),
+              salesEndAt:
+                t.salesSchedule && t.salesEnd
+                  ? iso(t.salesEnd, "23:59")
+                  : iso(firstDate, "00:00"),
               category: t.kind === "group" ? "group" : "general",
               description: t.description.trim() || undefined,
             }),
@@ -349,7 +339,6 @@ export function EventComposer() {
     setStatus("idle");
     setSubmitError("");
     setCreatedTitle("");
-    setTemplate(null);
     setStep(0);
   }
 
@@ -387,11 +376,6 @@ export function EventComposer() {
       <div className="flex flex-col gap-6">
         {step === 0 ? (
         <>
-        <TemplatePicker
-          selected={template}
-          onSelect={applyTemplate}
-          onBlank={clearTemplate}
-        />
         <SectionCard title="مشخصات رویداد">
           <div className="flex flex-col gap-4">
             <Field id="title" label="عنوان" required error={errors.title}>
