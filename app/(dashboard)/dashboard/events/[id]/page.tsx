@@ -1,22 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, MapPin, Clock, Repeat, Ticket } from "lucide-react";
+import { ChevronRight, MapPin, Ticket } from "lucide-react";
 
 import { getEventById, listTickets } from "@/lib/server";
-import {
-  formatJalaliDate,
-  formatTime,
-  formatToman,
-  formatNumber,
-} from "@/lib/format";
+import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
 import {
   CATEGORY_LABELS,
   FREQUENCY_LABELS,
   WEEKDAY_LABELS,
 } from "@/lib/wizard/labels";
-import { EventStatusBadge } from "@/components/dashboard/EventStatusBadge";
+import { EditEventForm } from "@/components/dashboard/EditEventForm";
+import { SessionsManager } from "@/components/dashboard/SessionsManager";
 import type { Event } from "@/types";
 
 interface Params {
@@ -59,19 +55,12 @@ export default async function EventDetailPage({ params }: Params) {
         بازگشت به رویدادها
       </Link>
 
-      <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {event.title}
-          </h1>
-          <EventStatusBadge status={event.status} />
-        </div>
-        {event.description ? (
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            {event.description}
-          </p>
-        ) : null}
-      </div>
+      <EditEventForm
+        eventId={event.id}
+        title={event.title}
+        description={event.description}
+        status={event.status}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <section className="rounded-lg border border-border p-5">
@@ -82,30 +71,17 @@ export default async function EventDetailPage({ params }: Params) {
           <p className="text-sm text-foreground">{event.venue.name}</p>
           <p className="mt-1 text-sm text-muted">{event.venue.address}</p>
           <p className="mt-1 text-sm text-muted">
-            {event.venue.city} · ظرفیت {formatNumber(event.venue.capacity)} نفر
+            {[event.venue.province, event.venue.city].filter(Boolean).join("، ")} · ظرفیت{" "}
+            {formatNumber(event.venue.capacity)} نفر
           </p>
         </section>
 
-        <section className="rounded-lg border border-border p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Clock className="size-4 text-faint" aria-hidden />
-            زمان‌بندی · {MODE_LABELS[event.mode]}
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {event.sessions.map((s) => (
-              <li key={s.id} className="text-sm text-muted">
-                {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
-                {formatTime(s.endAt)}
-              </li>
-            ))}
-          </ul>
-          {recurrence ? (
-            <p className="mt-3 flex items-center gap-2 text-xs text-muted">
-              <Repeat className="size-3.5 text-faint" aria-hidden />
-              {recurrence}
-            </p>
-          ) : null}
-        </section>
+        <SessionsManager
+          eventId={event.id}
+          sessions={event.sessions}
+          modeLabel={MODE_LABELS[event.mode]}
+          recurrence={recurrence}
+        />
       </div>
 
       <section className="flex flex-col gap-3">

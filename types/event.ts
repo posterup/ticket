@@ -61,6 +61,8 @@ export interface EventSession {
   endAt: IsoDateTime;
   /** Overrides the event venue for this occurrence when set. */
   venueId?: string;
+  /** When true, this سانس was cancelled by the organizer. */
+  cancelled?: boolean;
 }
 
 /**
