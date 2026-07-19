@@ -122,20 +122,48 @@ export function TicketEditor({
         ) : null}
       </div>
 
+      {/* Availability — capacity + sales window (visible, not advanced) */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field id={`cap-${t.id}`} label="ظرفیت">
+          <Input
+            id={`cap-${t.id}`}
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={t.capacity}
+            onChange={(e) => onChange({ capacity: e.target.value })}
+            placeholder="نامحدود"
+          />
+        </Field>
+        <Field id={`ss-${t.id}`} label="شروع فروش">
+          <DateField
+            id={`ss-${t.id}`}
+            value={t.salesStart}
+            onChange={(v) => onChange({ salesStart: v })}
+          />
+        </Field>
+        <Field id={`se-${t.id}`} label="پایان فروش">
+          <DateField
+            id={`se-${t.id}`}
+            value={t.salesEnd}
+            onChange={(v) => onChange({ salesEnd: v })}
+          />
+        </Field>
+      </div>
+
+      {/* Description (visible, not advanced) */}
+      <Field id={`desc-${t.id}`} label="توضیحات">
+        <Textarea
+          id={`desc-${t.id}`}
+          rows={2}
+          value={t.description}
+          onChange={(e) => onChange({ description: e.target.value })}
+        />
+      </Field>
+
       {/* Advanced */}
       <Disclosure label="گزینه‌های پیشرفته">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field id={`cap-${t.id}`} label="ظرفیت">
-            <Input
-              id={`cap-${t.id}`}
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={t.capacity}
-              onChange={(e) => onChange({ capacity: e.target.value })}
-              placeholder="نامحدود"
-            />
-          </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field id={`minord-${t.id}`} label="حداقل در هر خرید">
             <Input
               id={`minord-${t.id}`}
@@ -158,31 +186,28 @@ export function TicketEditor({
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field id={`ss-${t.id}`} label="شروع فروش">
-            <DateField
-              id={`ss-${t.id}`}
-              value={t.salesStart}
-              onChange={(v) => onChange({ salesStart: v })}
-            />
-          </Field>
-          <Field id={`se-${t.id}`} label="پایان فروش">
-            <DateField
-              id={`se-${t.id}`}
-              value={t.salesEnd}
-              onChange={(v) => onChange({ salesEnd: v })}
-            />
-          </Field>
-        </div>
-
-        <Field id={`desc-${t.id}`} label="توضیحات">
-          <Textarea
-            id={`desc-${t.id}`}
-            rows={2}
-            value={t.description}
-            onChange={(e) => onChange({ description: e.target.value })}
+        {/* دربستی — one large order books out the whole ticket type */}
+        <div className="flex flex-col gap-3">
+          <Toggle
+            label="فروش دربستی"
+            hint="اگر یک خرید دست‌کم به تعداد تعیین‌شده باشد، این بلیت کامل فروخته‌شده می‌شود."
+            checked={t.buyout}
+            onChange={(v) => onChange({ buyout: v })}
           />
-        </Field>
+          {t.buyout ? (
+            <Field id={`buyout-${t.id}`} label="حداقل تعداد برای دربست">
+              <Input
+                id={`buyout-${t.id}`}
+                type="number"
+                min={1}
+                inputMode="numeric"
+                value={t.buyoutMin}
+                onChange={(e) => onChange({ buyoutMin: e.target.value })}
+                placeholder="مثلاً ۵۰"
+              />
+            </Field>
+          ) : null}
+        </div>
 
         {/* Per-session attachment */}
         {sessions.length > 1 ? (

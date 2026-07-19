@@ -65,6 +65,13 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
     const max = Number(t.maxPerOrder);
     if (Number.isFinite(min) && Number.isFinite(max) && max < min) {
       e[`ticket-${t.id}`] = "حداکثر تعداد نباید کمتر از حداقل باشد.";
+      continue;
+    }
+    if (t.buyout) {
+      const n = Number(t.buyoutMin);
+      if (!Number.isInteger(n) || n < 1) {
+        e[`ticket-${t.id}`] = "حداقل تعداد برای دربست باید عددی مثبت باشد.";
+      }
     }
   }
 
