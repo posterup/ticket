@@ -64,6 +64,24 @@ export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
   return event;
 }
 
+/** Append a new سانس (session) to an event; returns it, or `undefined`. */
+export function addSession(
+  eventId: string,
+  input: { startAt: string; endAt: string },
+): EventSession | undefined {
+  const event = events.find((e) => e.id === eventId);
+  if (!event) return undefined;
+  const session: EventSession = {
+    id: crypto.randomUUID(),
+    eventId,
+    startAt: input.startAt,
+    endAt: input.endAt,
+  };
+  event.sessions.push(session);
+  event.updatedAt = new Date().toISOString();
+  return session;
+}
+
 /** Fields an organizer may edit on a single سانس (session). */
 export type SessionUpdate = Partial<
   Pick<EventSession, "startAt" | "endAt" | "cancelled">
