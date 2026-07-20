@@ -11,6 +11,8 @@ export interface DiscountCode {
   id: string;
   /** Scope: a single event, or `null` for all of the organizer's events. */
   eventId: string | null;
+  /** Narrower scope: a single سانس of the event, or `null` for the whole event. */
+  sessionId?: string | null;
   /** Redemption code, stored uppercase (e.g. `WELCOME10`). */
   code: string;
   kind: DiscountKind;
@@ -29,6 +31,7 @@ export interface DiscountCode {
 /** Payload accepted by `createDiscount`; the server fills the rest. */
 export interface CreateDiscountInput {
   eventId: string | null;
+  sessionId?: string | null;
   code: string;
   kind: DiscountKind;
   value: number;

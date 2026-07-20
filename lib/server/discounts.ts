@@ -66,6 +66,7 @@ export function createDiscount(input: CreateDiscountInput): DiscountCode {
   const discount: DiscountCode = {
     id: crypto.randomUUID(),
     eventId: input.eventId,
+    sessionId: input.sessionId ?? null,
     code: input.code.trim().toUpperCase(),
     kind: input.kind,
     value: input.value,

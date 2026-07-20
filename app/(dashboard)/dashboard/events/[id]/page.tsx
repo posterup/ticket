@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, MapPin, Ticket } from "lucide-react";
+import { ChevronRight, MapPin } from "lucide-react";
 
-import { getEventById, listTickets } from "@/lib/server";
-import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
+import { getEventById, listTickets, listDiscounts } from "@/lib/server";
+import { formatJalaliDate, formatTime, formatNumber } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
-import {
-  CATEGORY_LABELS,
-  FREQUENCY_LABELS,
-  WEEKDAY_LABELS,
-} from "@/lib/wizard/labels";
+import { FREQUENCY_LABELS, WEEKDAY_LABELS } from "@/lib/wizard/labels";
 import { EditEventForm } from "@/components/dashboard/EditEventForm";
 import { SessionsManager } from "@/components/dashboard/SessionsManager";
+import { EventTickets } from "@/components/dashboard/EventTickets";
+import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
 import type { Event } from "@/types";
 
 interface Params {
@@ -43,7 +41,12 @@ export default async function EventDetailPage({ params }: Params) {
   const event = getEventById(id);
   if (!event) notFound();
   const tickets = listTickets(id);
+  const discounts = listDiscounts(id);
   const recurrence = recurrenceText(event);
+  const sessionOptions = event.sessions.map((s) => ({
+    id: s.id,
+    label: `${formatJalaliDate(s.startAt)} · ${formatTime(s.startAt)}`,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,50 +87,13 @@ export default async function EventDetailPage({ params }: Params) {
         />
       </div>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Ticket className="size-4 text-faint" aria-hidden />
-          انواع بلیت
-        </h2>
-        {tickets.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted">
-            هنوز نوع بلیتی برای این رویداد تعریف نشده است.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {tickets.map((t) => (
-              <div key={t.id} className="rounded-lg border border-border p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground">
-                    {t.name}
-                  </p>
-                  <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted">
-                    {CATEGORY_LABELS[t.category]}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm font-semibold text-foreground">
-                  {formatToman(t.price)}
-                </p>
-                <dl className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-xs text-muted">
-                  <div className="flex justify-between">
-                    <dt>ظرفیت</dt>
-                    <dd className="text-foreground">
-                      {formatNumber(t.capacity)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt>بازه فروش</dt>
-                    <dd>
-                      {formatJalaliDate(t.salesStartAt)} تا{" "}
-                      {formatJalaliDate(t.salesEndAt)}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      <EventTickets eventId={event.id} tickets={tickets} />
+
+      <EventDiscounts
+        eventId={event.id}
+        sessions={sessionOptions}
+        discounts={discounts}
+      />
     </div>
   );
 }
