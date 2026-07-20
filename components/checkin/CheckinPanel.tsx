@@ -9,37 +9,51 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/ui/field";
 import { formatNumber } from "@/lib/format";
-import type { Holder } from "@/lib/checkin/data";
+import type { Holder, SessionRef } from "@/lib/checkin/data";
 
 export interface CheckinEvent {
   id: string;
   title: string;
+  sessions: SessionRef[];
   holders: Holder[];
 }
 
-type Feedback = { kind: "ok" | "dup" | "err"; msg: string };
+type Feedback = { kind: "ok" | "dup" | "err" | "warn"; msg: string };
 
 export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
   const [eventIdx, setEventIdx] = useState(0);
+  const event = events[eventIdx];
+  const sessions = event?.sessions ?? [];
+  const [sessionId, setSessionId] = useState(sessions[0]?.id ?? "");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
   const [code, setCode] = useState("");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  const event = events[eventIdx];
   const holders = event?.holders ?? [];
-  const checkedCount = holders.filter((h) => checked.has(h.id)).length;
-  const total = holders.length;
+  // Check-in is scoped to the selected سانس: only its guests are admitted here.
+  const sessionHolders = useMemo(
+    () => holders.filter((h) => h.sessionId === sessionId),
+    [holders, sessionId],
+  );
+  const checkedCount = sessionHolders.filter((h) => checked.has(h.id)).length;
+  const total = sessionHolders.length;
   const pct = total ? Math.round((checkedCount / total) * 100) : 0;
 
   const filtered = useMemo(() => {
     const q = query.trim();
-    if (!q) return holders;
+    if (!q) return sessionHolders;
     const up = q.toUpperCase();
-    return holders.filter(
+    return sessionHolders.filter(
       (h) => h.name.includes(q) || h.code.includes(up),
     );
-  }, [holders, query]);
+  }, [sessionHolders, query]);
+
+  function switchSession(id: string) {
+    setSessionId(id);
+    setFeedback(null);
+    setQuery("");
+  }
 
   function toggle(id: string) {
     setChecked((prev) => {
@@ -53,9 +67,15 @@ export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
   function submitCode() {
     const value = code.trim().toUpperCase();
     if (!value) return;
+    // Search across the whole event so a wrong-session ticket is detected.
     const holder = holders.find((h) => h.code === value);
     if (!holder) {
       setFeedback({ kind: "err", msg: "کدی با این مشخصات یافت نشد." });
+    } else if (holder.sessionId !== sessionId) {
+      setFeedback({
+        kind: "warn",
+        msg: `این بلیت برای سانس «${holder.sessionLabel}» است، نه سانس انتخاب‌شده.`,
+      });
     } else if (checked.has(holder.id)) {
       setFeedback({ kind: "dup", msg: `«${holder.name}» قبلاً ثبت شده است.` });
     } else {
@@ -67,23 +87,49 @@ export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <Field id="event" label="رویداد">
-        <Select
-          id="event"
-          value={String(eventIdx)}
-          onChange={(e) => {
-            setEventIdx(Number(e.target.value));
-            setFeedback(null);
-            setQuery("");
-          }}
-        >
-          {events.map((ev, i) => (
-            <option key={ev.id} value={i}>
-              {ev.title}
-            </option>
-          ))}
-        </Select>
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {events.length > 1 ? (
+          <Field id="event" label="رویداد">
+            <Select
+              id="event"
+              value={String(eventIdx)}
+              onChange={(e) => {
+                const idx = Number(e.target.value);
+                setEventIdx(idx);
+                setSessionId(events[idx]?.sessions[0]?.id ?? "");
+                setFeedback(null);
+                setQuery("");
+              }}
+            >
+              {events.map((ev, i) => (
+                <option key={ev.id} value={i}>
+                  {ev.title}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
+
+        {sessions.length > 0 ? (
+          <Field
+            id="session"
+            label="سانس"
+            hint="ورودها فقط برای سانس انتخاب‌شده ثبت می‌شوند."
+          >
+            <Select
+              id="session"
+              value={sessionId}
+              onChange={(e) => switchSession(e.target.value)}
+            >
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
         {/* Scan / code entry + progress */}
@@ -120,13 +166,14 @@ export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
                   "mt-3 flex items-center gap-2 text-sm",
                   feedback.kind === "ok" && "text-success",
                   feedback.kind === "dup" && "text-warning",
-                  feedback.kind === "err" && "text-danger",
+                  (feedback.kind === "err" || feedback.kind === "warn") &&
+                    "text-danger",
                 )}
               >
                 {feedback.kind === "ok" ? (
-                  <Check className="size-4" aria-hidden />
+                  <Check className="size-4 shrink-0" aria-hidden />
                 ) : (
-                  <CircleAlert className="size-4" aria-hidden />
+                  <CircleAlert className="size-4 shrink-0" aria-hidden />
                 )}
                 {feedback.msg}
               </p>
@@ -135,7 +182,7 @@ export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
 
           <div className="rounded-lg border border-border bg-card p-5">
             <div className="flex items-end justify-between">
-              <span className="text-sm text-muted">ثبت‌شده</span>
+              <span className="text-sm text-muted">ثبت‌شده در این سانس</span>
               <span className="text-sm font-semibold text-foreground">
                 {formatNumber(checkedCount)} از {formatNumber(total)}
               </span>
@@ -150,7 +197,7 @@ export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
           </div>
         </div>
 
-        {/* Holder list */}
+        {/* Holder list (scoped to the selected سانس) */}
         <div className="flex flex-col gap-3">
           <div className="relative">
             <Search
@@ -210,7 +257,7 @@ export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
             })}
             {filtered.length === 0 ? (
               <li className="px-4 py-8 text-center text-sm text-muted">
-                نتیجه‌ای یافت نشد.
+                برای این سانس مهمانی یافت نشد.
               </li>
             ) : null}
           </ul>

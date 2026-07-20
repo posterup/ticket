@@ -30,19 +30,42 @@ export interface Holder {
   code: string;
   name: string;
   ticketType: string;
+  /** The سانس this ticket is valid for. */
+  sessionId: string;
+  sessionLabel: string;
 }
 
-/** Build a deterministic holder list for an event (up to 14 holders). */
-export function buildHolders(eventId: string, index: number): Holder[] {
+export interface SessionRef {
+  id: string;
+  label: string;
+}
+
+/**
+ * Build a deterministic holder list for an event (up to 14 holders). Each
+ * holder is assigned to one of the event's سانس‌ها so check-in can verify a
+ * guest arrived at the right session.
+ */
+export function buildHolders(
+  eventId: string,
+  index: number,
+  sessions: SessionRef[],
+): Holder[] {
   const ticketNames = listTickets(eventId).map((t) => t.name);
   const types = ticketNames.length > 0 ? ticketNames : ["عمومی"];
+  const sess: SessionRef[] =
+    sessions.length > 0 ? sessions : [{ id: `${eventId}-s0`, label: "سانس" }];
   const count = Math.min(14, NAME_POOL.length);
   const prefix = String.fromCharCode(65 + (index % 26)); // A, B, C…
 
-  return Array.from({ length: count }, (_, i) => ({
-    id: `${eventId}-h${i}`,
-    code: `PSTR-${prefix}${(i + 1).toString().padStart(3, "0")}`,
-    name: NAME_POOL[i % NAME_POOL.length],
-    ticketType: types[i % types.length],
-  }));
+  return Array.from({ length: count }, (_, i) => {
+    const session = sess[i % sess.length];
+    return {
+      id: `${eventId}-h${i}`,
+      code: `PSTR-${prefix}${(i + 1).toString().padStart(3, "0")}`,
+      name: NAME_POOL[i % NAME_POOL.length],
+      ticketType: types[i % types.length],
+      sessionId: session.id,
+      sessionLabel: session.label,
+    };
+  });
 }
