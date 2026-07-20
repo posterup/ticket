@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, MapPin } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import {
   getEventById,
@@ -9,12 +9,14 @@ import {
   listDiscounts,
   listCampaigns,
   listSegments,
+  listCheckedHolderIds,
 } from "@/lib/server";
 import { buildHolders } from "@/lib/checkin/data";
 import { formatJalaliDate, formatTime, formatNumber } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
 import { FREQUENCY_LABELS, WEEKDAY_LABELS } from "@/lib/wizard/labels";
 import { EditEventForm } from "@/components/dashboard/EditEventForm";
+import { EditVenueForm } from "@/components/dashboard/EditVenueForm";
 import { SessionsManager } from "@/components/dashboard/SessionsManager";
 import { EventTickets } from "@/components/dashboard/EventTickets";
 import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
@@ -108,20 +110,7 @@ export default async function EventDetailPage({ params }: Params) {
             label: "نمای کلی",
             content: (
               <div className="grid gap-4 sm:grid-cols-2">
-                <section className="rounded-lg border border-border p-5">
-                  <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <MapPin className="size-4 text-faint" aria-hidden />
-                    محل برگزاری
-                  </h2>
-                  <p className="text-sm text-foreground">{event.venue.name}</p>
-                  <p className="mt-1 text-sm text-muted">{event.venue.address}</p>
-                  <p className="mt-1 text-sm text-muted">
-                    {[event.venue.province, event.venue.city]
-                      .filter(Boolean)
-                      .join("، ")}{" "}
-                    · ظرفیت {formatNumber(event.venue.capacity)} نفر
-                  </p>
-                </section>
+                <EditVenueForm eventId={event.id} venue={event.venue} />
 
                 <SessionsManager
                   eventId={event.id}
@@ -178,7 +167,12 @@ export default async function EventDetailPage({ params }: Params) {
           {
             id: "checkin",
             label: "پذیرش و مهمانان",
-            content: <CheckinPanel events={checkinEvents} />,
+            content: (
+              <CheckinPanel
+                events={checkinEvents}
+                initialChecked={listCheckedHolderIds()}
+              />
+            ),
           },
         ]}
       />

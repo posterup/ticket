@@ -319,3 +319,9 @@ export const attendees: Attendee[] = [
     createdAt: "2026-06-12T09:45:00.000Z",
   },
 ];
+
+/**
+ * Recorded check-ins, as a set of holder ids (see `lib/checkin/data.ts`).
+ * In-memory only — replace with real issued-ticket scan records later.
+ */
+export const checkins: Set<string> = new Set();
