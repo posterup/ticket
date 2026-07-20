@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { listEvents } from "@/lib/server";
 import { buildHolders } from "@/lib/checkin/data";
+import { formatJalaliDate, formatTime } from "@/lib/format";
 import {
   CheckinPanel,
   type CheckinEvent,
@@ -10,11 +11,18 @@ import {
 export const metadata: Metadata = { title: "پذیرش | پوستر" };
 
 export default function CheckinPage() {
-  const events: CheckinEvent[] = listEvents().map((e, i) => ({
-    id: e.id,
-    title: e.title,
-    holders: buildHolders(e.id, i),
-  }));
+  const events: CheckinEvent[] = listEvents().map((e, i) => {
+    const sessions = e.sessions.map((s) => ({
+      id: s.id,
+      label: `${formatJalaliDate(s.startAt)} · ${formatTime(s.startAt)}`,
+    }));
+    return {
+      id: e.id,
+      title: e.title,
+      sessions,
+      holders: buildHolders(e.id, i, sessions),
+    };
+  });
 
   return (
     <div className="flex flex-col gap-8">

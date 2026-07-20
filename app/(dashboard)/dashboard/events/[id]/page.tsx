@@ -76,7 +76,12 @@ export default async function EventDetailPage({ params }: Params) {
   };
 
   const checkinEvents = [
-    { id: event.id, title: event.title, holders: buildHolders(event.id, 0) },
+    {
+      id: event.id,
+      title: event.title,
+      sessions: sessionOptions,
+      holders: buildHolders(event.id, 0, sessionOptions),
+    },
   ];
 
   return (
