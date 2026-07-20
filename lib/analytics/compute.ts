@@ -46,6 +46,27 @@ export interface Analytics {
   monthly: { label: string; value: number }[];
 }
 
+/** Estimated sales rolled up per event id, using the same per-category ratio. */
+export interface EventSalesStat {
+  sold: number;
+  capacity: number;
+  revenue: number;
+}
+
+export function computeByEvent(): Record<string, EventSalesStat> {
+  const out: Record<string, EventSalesStat> = {};
+  for (const t of listTickets()) {
+    const sold = Math.round(t.capacity * (SELL_RATIO[t.category] ?? 0.5));
+    const prev = out[t.eventId] ?? { sold: 0, capacity: 0, revenue: 0 };
+    out[t.eventId] = {
+      sold: prev.sold + sold,
+      capacity: prev.capacity + t.capacity,
+      revenue: prev.revenue + sold * t.price,
+    };
+  }
+  return out;
+}
+
 export function computeAnalytics(): Analytics {
   const tickets = listTickets();
   let revenue = 0;

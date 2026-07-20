@@ -11,6 +11,12 @@ export const metadata: Metadata = {
   title: "پوستر | پلتفرم برگزاری و بلیت‌فروشی تجربه و رویداد",
   description:
     "تجربه‌ها و رویدادهای جذاب اطرافتان را کشف کنید؛ و به کمک پوستر، رویدادهای خود را به‌سادگی بسازید، بلیت بفروشید و برگزار کنید.",
+  // Keep the whole project out of search indexes (paired with /robots.txt).
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
 };
 
 export const viewport: Viewport = {
