@@ -41,7 +41,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function TicketDesigner() {
+export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = {}) {
   const [template, setTemplate] = useState<TicketTemplate>({
     accent: "#2563EB",
     surface: "light",
@@ -67,7 +67,7 @@ export function TicketDesigner() {
     setExporting(true);
     setExportError(null);
     try {
-      await downloadNodeAsPng(previewRef.current, ticketFileName(SAMPLE.eventTitle));
+      await downloadNodeAsPng(previewRef.current, ticketFileName(sample.eventTitle));
     } catch {
       setExportError("خطا در ساخت تصویر بلیت. دوباره تلاش کنید.");
     } finally {
@@ -281,7 +281,7 @@ export function TicketDesigner() {
         <div className="lg:sticky lg:top-8">
           <p className="mb-4 text-sm font-medium text-muted">پیش‌نمایش زنده</p>
           <div ref={previewRef}>
-            <TicketPreview template={template} sample={SAMPLE} />
+            <TicketPreview template={template} sample={sample} />
           </div>
           <div className="mt-5 flex flex-col items-center gap-2">
             <Button

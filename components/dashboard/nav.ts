@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   CalendarDays,
-  Ticket,
   ChartColumn,
   ScanLine,
   Megaphone,
@@ -21,7 +20,6 @@ export interface NavItem {
 export const SIDEBAR_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
   { href: "/dashboard/events", label: "رویدادها", icon: CalendarDays },
-  { href: "/dashboard/tickets/customize", label: "قالب بلیت", icon: Ticket },
   { href: "/dashboard/analytics", label: "تحلیل", icon: ChartColumn },
   { href: "/dashboard/checkin", label: "پذیرش", icon: ScanLine },
   { href: "/dashboard/marketing", label: "بازاریابی", icon: Megaphone },
