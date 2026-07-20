@@ -5,30 +5,31 @@ import { useRouter } from "next/navigation";
 import { Ticket, Plus, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { DateField } from "@/components/ui/date-field";
 import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
 import { CATEGORY_LABELS } from "@/lib/wizard/labels";
-import type { TicketCategory, TicketType } from "@/types";
-
-const CATEGORIES: TicketCategory[] = [
-  "general",
-  "vip",
-  "student",
-  "early-bird",
-  "backstage",
-  "group",
-];
+import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
+import { emptyTicket, type TicketTypeDraft } from "@/lib/create/types";
+import type { TicketType } from "@/types";
 
 interface Props {
   eventId: string;
   tickets: TicketType[];
+  sessions: SessionOption[];
 }
 
-/** Ticket-types list for an event, with an inline "add ticket type" form. */
-export function EventTickets({ eventId, tickets }: Props) {
+/** Price a draft resolves to (mirrors the composer's submit mapping). */
+function ticketPrice(t: TicketTypeDraft): number {
+  if (t.kind === "free") return 0;
+  if (t.kind === "donation") return Math.max(0, Math.floor(Number(t.minPrice) || 0));
+  return Math.max(0, Math.floor(Number(t.price) || 0));
+}
+
+function iso(date: string, time: string): string {
+  return `${date}T${time}:00.000Z`;
+}
+
+/** Ticket-types list for an event, with an inline full "add ticket type" editor. */
+export function EventTickets({ eventId, tickets, sessions }: Props) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
 
@@ -55,6 +56,7 @@ export function EventTickets({ eventId, tickets }: Props) {
       {adding ? (
         <AddTicketForm
           eventId={eventId}
+          sessions={sessions}
           onDone={() => {
             setAdding(false);
             router.refresh();
@@ -103,28 +105,32 @@ export function EventTickets({ eventId, tickets }: Props) {
 
 function AddTicketForm({
   eventId,
+  sessions,
   onDone,
   onCancel,
 }: {
   eventId: string;
+  sessions: SessionOption[];
   onDone: () => void;
   onCancel: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState<TicketCategory>("general");
-  const [price, setPrice] = useState("");
-  const [capacity, setCapacity] = useState("");
-  const [salesEnd, setSalesEnd] = useState("");
+  const [draft, setDraft] = useState<TicketTypeDraft>(() =>
+    emptyTicket("new-ticket"),
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  async function save() {
-    if (!name.trim()) return setError("نام بلیت الزامی است.");
-    const p = Number(price);
-    const cap = Number(capacity);
-    if (!Number.isInteger(p) || p < 0) return setError("قیمت نامعتبر است.");
-    if (!Number.isInteger(cap) || cap < 0) return setError("ظرفیت نامعتبر است.");
+  function validate(t: TicketTypeDraft): string | null {
+    if (!t.name.trim()) return "نام بلیت الزامی است.";
+    const priced = t.kind === "paid" || t.kind === "group" || t.kind === "addon";
+    if (priced && !(Number(t.price) > 0)) return "قیمت را وارد کنید.";
+    if (t.kind === "donation" && Number(t.minPrice) < 0) return "حداقل مبلغ نامعتبر است.";
+    return null;
+  }
 
+  async function save() {
+    const msg = validate(draft);
+    if (msg) return setError(msg);
     setSaving(true);
     setError("");
     try {
@@ -133,14 +139,19 @@ function AddTicketForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventId,
-          name: name.trim(),
-          price: p,
-          capacity: cap,
-          category,
-          salesStartAt: new Date().toISOString(),
-          salesEndAt: salesEnd
-            ? `${salesEnd}T23:59:00.000Z`
-            : new Date().toISOString(),
+          name: draft.name.trim(),
+          price: ticketPrice(draft),
+          capacity: Math.max(0, Math.floor(Number(draft.capacity) || 0)),
+          category: draft.kind === "group" ? "group" : "general",
+          salesStartAt:
+            draft.salesSchedule && draft.salesStart
+              ? iso(draft.salesStart, "00:00")
+              : new Date().toISOString(),
+          salesEndAt:
+            draft.salesSchedule && draft.salesEnd
+              ? iso(draft.salesEnd, "23:59")
+              : new Date().toISOString(),
+          description: draft.description.trim() || undefined,
         }),
       });
       if (!res.ok) throw new Error("خطا در ساخت بلیت.");
@@ -153,58 +164,16 @@ function AddTicketForm({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="t-name" label="نام بلیت" required>
-          <Input
-            id="t-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="مثلاً عمومی"
-          />
-        </Field>
-        <Field id="t-cat" label="دسته">
-          <Select
-            id="t-cat"
-            value={category}
-            onChange={(e) => setCategory(e.target.value as TicketCategory)}
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_LABELS[c]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field id="t-price" label="قیمت (تومان)" required>
-          <Input
-            id="t-price"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="۰ برای رایگان"
-          />
-        </Field>
-        <Field id="t-cap" label="ظرفیت" required>
-          <Input
-            id="t-cap"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={capacity}
-            onChange={(e) => setCapacity(e.target.value)}
-          />
-        </Field>
-        <div className="sm:col-span-2">
-          <Field id="t-end" label="پایان فروش (اختیاری)">
-            <DateField id="t-end" value={salesEnd} onChange={setSalesEnd} />
-          </Field>
-        </div>
-      </div>
-      {error ? <p className="mt-3 text-xs text-danger">{error}</p> : null}
-      <div className="mt-4 flex items-center gap-2">
+    <div className="flex flex-col gap-4">
+      <TicketEditor
+        ticket={draft}
+        sessions={sessions}
+        canRemove={false}
+        onChange={(p) => setDraft((d) => ({ ...d, ...p }))}
+        onRemove={() => {}}
+      />
+      {error ? <p className="text-xs text-danger">{error}</p> : null}
+      <div className="flex items-center gap-2">
         <Button type="button" size="sm" onClick={save} disabled={saving}>
           <Check aria-hidden />
           {saving ? "در حال ذخیره…" : "ذخیره بلیت"}
