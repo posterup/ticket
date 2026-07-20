@@ -20,15 +20,33 @@ export interface CheckinEvent {
 
 type Feedback = { kind: "ok" | "dup" | "err" | "warn"; msg: string };
 
-export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
+export function CheckinPanel({
+  events,
+  initialChecked = [],
+}: {
+  events: CheckinEvent[];
+  /** Holder ids already checked in (from the server), so state survives refresh. */
+  initialChecked?: string[];
+}) {
   const [eventIdx, setEventIdx] = useState(0);
   const event = events[eventIdx];
   const sessions = event?.sessions ?? [];
   const [sessionId, setSessionId] = useState(sessions[0]?.id ?? "");
-  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [checked, setChecked] = useState<Set<string>>(
+    () => new Set(initialChecked),
+  );
   const [query, setQuery] = useState("");
   const [code, setCode] = useState("");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+
+  // Persist a check-in change so it's still there after a refresh.
+  function persist(holderId: string, isChecked: boolean) {
+    void fetch("/api/checkin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ holderId, checked: isChecked }),
+    });
+  }
 
   const holders = event?.holders ?? [];
   // Check-in is scoped to the selected سانس: only its guests are admitted here.
@@ -58,8 +76,10 @@ export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
   function toggle(id: string) {
     setChecked((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const nowChecked = !next.has(id);
+      if (nowChecked) next.add(id);
+      else next.delete(id);
+      persist(id, nowChecked);
       return next;
     });
   }
@@ -80,6 +100,7 @@ export function CheckinPanel({ events }: { events: CheckinEvent[] }) {
       setFeedback({ kind: "dup", msg: `«${holder.name}» قبلاً ثبت شده است.` });
     } else {
       setChecked((prev) => new Set(prev).add(holder.id));
+      persist(holder.id, true);
       setFeedback({ kind: "ok", msg: `ورود «${holder.name}» ثبت شد.` });
     }
     setCode("");

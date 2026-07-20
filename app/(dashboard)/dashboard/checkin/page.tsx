@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { listEvents } from "@/lib/server";
+import { listEvents, listCheckedHolderIds } from "@/lib/server";
 import { buildHolders } from "@/lib/checkin/data";
 import { formatJalaliDate, formatTime } from "@/lib/format";
 import {
@@ -34,7 +34,7 @@ export default function CheckinPage() {
           مهمانان را با اسکن کد بلیت یا جستجو ثبت ورود کنید.
         </p>
       </div>
-      <CheckinPanel events={events} />
+      <CheckinPanel events={events} initialChecked={listCheckedHolderIds()} />
     </div>
   );
 }

@@ -82,6 +82,34 @@ export function addSession(
   return session;
 }
 
+/** Venue fields an organizer may edit from the dashboard. */
+export type VenueUpdate = Partial<
+  Pick<
+    Venue,
+    "name" | "province" | "city" | "address" | "capacity" | "lat" | "lng" | "hideAddress"
+  >
+>;
+
+/** Update an event's venue in place; returns it, or `undefined` if absent. */
+export function updateVenue(
+  eventId: string,
+  patch: VenueUpdate,
+): Venue | undefined {
+  const event = events.find((e) => e.id === eventId);
+  if (!event) return undefined;
+  const v = event.venue;
+  if (patch.name !== undefined) v.name = patch.name;
+  if (patch.province !== undefined) v.province = patch.province;
+  if (patch.city !== undefined) v.city = patch.city;
+  if (patch.address !== undefined) v.address = patch.address;
+  if (patch.capacity !== undefined) v.capacity = patch.capacity;
+  if (patch.lat !== undefined) v.lat = patch.lat;
+  if (patch.lng !== undefined) v.lng = patch.lng;
+  if (patch.hideAddress !== undefined) v.hideAddress = patch.hideAddress;
+  event.updatedAt = new Date().toISOString();
+  return v;
+}
+
 /** Fields an organizer may edit on a single سانس (session). */
 export type SessionUpdate = Partial<
   Pick<EventSession, "startAt" | "endAt" | "cancelled">
