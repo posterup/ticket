@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default function CreateTicketPage() {
   return (
     <div className="min-h-[100dvh]">
-      <header className="border-b border-border">
+      <header className="auth-mobile-hide border-b border-border">
         <div className="mx-auto flex h-18 max-w-5xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"

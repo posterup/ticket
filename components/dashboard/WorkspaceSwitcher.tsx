@@ -65,7 +65,7 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: Workspace[] }) {
       {open ? (
         <div
           role="menu"
-          className="absolute inset-x-0 top-full z-50 mt-1 rounded-lg border border-border bg-card p-1 shadow-lg shadow-foreground/5"
+          className="absolute inset-x-0 top-full z-50 mt-1 rounded-lg border border-border bg-background p-1 shadow-lg shadow-foreground/5"
         >
           <p className="px-2 py-1.5 text-xs text-faint">فضاهای کاری</p>
           {workspaces.map((w) => (
