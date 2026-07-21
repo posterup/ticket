@@ -46,7 +46,7 @@ export default function SettingsPage() {
         <Link
           href="/dashboard/profile"
           aria-label="بازگشت به پروفایل"
-          className="grid size-9 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="hidden size-9 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40 lg:grid"
         >
           <ChevronLeft className="size-5 rotate-180" aria-hidden />
         </Link>

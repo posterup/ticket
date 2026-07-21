@@ -63,6 +63,19 @@
 
 html {
   scroll-behavior: smooth;
+  /* Never show a horizontal scrollbar at the page level; inner containers
+     that need to scroll sideways use their own overflow-x-auto. */
+  overflow-x: hidden;
+}
+
+/* Hide scrollbars (x and y) app-wide while keeping scrolling functional. */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 body {
