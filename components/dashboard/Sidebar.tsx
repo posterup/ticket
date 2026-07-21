@@ -8,7 +8,13 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { buttonVariants } from "@/components/ui/button";
 import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
-import { SIDEBAR_ITEMS, CREATE_HREF, isActive } from "@/components/dashboard/nav";
+import {
+  SIDEBAR_ITEMS,
+  PROFILE_ITEM,
+  CREATE_HREF,
+  isActive,
+  type NavItem,
+} from "@/components/dashboard/nav";
 import type { Workspace } from "@/types";
 
 /** Desktop sidebar navigation (hidden on mobile, where BottomNav takes over). */
@@ -40,27 +46,41 @@ export function Sidebar({ workspaces }: { workspaces: Workspace[] }) {
       </Link>
 
       <nav className="mt-6 flex flex-col gap-1" aria-label="ناوبری داشبورد">
-        {SIDEBAR_ITEMS.map((item) => {
-          const active = isActive(pathname, item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                active
-                  ? "bg-subtle text-foreground"
-                  : "text-muted hover:bg-subtle hover:text-foreground",
-              )}
-            >
-              <Icon className="size-[1.15rem]" aria-hidden />
-              {item.label}
-            </Link>
-          );
-        })}
+        {SIDEBAR_ITEMS.map((item) => (
+          <SidebarLink
+            key={item.href}
+            item={item}
+            active={isActive(pathname, item.href)}
+          />
+        ))}
       </nav>
+
+      {/* Account pinned to the bottom, mirroring the mobile profile tab. */}
+      <div className="mt-auto border-t border-border pt-3">
+        <SidebarLink
+          item={PROFILE_ITEM}
+          active={isActive(pathname, PROFILE_ITEM.href)}
+        />
+      </div>
     </aside>
+  );
+}
+
+function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+        active
+          ? "bg-subtle text-foreground"
+          : "text-muted hover:bg-subtle hover:text-foreground",
+      )}
+    >
+      <Icon className="size-[1.15rem]" aria-hidden />
+      {item.label}
+    </Link>
   );
 }
