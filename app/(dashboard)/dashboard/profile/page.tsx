@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Building2, Mail, Phone } from "lucide-react";
 
+import { LogoutButton } from "@/components/auth/LogoutButton";
+
 export const metadata: Metadata = { title: "پروفایل | پوستر" };
 
 // Placeholder organizer profile until authentication and workspaces land (#15).
@@ -65,6 +67,8 @@ export default function ProfilePage() {
           </p>
         </div>
       </div>
+
+      <LogoutButton />
     </div>
   );
 }

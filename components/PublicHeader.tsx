@@ -7,7 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 /** Solid public header for content pages (events browsing). */
 export function PublicHeader() {
   return (
-    <header className="border-b border-border bg-card">
+    <header className="auth-mobile-hide border-b border-border bg-card">
       <div className="mx-auto flex h-18 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"

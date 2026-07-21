@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { setLoggedIn } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -20,8 +21,10 @@ export function LoginForm() {
     if (!password) next.pw = "رمز عبور را وارد کنید.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    // Mock auth: enter the dashboard.
+    // Mock auth: flip the logged-in flag, then enter the dashboard.
+    setLoggedIn();
     router.push("/dashboard");
+    router.refresh();
   }
 
   return (

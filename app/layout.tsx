@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 
 // Self-hosted Vazirmatn (variable). Bundled at build time so the deploy has no
 // external font dependency (avoids build-time Google Fonts fetch failures).
 import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 
-import { AppBottomNav } from "@/components/AppBottomNav";
+import { AUTH_COOKIE } from "@/lib/auth";
+import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "پوستر | پلتفرم برگزاری و بلیت‌فروشی تجربه و رویداد",
@@ -26,18 +28,17 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const loggedIn = (await cookies()).get(AUTH_COOKIE)?.value === "1";
+
   return (
-    <html lang="fa" dir="rtl">
+    <html lang="fa" dir="rtl" data-auth={loggedIn ? "in" : "out"}>
       <body>
-        {children}
-        {/* Clears the fixed app bottom nav so content isn't hidden behind it. */}
-        <div className="h-16 lg:hidden" aria-hidden />
-        <AppBottomNav />
+        <AppShell loggedIn={loggedIn}>{children}</AppShell>
       </body>
     </html>
   );

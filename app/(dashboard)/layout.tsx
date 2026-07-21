@@ -17,7 +17,7 @@ export default function DashboardLayout({
     <div className="lg:flex">
       <Sidebar workspaces={workspaces} />
       <div className="min-h-[100dvh] flex-1">
-        <header className="flex h-16 items-center justify-between gap-3 border-b border-border px-4 lg:hidden">
+        <header className="auth-mobile-hide flex h-16 items-center justify-between gap-3 border-b border-border px-4 lg:hidden">
           <div className="flex items-center gap-2.5">
             <MobileNavDrawer />
             <Link

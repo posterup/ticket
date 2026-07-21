@@ -113,6 +113,17 @@ body::before {
   }
 }
 
+/*
+  When signed in, the mobile app shell (AppShell) supplies its own fixed top
+  bar, so page-level headers would double up on small screens. Hide any header
+  opted in with `.auth-mobile-hide` below `lg`; desktop keeps its own chrome.
+*/
+@media (max-width: 1023.98px) {
+  [data-auth="in"] .auth-mobile-hide {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

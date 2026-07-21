@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
+import { setLoggedIn } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,9 @@ export function SignupForm() {
     if (!workspace.trim()) next.ws = "نام فضای کاری الزامی است.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
+    setLoggedIn();
     router.push("/dashboard");
+    router.refresh();
   }
 
   return (
