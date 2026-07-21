@@ -35,7 +35,7 @@ export function ChangePasswordForm() {
         <Link
           href="/dashboard/settings"
           aria-label="بازگشت به تنظیمات"
-          className="grid size-9 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="hidden size-9 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40 lg:grid"
         >
           <ChevronRight className="size-5" aria-hidden />
         </Link>

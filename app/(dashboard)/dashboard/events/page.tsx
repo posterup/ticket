@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Plus, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 import { listEvents } from "@/lib/server";
 import { formatNumber } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
 import { EventStatusBadge } from "@/components/dashboard/EventStatusBadge";
 
 export const metadata: Metadata = { title: "رویدادها | پوستر" };
@@ -16,22 +14,13 @@ export default function EventsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            رویدادها
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            مدیریت رویدادها، جلسات و انواع بلیت.
-          </p>
-        </div>
-        <Link
-          href="/tickets/create"
-          className={cn(buttonVariants({ variant: "primary", size: "sm" }))}
-        >
-          <Plus aria-hidden />
-          <span className="hidden sm:inline">ساخت رویداد</span>
-        </Link>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          رویدادها
+        </h1>
+        <p className="mt-1 text-sm text-muted">
+          مدیریت رویدادها، جلسات و انواع بلیت.
+        </p>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border">
