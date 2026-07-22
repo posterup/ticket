@@ -7,8 +7,6 @@ import {
   getEventById,
   listTickets,
   listDiscounts,
-  listCampaigns,
-  listSegments,
   listCheckedHolderIds,
   listWorkspaces,
   getWorkspaceByEvent,
@@ -30,7 +28,6 @@ import { GuestInvite } from "@/components/dashboard/GuestInvite";
 import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
 import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
-import { MarketingPanel } from "@/components/marketing/MarketingPanel";
 import { CheckinPanel } from "@/components/checkin/CheckinPanel";
 import type { TicketSample } from "@/components/tickets/TicketPreview";
 import type { Event } from "@/types";
@@ -65,8 +62,6 @@ export default async function EventDetailPage({ params }: Params) {
 
   const tickets = listTickets(id);
   const discounts = listDiscounts(id);
-  const campaigns = listCampaigns();
-  const segments = listSegments();
   const recurrence = recurrenceText(event);
   const sessionOptions = event.sessions.map((s) => ({
     id: s.id,
@@ -198,13 +193,6 @@ export default async function EventDetailPage({ params }: Params) {
                   <TicketDesigner sample={ticketSample} />
                 </section>
               </div>
-            ),
-          },
-          {
-            id: "marketing",
-            label: "بازاریابی",
-            content: (
-              <MarketingPanel seedCampaigns={campaigns} segments={segments} />
             ),
           },
           {
