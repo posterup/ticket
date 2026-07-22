@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, Pencil, Check, X } from "lucide-react";
 
-import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -29,7 +28,6 @@ export function EditVenueForm({
     province: venue.province ?? "",
     city: venue.city ?? "",
     address: venue.address ?? "",
-    capacity: String(venue.capacity ?? 0),
     lat: venue.lat ?? null,
     lng: venue.lng ?? null,
     hideAddress: venue.hideAddress ?? false,
@@ -43,7 +41,6 @@ export function EditVenueForm({
       province: venue.province ?? "",
       city: venue.city ?? "",
       address: venue.address ?? "",
-      capacity: String(venue.capacity ?? 0),
       lat: venue.lat ?? null,
       lng: venue.lng ?? null,
       hideAddress: venue.hideAddress ?? false,
@@ -55,7 +52,6 @@ export function EditVenueForm({
   async function save() {
     if (!form.province.trim()) return setError("استان را انتخاب کنید.");
     if (!form.city.trim()) return setError("شهر را انتخاب کنید.");
-    const cap = Math.max(0, Math.floor(Number(form.capacity) || 0));
     setSaving(true);
     setError("");
     try {
@@ -67,7 +63,6 @@ export function EditVenueForm({
           province: form.province,
           city: form.city,
           address: form.address.trim(),
-          capacity: cap,
           hideAddress: form.hideAddress,
           ...(form.lat != null && form.lng != null
             ? { lat: form.lat, lng: form.lng }
@@ -109,8 +104,7 @@ export function EditVenueForm({
           <p className="mt-1 text-sm text-muted">{venue.address}</p>
         ) : null}
         <p className="mt-1 text-sm text-muted">
-          {[venue.province, venue.city].filter(Boolean).join("، ")} · ظرفیت{" "}
-          {formatNumber(venue.capacity)} نفر
+          {[venue.province, venue.city].filter(Boolean).join("، ")}
         </p>
         {venue.hideAddress ? (
           <p className="mt-1 text-xs text-faint">
@@ -180,16 +174,6 @@ export function EditVenueForm({
             />
           </Field>
         </div>
-        <Field id="v-capacity" label="ظرفیت">
-          <Input
-            id="v-capacity"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={form.capacity}
-            onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
-          />
-        </Field>
         <div className="sm:col-span-2">
           <LocationPicker
             lat={form.lat}
