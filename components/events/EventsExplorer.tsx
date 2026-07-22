@@ -6,6 +6,7 @@ import { MapPin, ChevronDown, Check, CalendarDays, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { cityDescription } from "@/lib/geo/iran";
 import { EventCover } from "@/components/events/EventCover";
 
 export interface DiscoverEvent {
@@ -96,9 +97,15 @@ export function EventsExplorer({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Header controls: search + city */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
+      {/* City header (name + chevron + description), then search below */}
+      <div className="flex flex-col gap-4">
+        <CityHeader
+          cities={cities}
+          city={city}
+          onChange={setCity}
+          description={cityDescription(city)}
+        />
+        <div className="relative">
           <Search
             className="pointer-events-none absolute inset-y-0 end-3.5 my-auto size-4 text-faint"
             aria-hidden
@@ -111,7 +118,6 @@ export function EventsExplorer({
             className="h-12 w-full rounded-full border border-border bg-card pe-10 ps-4 text-sm text-foreground outline-none transition-colors placeholder:text-faint hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15"
           />
         </div>
-        <CitySelector cities={cities} city={city} onChange={setCity} />
       </div>
 
       {scoped.length === 0 ? (
@@ -208,14 +214,16 @@ function Hero({ events }: { events: DiscoverEvent[] }) {
   );
 }
 
-function CitySelector({
+function CityHeader({
   cities,
   city,
   onChange,
+  description,
 }: {
   cities: string[];
   city: string;
   onChange: (city: string) => void;
+  description: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -231,48 +239,57 @@ function CitySelector({
   const options = [ALL_CITIES, ...cities];
 
   return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className="flex h-12 items-center gap-2 rounded-full border border-border bg-card pe-3 ps-4 text-start outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring/40"
-      >
-        <MapPin className="size-4 text-accent" aria-hidden />
-        <span className="text-sm font-bold text-foreground">{city}</span>
-        <ChevronDown
-          className={cn("size-4 text-faint transition-transform", open && "rotate-180")}
-          aria-hidden
-        />
-      </button>
-
-      {open ? (
-        <ul
-          role="listbox"
-          className="absolute end-0 top-full z-50 mt-1 max-h-72 w-52 overflow-y-auto rounded-lg border border-border bg-background p-1 shadow-lg shadow-foreground/5"
+    <div>
+      <div ref={ref} className="relative inline-block">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          className="flex items-center gap-2 rounded-lg text-start outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
         >
-          {options.map((c) => (
-            <li key={c}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={c === city}
-                onClick={() => {
-                  onChange(c);
-                  setOpen(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-foreground outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
-              >
-                <span className="flex-1 truncate">{c}</span>
-                {c === city ? (
-                  <Check className="size-4 shrink-0 text-foreground" aria-hidden />
-                ) : null}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+          <span className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            {city}
+          </span>
+          <ChevronDown
+            className={cn(
+              "size-6 text-faint transition-transform",
+              open && "rotate-180",
+            )}
+            aria-hidden
+          />
+        </button>
+
+        {open ? (
+          <ul
+            role="listbox"
+            className="absolute start-0 top-full z-50 mt-2 max-h-72 w-56 overflow-y-auto rounded-lg border border-border bg-background p-1 shadow-lg shadow-foreground/5"
+          >
+            {options.map((c) => (
+              <li key={c}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={c === city}
+                  onClick={() => {
+                    onChange(c);
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-foreground outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
+                >
+                  <MapPin className="size-4 shrink-0 text-faint" aria-hidden />
+                  <span className="flex-1 truncate">{c}</span>
+                  {c === city ? (
+                    <Check className="size-4 shrink-0 text-foreground" aria-hidden />
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+
+      <p className="mt-1 text-sm text-muted">{description}</p>
     </div>
   );
 }
