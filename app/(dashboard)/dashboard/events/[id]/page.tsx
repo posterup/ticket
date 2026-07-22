@@ -170,15 +170,15 @@ export default async function EventDetailPage({ params }: Params) {
             label: "بلیت‌ها",
             content: (
               <div className="flex flex-col gap-8">
-                <EventAccessSettings
-                  eventId={event.id}
-                  visibility={event.visibility}
-                  requiresApproval={event.requiresApproval}
-                />
                 <EventTickets
                   eventId={event.id}
                   tickets={tickets}
                   sessions={sessionOptions}
+                />
+                <EventAccessSettings
+                  eventId={event.id}
+                  visibility={event.visibility}
+                  requiresApproval={event.requiresApproval}
                 />
                 <section className="flex flex-col gap-4 border-t border-border pt-6">
                   <div>

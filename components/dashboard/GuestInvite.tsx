@@ -109,7 +109,11 @@ export function GuestInvite({
         className="flex flex-col gap-3"
       >
         {sessions.length > 0 ? (
-          <Field id="guest-session" label="سانس">
+          <Field
+            id="guest-session"
+            label="انتخاب سانس"
+            hint="مهمان به سانس انتخاب‌شده دعوت می‌شود."
+          >
             <Select
               id="guest-session"
               value={sessionId}
