@@ -87,7 +87,6 @@ export default async function EventDetailPage({ params }: Params) {
     eventTitle: event.title,
     holder: "سارا محمدی",
     category: tickets[0]?.name ?? "عمومی",
-    seat: "ردیف A · صندلی ۱۲",
     date: first
       ? `${formatJalaliDate(first.startAt)} · ${formatTime(first.startAt)}`
       : "تاریخ رویداد",

@@ -132,7 +132,6 @@ export function EventComposer() {
     eventTitle: draft.title.trim() || "عنوان رویداد",
     holder: "سارا محمدی",
     category: draft.ticketTypes[0]?.name.trim() || "عمومی",
-    seat: "ردیف A · صندلی ۱۲",
     date: expanded[0]?.date
       ? formatJalaliDate(`${expanded[0].date}T00:00:00.000Z`)
       : "تاریخ رویداد",

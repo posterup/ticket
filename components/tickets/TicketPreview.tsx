@@ -14,7 +14,6 @@ export interface TicketTemplate {
   /** Optional uploaded logo (data URL). */
   logo: string | null;
   showCategory: boolean;
-  showSeat: boolean;
   showDate: boolean;
   showVenue: boolean;
   note: string;
@@ -24,7 +23,6 @@ export interface TicketSample {
   eventTitle: string;
   holder: string;
   category: string;
-  seat: string;
   date: string;
   venue: string;
 }
@@ -64,7 +62,6 @@ export function TicketPreview({
     badge?: boolean;
   }[] = [
     { show: template.showCategory, label: "دسته", value: sample.category, badge: true },
-    { show: template.showSeat, label: "جایگاه", value: sample.seat },
     { show: template.showDate, label: "تاریخ", value: sample.date },
     { show: template.showVenue, label: "مکان", value: sample.venue },
   ];
