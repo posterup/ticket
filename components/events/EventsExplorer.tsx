@@ -39,9 +39,15 @@ function weekendRange(): { start: number; end: number } {
   return { start: thu.getTime(), end: fri.getTime() };
 }
 
-export function EventsExplorer({ events }: { events: DiscoverEvent[] }) {
+export function EventsExplorer({
+  events,
+  defaultCity,
+}: {
+  events: DiscoverEvent[];
+  defaultCity?: string;
+}) {
   const [query, setQuery] = useState("");
-  const [city, setCity] = useState(ALL_CITIES);
+  const [city, setCity] = useState(defaultCity ?? ALL_CITIES);
 
   const cities = useMemo(
     () =>
@@ -244,7 +250,7 @@ function CitySelector({
       {open ? (
         <ul
           role="listbox"
-          className="absolute end-0 z-50 mt-1 max-h-72 w-52 overflow-y-auto rounded-lg border border-border bg-background p-1 shadow-lg shadow-foreground/5"
+          className="absolute end-0 top-full z-50 mt-1 max-h-72 w-52 overflow-y-auto rounded-lg border border-border bg-background p-1 shadow-lg shadow-foreground/5"
         >
           {options.map((c) => (
             <li key={c}>

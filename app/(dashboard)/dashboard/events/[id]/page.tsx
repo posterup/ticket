@@ -12,6 +12,8 @@ import {
   listCheckedHolderIds,
   listWorkspaces,
   getWorkspaceByEvent,
+  listGuests,
+  listCollaborators,
 } from "@/lib/server";
 import { buildHolders } from "@/lib/checkin/data";
 import { formatJalaliDate, formatTime, formatNumber } from "@/lib/format";
@@ -76,6 +78,13 @@ export default async function EventDetailPage({ params }: Params) {
   const collabWorkspaces = listWorkspaces()
     .filter((w) => w.slug !== owner?.slug)
     .map((w) => ({ slug: w.slug, name: w.name, avatar: w.avatar }));
+  const guests = listGuests(event.id).map((g) => ({
+    id: g.id,
+    contact: g.contact,
+    channel: g.channel,
+    status: g.status,
+  }));
+  const collaborators = listCollaborators(event.id);
 
   const first = event.sessions[0];
   const ticketSample: TicketSample = {
@@ -123,7 +132,7 @@ export default async function EventDetailPage({ params }: Params) {
             label: "نمای کلی",
             content: (
               <div className="flex flex-col gap-4">
-                <EventLinkForm slug={event.id} />
+                <EventLinkForm eventId={event.id} slug={event.slug ?? event.id} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <EditVenueForm eventId={event.id} venue={event.venue} />
 
@@ -135,7 +144,11 @@ export default async function EventDetailPage({ params }: Params) {
                   />
                 </div>
 
-                <EventCollaborators workspaces={collabWorkspaces} />
+                <EventCollaborators
+                  eventId={event.id}
+                  workspaces={collabWorkspaces}
+                  initial={collaborators}
+                />
               </div>
             ),
           },
@@ -144,7 +157,7 @@ export default async function EventDetailPage({ params }: Params) {
             label: "پذیرش و مهمانان",
             content: (
               <div className="flex flex-col gap-6">
-                <GuestInvite />
+                <GuestInvite eventId={event.id} initial={guests} />
                 <CheckinPanel
                   events={checkinEvents}
                   initialChecked={listCheckedHolderIds()}
@@ -157,7 +170,11 @@ export default async function EventDetailPage({ params }: Params) {
             label: "بلیت‌ها",
             content: (
               <div className="flex flex-col gap-8">
-                <EventAccessSettings />
+                <EventAccessSettings
+                  eventId={event.id}
+                  visibility={event.visibility}
+                  requiresApproval={event.requiresApproval}
+                />
                 <EventTickets
                   eventId={event.id}
                   tickets={tickets}

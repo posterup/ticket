@@ -13,12 +13,20 @@ import { Input } from "@/components/ui/input";
  * lets the organizer set a custom slug. Slug edits are local/mock until a
  * persisted event-slug lands (the public route is by id today).
  */
-export function EventLinkForm({ slug: initialSlug }: { slug: string }) {
+export function EventLinkForm({
+  eventId,
+  slug: initialSlug,
+}: {
+  eventId: string;
+  slug: string;
+}) {
   const [origin, setOrigin] = useState("https://poster.ir");
   const [slug, setSlug] = useState(initialSlug);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(initialSlug);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") setOrigin(window.location.origin);
@@ -36,11 +44,25 @@ export function EventLinkForm({ slug: initialSlug }: { slug: string }) {
     }
   }
 
-  function save() {
+  async function save() {
     const next = draft.trim().replace(/^\/+|\/+$/g, "").replace(/\s+/g, "-");
-    if (!next) return;
-    setSlug(next);
-    setEditing(false);
+    if (!next) return setError("نشانی اختصاصی را وارد کنید.");
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/events/${eventId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: next }),
+      });
+      if (!res.ok) throw new Error("خطا در ذخیره لینک.");
+      setSlug(next);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "خطای ناشناخته رخ داد.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -101,6 +123,7 @@ export function EventLinkForm({ slug: initialSlug }: { slug: string }) {
             id="slug"
             label="نشانی اختصاصی"
             hint={`${origin}/events/…`}
+            error={error}
           >
             <Input
               id="slug"
@@ -108,12 +131,13 @@ export function EventLinkForm({ slug: initialSlug }: { slug: string }) {
               onChange={(e) => setDraft(e.target.value)}
               placeholder="my-event"
               dir="ltr"
+              aria-invalid={Boolean(error)}
             />
           </Field>
           <div className="flex items-center gap-2">
-            <Button type="button" size="sm" onClick={save}>
+            <Button type="button" size="sm" onClick={save} disabled={saving}>
               <Check aria-hidden />
-              ذخیره لینک
+              {saving ? "در حال ذخیره…" : "ذخیره لینک"}
             </Button>
             <Button
               type="button"

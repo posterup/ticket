@@ -17,6 +17,16 @@ export function getEventById(id: string): Event | undefined {
   return events.find((event) => event.id === id);
 }
 
+/** Return a single event by its custom slug, or `undefined`. */
+export function getEventBySlug(slug: string): Event | undefined {
+  return events.find((event) => event.slug === slug);
+}
+
+/** Resolve an event by id first, then by custom slug (public routes). */
+export function getEventByIdOrSlug(idOrSlug: string): Event | undefined {
+  return getEventById(idOrSlug) ?? getEventBySlug(idOrSlug);
+}
+
 /** Create and persist a new event, returning the stored record. */
 export function createEvent(input: CreateEventInput): Event {
   const id = crypto.randomUUID();
@@ -50,7 +60,10 @@ export function createEvent(input: CreateEventInput): Event {
 
 /** Fields an organizer may edit on an existing event. */
 export type EventUpdate = Partial<
-  Pick<Event, "title" | "description" | "status">
+  Pick<
+    Event,
+    "title" | "description" | "status" | "visibility" | "requiresApproval" | "slug"
+  >
 >;
 
 /** Apply an in-place update to an event; returns it, or `undefined` if absent. */
@@ -60,6 +73,11 @@ export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
   if (patch.title !== undefined) event.title = patch.title;
   if (patch.description !== undefined) event.description = patch.description;
   if (patch.status !== undefined) event.status = patch.status;
+  if (patch.visibility !== undefined) event.visibility = patch.visibility;
+  if (patch.requiresApproval !== undefined) {
+    event.requiresApproval = patch.requiresApproval;
+  }
+  if (patch.slug !== undefined) event.slug = patch.slug;
   event.updatedAt = new Date().toISOString();
   return event;
 }

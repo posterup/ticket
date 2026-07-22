@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { getEventById, listTickets } from "@/lib/server";
+import { getEventByIdOrSlug, listTickets } from "@/lib/server";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import {
@@ -19,9 +19,9 @@ export const metadata: Metadata = { title: "تهیه بلیت | پوستر" };
 export default async function CheckoutPage({ params, searchParams }: Props) {
   const { id } = await params;
   const { ticket } = await searchParams;
-  const event = getEventById(id);
+  const event = getEventByIdOrSlug(id);
   if (!event) notFound();
-  const tickets = listTickets(id);
+  const tickets = listTickets(event.id);
   if (tickets.length === 0) notFound();
 
   const initialTicketId =
@@ -45,7 +45,7 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
           <p className="mt-1 text-sm text-muted">{event.title}</p>
         </div>
         <CheckoutForm
-          eventId={id}
+          eventId={event.id}
           eventTitle={event.title}
           tickets={checkoutTickets}
           initialTicketId={initialTicketId}

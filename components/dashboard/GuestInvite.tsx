@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 type Rsvp = "pending" | "going" | "declined";
 
-interface Guest {
+export interface GuestItem {
   id: string;
   contact: string;
   channel: "phone" | "email";
@@ -18,40 +18,58 @@ interface Guest {
 const isEmail = (v: string) => /@/.test(v);
 
 /**
- * Invite guests by phone or email. Guests don't pay — they only RSVP (coming
- * or not), and appear in the guest list with their response. Mock/local state
- * until a persisted guest/invite model lands.
+ * Invite guests by phone or email. Guests don't pay — they only RSVP. Persists
+ * to the event's guest list via `/api/events/:id/guests`.
  */
-export function GuestInvite() {
-  const [guests, setGuests] = useState<Guest[]>([]);
+export function GuestInvite({
+  eventId,
+  initial = [],
+}: {
+  eventId: string;
+  initial?: GuestItem[];
+}) {
+  const [guests, setGuests] = useState<GuestItem[]>(initial);
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
 
-  function invite() {
+  async function invite() {
     const contact = value.trim();
     if (!contact) return setError("شماره موبایل یا ایمیل مهمان را وارد کنید.");
     if (guests.some((g) => g.contact === contact)) {
       return setError("این مهمان قبلاً دعوت شده است.");
     }
-    setGuests((prev) => [
-      {
-        id: crypto.randomUUID(),
-        contact,
-        channel: isEmail(contact) ? "email" : "phone",
-        status: "pending",
-      },
-      ...prev,
-    ]);
+    const channel = isEmail(contact) ? "email" : "phone";
     setValue("");
     setError("");
+    try {
+      const res = await fetch(`/api/events/${eventId}/guests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contact, channel }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error();
+      setGuests((prev) => [
+        { id: json.data.id, contact, channel, status: "pending" },
+        ...prev,
+      ]);
+    } catch {
+      setError("خطا در ثبت مهمان.");
+    }
   }
 
   function setStatus(id: string, status: Rsvp) {
     setGuests((prev) => prev.map((g) => (g.id === id ? { ...g, status } : g)));
+    void fetch(`/api/events/${eventId}/guests/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
   }
 
   function remove(id: string) {
     setGuests((prev) => prev.filter((g) => g.id !== id));
+    void fetch(`/api/events/${eventId}/guests/${id}`, { method: "DELETE" });
   }
 
   const going = guests.filter((g) => g.status === "going").length;
@@ -92,7 +110,6 @@ export function GuestInvite() {
         {error ? <p className="text-xs text-danger">{error}</p> : null}
       </form>
 
-      {/* Guest list */}
       {guests.length > 0 ? (
         <div className="flex flex-col gap-2 border-t border-border pt-4">
           <div className="flex items-center justify-between">
@@ -122,7 +139,6 @@ export function GuestInvite() {
 
                   <StatusPill status={g.status} />
 
-                  {/* Simulate the guest's RSVP response (mock). */}
                   <div className="flex shrink-0 items-center gap-1">
                     <IconToggle
                       label="می‌آید"
