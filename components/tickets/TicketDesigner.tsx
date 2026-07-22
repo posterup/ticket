@@ -20,14 +20,12 @@ const SAMPLE: TicketSample = {
   eventTitle: "کنسرت همایون شجریان",
   holder: "سارا محمدی",
   category: "وی‌آی‌پی",
-  seat: "ردیف A · صندلی ۱۲",
   date: "۲۳ مرداد ۱۴۰۵ · ۱۸:۳۰",
   venue: "برج میلاد، تهران",
 };
 
 const FIELD_TOGGLES: { key: keyof TicketTemplate; label: string }[] = [
   { key: "showCategory", label: "نمایش دسته بلیت" },
-  { key: "showSeat", label: "نمایش جایگاه" },
   { key: "showDate", label: "نمایش تاریخ" },
   { key: "showVenue", label: "نمایش مکان" },
 ];
@@ -49,7 +47,6 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
     bgImage: null,
     logo: null,
     showCategory: true,
-    showSeat: true,
     showDate: true,
     showVenue: true,
     note: "این بلیت را هنگام ورود ارائه دهید.",

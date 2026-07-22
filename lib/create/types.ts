@@ -160,7 +160,6 @@ export function defaultTicketDesign(): TicketTemplate {
     bgImage: null,
     logo: null,
     showCategory: true,
-    showSeat: false,
     showDate: true,
     showVenue: true,
     note: "این بلیت را هنگام ورود ارائه دهید.",
