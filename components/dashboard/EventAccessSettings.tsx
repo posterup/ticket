@@ -72,16 +72,14 @@ export function EventAccessSettings({
         />
       </div>
 
-      {visibility === "link" ? (
-        <div className="border-t border-border pt-4">
-          <Toggle
-            label="پذیرش با تأیید مدیر (فقط مهمانان تأییدشده)"
-            hint="برای رویدادهای خصوصی؛ ثبت‌نام هر فرد باید توسط شما تأیید شود."
-            checked={approval}
-            onChange={changeApproval}
-          />
-        </div>
-      ) : null}
+      <div className="border-t border-border pt-4">
+        <Toggle
+          label="پذیرش با تأیید مدیر (فقط مهمانان تأییدشده)"
+          hint="در هر دو حالت عمومی و خصوصی؛ ثبت‌نام هر فرد باید پیش از پرداخت توسط شما تأیید شود."
+          checked={approval}
+          onChange={changeApproval}
+        />
+      </div>
     </section>
   );
 }
