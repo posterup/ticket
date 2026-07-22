@@ -17,6 +17,8 @@ export interface Workspace {
   bio?: string;
   /** 1-2 character avatar initials. */
   avatar: string;
+  /** Optional banner/cover image URL; a seeded gradient is shown when absent. */
+  banner?: string;
   followers: number;
   following: number;
   verified?: boolean;

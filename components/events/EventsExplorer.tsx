@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { MapPin, CalendarDays, Search, X, BadgeCheck, Users } from "lucide-react";
+import { MapPin, ChevronDown, Check, CalendarDays, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 import { formatNumber } from "@/lib/format";
 import { EventCover } from "@/components/events/EventCover";
 
@@ -23,212 +22,315 @@ export interface DiscoverEvent {
   org: { slug: string; name: string; avatar: string; verified: boolean } | null;
 }
 
-/** How many category chips to surface (most frequent tags first). */
-const MAX_CATEGORIES = 8;
+const ALL_CITIES = "همه شهرها";
+
+/** Coming weekend range (Iran: Thu–Fri). Uses the current date at render. */
+function weekendRange(): { start: number; end: number } {
+  const now = new Date();
+  const day = now.getDay(); // 0 Sun … 5 Fri, 6 Sat
+  // Days until the coming Friday (Fri=5); if today is Fri, that's today.
+  const untilFri = (5 - day + 7) % 7;
+  const fri = new Date(now);
+  fri.setDate(now.getDate() + untilFri);
+  const thu = new Date(fri);
+  thu.setDate(fri.getDate() - 1);
+  thu.setHours(0, 0, 0, 0);
+  fri.setHours(23, 59, 59, 999);
+  return { start: thu.getTime(), end: fri.getTime() };
+}
 
 export function EventsExplorer({ events }: { events: DiscoverEvent[] }) {
   const [query, setQuery] = useState("");
-  const [city, setCity] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
+  const [city, setCity] = useState(ALL_CITIES);
 
-  const cities = useMemo(() => {
-    return [...new Set(events.map((e) => e.city))].sort((a, b) =>
-      a.localeCompare(b, "fa"),
-    );
-  }, [events]);
+  const cities = useMemo(
+    () =>
+      [...new Set(events.map((e) => e.city))].sort((a, b) =>
+        a.localeCompare(b, "fa"),
+      ),
+    [events],
+  );
 
-  const categories = useMemo(() => {
-    const freq = new Map<string, number>();
-    for (const e of events) {
-      for (const t of e.tags) freq.set(t, (freq.get(t) ?? 0) + 1);
-    }
-    return [...freq.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, MAX_CATEGORIES)
-      .map(([tag]) => tag);
-  }, [events]);
-
-  const filtered = useMemo(() => {
+  const scoped = useMemo(() => {
     const q = query.trim().toLowerCase();
     return events.filter((e) => {
-      if (city && e.city !== city) return false;
-      if (category && !e.tags.includes(category)) return false;
-      if (q) {
-        const haystack = [e.title, e.venueName, e.city, e.org?.name ?? "", ...e.tags]
-          .join(" ")
-          .toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-      return true;
+      if (city !== ALL_CITIES && e.city !== city) return false;
+      if (!q) return true;
+      const hay = [e.title, e.venueName, e.city, e.org?.name ?? "", ...e.tags]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
     });
-  }, [events, query, city, category]);
+  }, [events, query, city]);
 
-  const hasFilters = Boolean(query || city || category);
+  const featured = useMemo(
+    () => [...scoped].sort((a, b) => b.going - a.going).slice(0, 3),
+    [scoped],
+  );
+
+  const rows = useMemo(() => {
+    const popular = [...scoped].sort((a, b) => b.going - a.going);
+
+    const { start, end } = weekendRange();
+    const weekend = scoped.filter((e) => {
+      const t = e.sortKey ? new Date(e.sortKey).getTime() : NaN;
+      return Number.isFinite(t) && t >= start && t <= end;
+    });
+
+    const upcoming = [...scoped].sort((a, b) =>
+      a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0,
+    );
+
+    return [
+      { key: "popular", title: "پرطرفدارها", ranked: true, events: popular },
+      { key: "weekend", title: "این آخر هفته", ranked: false, events: weekend },
+      { key: "upcoming", title: "به‌زودی", ranked: false, events: upcoming },
+    ].filter((r) => r.events.length > 0);
+  }, [scoped]);
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Search */}
-      <div className="relative">
-        <Search
-          className="pointer-events-none absolute inset-y-0 end-3.5 my-auto size-4 text-faint"
-          aria-hidden
-        />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="جست‌وجوی رویداد، برگزارکننده یا مکان…"
-          aria-label="جست‌وجوی رویداد"
-          className="pe-10"
-        />
+    <div className="flex flex-col gap-8">
+      {/* Header controls: search + city */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search
+            className="pointer-events-none absolute inset-y-0 end-3.5 my-auto size-4 text-faint"
+            aria-hidden
+          />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="جست‌وجوی رویداد، برگزارکننده یا مکان…"
+            aria-label="جست‌وجوی رویداد"
+            className="h-12 w-full rounded-full border border-border bg-card pe-10 ps-4 text-sm text-foreground outline-none transition-colors placeholder:text-faint hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15"
+          />
+        </div>
+        <CitySelector cities={cities} city={city} onChange={setCity} />
       </div>
 
-      {/* City filter */}
-      <FilterRow label="شهر">
-        <Chip active={city === null} onClick={() => setCity(null)}>
-          همه شهرها
-        </Chip>
-        {cities.map((c) => (
-          <Chip key={c} active={city === c} onClick={() => setCity(c === city ? null : c)}>
-            {c}
-          </Chip>
-        ))}
-      </FilterRow>
-
-      {/* Category filter */}
-      {categories.length > 0 ? (
-        <FilterRow label="دسته">
-          <Chip active={category === null} onClick={() => setCategory(null)}>
-            همه
-          </Chip>
-          {categories.map((t) => (
-            <Chip
-              key={t}
-              active={category === t}
-              onClick={() => setCategory(t === category ? null : t)}
-            >
-              {t}
-            </Chip>
-          ))}
-        </FilterRow>
-      ) : null}
-
-      {/* Result meta */}
-      <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
-        <p className="text-sm text-muted">
-          {formatNumber(filtered.length)} رویداد
-        </p>
-        {hasFilters ? (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              setCity(null);
-              setCategory(null);
-            }}
-            className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
-          >
-            <X className="size-4" aria-hidden />
-            حذف فیلترها
-          </button>
-        ) : null}
-      </div>
-
-      {/* Results */}
-      {filtered.length === 0 ? (
+      {scoped.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-10 text-center">
           <p className="text-sm font-medium text-foreground">رویدادی یافت نشد.</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
-            عبارت جست‌وجو یا فیلترها را تغییر دهید.
-          </p>
+          <p className="mt-1 text-sm text-muted">شهر یا عبارت دیگری را امتحان کنید.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((e) => (
-            <Link
-              key={e.id}
-              href={`/events/${e.id}`}
-              className="flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-border-strong"
-            >
-              <EventCover seed={e.id} tags={e.tags} className="aspect-video" />
-              <div className="flex flex-1 flex-col p-5">
-              {e.org ? (
-                <span className="mb-3 flex items-center gap-2 text-xs text-muted">
-                  <span className="grid size-6 place-items-center rounded-full bg-foreground text-[0.625rem] font-bold text-background">
-                    {e.org.avatar}
-                  </span>
-                  <span className="flex items-center gap-1 truncate">
-                    {e.org.name}
-                    {e.org.verified ? (
-                      <BadgeCheck className="size-3.5 shrink-0 text-accent" aria-label="تأییدشده" />
-                    ) : null}
-                  </span>
-                </span>
-              ) : null}
-              <span className="text-xs text-faint">{e.modeLabel}</span>
-              <h2 className="mt-1 text-base font-semibold text-foreground">{e.title}</h2>
-              <div className="mt-4 flex flex-col gap-2 text-sm text-muted">
-                {e.dateLabel ? (
-                  <span className="flex items-center gap-2">
-                    <CalendarDays className="size-4 text-faint" aria-hidden />
-                    {e.dateLabel}
-                  </span>
-                ) : null}
-                <span className="flex items-center gap-2">
-                  <MapPin className="size-4 text-faint" aria-hidden />
-                  {e.venueName}، {e.city}
-                </span>
-                {e.going > 0 ? (
-                  <span className="flex items-center gap-2">
-                    <Users className="size-4 text-faint" aria-hidden />
-                    {formatNumber(e.going)} نفر می‌روند
-                  </span>
-                ) : null}
-              </div>
-              {e.price ? (
-                <span className="mt-auto border-t border-border pt-3 text-sm font-medium text-foreground">
-                  {e.price}
-                </span>
-              ) : null}
-              </div>
-            </Link>
+        <>
+          {featured.length > 0 ? <Hero events={featured} /> : null}
+
+          {rows.map((row) => (
+            <Carousel key={row.key} title={row.title} count={row.events.length}>
+              {row.events.map((e, i) => (
+                <EventCard
+                  key={e.id}
+                  event={e}
+                  rank={row.ranked ? i + 1 : undefined}
+                />
+              ))}
+            </Carousel>
           ))}
-        </div>
+        </>
       )}
     </div>
   );
 }
 
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+function Hero({ events }: { events: DiscoverEvent[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  function onScroll() {
+    const el = ref.current;
+    if (!el) return;
+    // RTL-safe: derive the slide from scroll progress, not sign of scrollLeft.
+    const max = el.scrollWidth - el.clientWidth;
+    const progress = max > 0 ? Math.abs(el.scrollLeft) / max : 0;
+    setActive(Math.round(progress * (events.length - 1)));
+  }
+
+  function goTo(i: number) {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollTo({ left: el.clientWidth * i * (el.dir === "rtl" ? -1 : 1), behavior: "smooth" });
+  }
+
   return (
-    <div className="flex items-start gap-3">
-      <span className="mt-1.5 shrink-0 text-xs font-medium text-faint">{label}</span>
-      <div className="flex flex-wrap gap-2">{children}</div>
+    <div className="flex flex-col gap-3">
+      <div
+        ref={ref}
+        onScroll={onScroll}
+        className="-mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 sm:mx-0 sm:px-0"
+      >
+        {events.map((e) => (
+          <Link
+            key={e.id}
+            href={`/events/${e.id}`}
+            className="relative w-full shrink-0 snap-center overflow-hidden rounded-2xl border border-border"
+          >
+            <EventCover seed={e.id} tags={e.tags} className="h-52 w-full sm:h-72" />
+            <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-foreground/20 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+              <h2 className="text-lg font-bold text-background sm:text-2xl">
+                {e.title}
+              </h2>
+              <p className="mt-1 text-sm text-background/85">
+                {[e.dateLabel, `${e.venueName}، ${e.city}`, e.price]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {events.length > 1 ? (
+        <div className="flex justify-center gap-1.5">
+          {events.map((e, i) => (
+            <button
+              key={e.id}
+              type="button"
+              onClick={() => goTo(i)}
+              aria-label={`اسلاید ${i + 1}`}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                i === active ? "w-5 bg-foreground" : "w-1.5 bg-border-strong",
+              )}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function Chip({
-  active,
-  onClick,
+function CitySelector({
+  cities,
+  city,
+  onChange,
+}: {
+  cities: string[];
+  city: string;
+  onChange: (city: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const options = [ALL_CITIES, ...cities];
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex h-12 items-center gap-2 rounded-full border border-border bg-card pe-3 ps-4 text-start outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring/40"
+      >
+        <MapPin className="size-4 text-accent" aria-hidden />
+        <span className="text-sm font-bold text-foreground">{city}</span>
+        <ChevronDown
+          className={cn("size-4 text-faint transition-transform", open && "rotate-180")}
+          aria-hidden
+        />
+      </button>
+
+      {open ? (
+        <ul
+          role="listbox"
+          className="absolute end-0 z-50 mt-1 max-h-72 w-52 overflow-y-auto rounded-lg border border-border bg-background p-1 shadow-lg shadow-foreground/5"
+        >
+          {options.map((c) => (
+            <li key={c}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={c === city}
+                onClick={() => {
+                  onChange(c);
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm text-foreground outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
+              >
+                <span className="flex-1 truncate">{c}</span>
+                {c === city ? (
+                  <Check className="size-4 shrink-0 text-foreground" aria-hidden />
+                ) : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function Carousel({
+  title,
+  count,
   children,
 }: {
-  active: boolean;
-  onClick: () => void;
+  title: string;
+  count: number;
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "rounded-full border px-3.5 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
-        active
-          ? "border-foreground bg-foreground text-background"
-          : "border-border text-muted hover:border-border-strong hover:text-foreground",
-      )}
+    <section className="flex flex-col gap-3">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-lg font-bold text-foreground">{title}</h2>
+        <span className="text-xs text-muted">{formatNumber(count)} رویداد</span>
+      </div>
+      <div className="-mx-4 flex snap-x gap-4 overflow-x-auto scroll-px-4 px-4 pb-1 sm:mx-0 sm:px-0">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function EventCard({ event: e, rank }: { event: DiscoverEvent; rank?: number }) {
+  return (
+    <Link
+      href={`/events/${e.id}`}
+      className="flex w-64 shrink-0 snap-start flex-col sm:w-72"
     >
-      {children}
-    </button>
+      <div className="relative">
+        <EventCover
+          seed={e.id}
+          tags={e.tags}
+          className="aspect-video rounded-xl border border-border"
+        />
+        {rank ? (
+          <span className="absolute end-2 top-2 grid size-7 place-items-center rounded-full bg-background/85 text-sm font-bold text-foreground backdrop-blur">
+            {formatNumber(rank)}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-2 flex flex-col gap-1">
+        <h3 className="truncate text-sm font-semibold text-foreground">{e.title}</h3>
+        {e.dateLabel ? (
+          <span className="flex items-center gap-1.5 text-xs text-muted">
+            <CalendarDays className="size-3.5 shrink-0 text-faint" aria-hidden />
+            {e.dateLabel}
+          </span>
+        ) : null}
+        <span className="flex items-center gap-1.5 text-xs text-muted">
+          <MapPin className="size-3.5 shrink-0 text-faint" aria-hidden />
+          <span className="truncate">
+            {e.venueName}، {e.city}
+          </span>
+        </span>
+        {e.price ? (
+          <span className="mt-0.5 text-sm font-semibold text-foreground">
+            {e.price}
+          </span>
+        ) : null}
+      </div>
+    </Link>
   );
 }

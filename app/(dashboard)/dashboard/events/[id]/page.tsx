@@ -10,6 +10,8 @@ import {
   listCampaigns,
   listSegments,
   listCheckedHolderIds,
+  listWorkspaces,
+  getWorkspaceByEvent,
 } from "@/lib/server";
 import { buildHolders } from "@/lib/checkin/data";
 import { formatJalaliDate, formatTime, formatNumber } from "@/lib/format";
@@ -17,8 +19,12 @@ import { MODE_LABELS } from "@/lib/events/labels";
 import { FREQUENCY_LABELS, WEEKDAY_LABELS } from "@/lib/wizard/labels";
 import { EditEventForm } from "@/components/dashboard/EditEventForm";
 import { EditVenueForm } from "@/components/dashboard/EditVenueForm";
+import { EventLinkForm } from "@/components/dashboard/EventLinkForm";
+import { EventCollaborators } from "@/components/dashboard/EventCollaborators";
 import { SessionsManager } from "@/components/dashboard/SessionsManager";
 import { EventTickets } from "@/components/dashboard/EventTickets";
+import { EventAccessSettings } from "@/components/dashboard/EventAccessSettings";
+import { GuestInvite } from "@/components/dashboard/GuestInvite";
 import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
 import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
@@ -65,6 +71,12 @@ export default async function EventDetailPage({ params }: Params) {
     label: `${formatJalaliDate(s.startAt)} · ${formatTime(s.startAt)}`,
   }));
 
+  // Workspaces a host can request to collaborate with (excluding the owner).
+  const owner = getWorkspaceByEvent(event.id);
+  const collabWorkspaces = listWorkspaces()
+    .filter((w) => w.slug !== owner?.slug)
+    .map((w) => ({ slug: w.slug, name: w.name, avatar: w.avatar }));
+
   const first = event.sessions[0];
   const ticketSample: TicketSample = {
     eventTitle: event.title,
@@ -88,9 +100,10 @@ export default async function EventDetailPage({ params }: Params) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Desktop-only: on mobile the shell's back bar provides the single back. */}
       <Link
         href="/dashboard/events"
-        className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
+        className="hidden items-center gap-1 text-sm text-muted hover:text-foreground lg:inline-flex"
       >
         <ChevronRight className="size-4" aria-hidden />
         بازگشت به رویدادها
@@ -109,14 +122,32 @@ export default async function EventDetailPage({ params }: Params) {
             id: "overview",
             label: "نمای کلی",
             content: (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <EditVenueForm eventId={event.id} venue={event.venue} />
+              <div className="flex flex-col gap-4">
+                <EventLinkForm slug={event.id} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <EditVenueForm eventId={event.id} venue={event.venue} />
 
-                <SessionsManager
-                  eventId={event.id}
-                  sessions={event.sessions}
-                  modeLabel={MODE_LABELS[event.mode]}
-                  recurrence={recurrence}
+                  <SessionsManager
+                    eventId={event.id}
+                    sessions={event.sessions}
+                    modeLabel={MODE_LABELS[event.mode]}
+                    recurrence={recurrence}
+                  />
+                </div>
+
+                <EventCollaborators workspaces={collabWorkspaces} />
+              </div>
+            ),
+          },
+          {
+            id: "checkin",
+            label: "پذیرش و مهمانان",
+            content: (
+              <div className="flex flex-col gap-6">
+                <GuestInvite />
+                <CheckinPanel
+                  events={checkinEvents}
+                  initialChecked={listCheckedHolderIds()}
                 />
               </div>
             ),
@@ -126,6 +157,7 @@ export default async function EventDetailPage({ params }: Params) {
             label: "بلیت‌ها",
             content: (
               <div className="flex flex-col gap-8">
+                <EventAccessSettings />
                 <EventTickets
                   eventId={event.id}
                   tickets={tickets}
@@ -147,17 +179,6 @@ export default async function EventDetailPage({ params }: Params) {
             ),
           },
           {
-            id: "discounts",
-            label: "تخفیف‌ها",
-            content: (
-              <EventDiscounts
-                eventId={event.id}
-                sessions={sessionOptions}
-                discounts={discounts}
-              />
-            ),
-          },
-          {
             id: "marketing",
             label: "بازاریابی",
             content: (
@@ -165,12 +186,13 @@ export default async function EventDetailPage({ params }: Params) {
             ),
           },
           {
-            id: "checkin",
-            label: "پذیرش و مهمانان",
+            id: "discounts",
+            label: "تخفیف‌ها",
             content: (
-              <CheckinPanel
-                events={checkinEvents}
-                initialChecked={listCheckedHolderIds()}
+              <EventDiscounts
+                eventId={event.id}
+                sessions={sessionOptions}
+                discounts={discounts}
               />
             ),
           },
