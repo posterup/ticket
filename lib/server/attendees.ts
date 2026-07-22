@@ -20,6 +20,17 @@ export function getAttendeeById(id: string): Attendee | undefined {
   return attendees.find((a) => a.id === id);
 }
 
+/** Replace a contact's tags (from string labels); returns it, or `undefined`. */
+export function setAttendeeTags(
+  id: string,
+  labels: string[],
+): Attendee | undefined {
+  const attendee = attendees.find((a) => a.id === id);
+  if (!attendee) return undefined;
+  attendee.tags = labels.map((label, i) => ({ id: `t-${i}-${label}`, label }));
+  return attendee;
+}
+
 /**
  * Mock mapping of which events a contact has joined. Real issued-ticket
  * records don't exist yet; this keeps the CRM contact view populated until

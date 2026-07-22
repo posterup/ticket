@@ -58,6 +58,11 @@ export function ContactsTable({ contacts }: { contacts: Contact[] }) {
 
   function setTags(id: string, tags: string[]) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, tags } : r)));
+    void fetch(`/api/attendees/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags }),
+    });
   }
 
   const selected = rows.find((r) => r.id === selectedId) ?? null;

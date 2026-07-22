@@ -13,10 +13,11 @@ import {
 } from "lucide-react";
 
 import {
-  getEventById,
+  getEventByIdOrSlug,
   listTickets,
   getWorkspaceByEvent,
   getEventEngagement,
+  listAcceptedCollaborators,
 } from "@/lib/server";
 import {
   formatJalaliDate,
@@ -26,13 +27,14 @@ import {
 } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
 import { FREQUENCY_LABELS, WEEKDAY_LABELS } from "@/lib/wizard/labels";
+import { cityCoords } from "@/lib/geo/iran";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { EventRsvp } from "@/components/events/EventRsvp";
 import { EventCover } from "@/components/events/EventCover";
-import type { Event, Workspace } from "@/types";
+import type { Event, EventCollaborator, Workspace } from "@/types";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -40,7 +42,7 @@ interface Params {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
-  const event = getEventById(id);
+  const event = getEventByIdOrSlug(id);
   return { title: event ? `${event.title} | پوستر` : "رویداد | پوستر" };
 }
 
@@ -66,13 +68,14 @@ function priceLabel(prices: number[]): string | null {
 
 export default async function PublicEventDetail({ params }: Params) {
   const { id } = await params;
-  const event = getEventById(id);
+  const event = getEventByIdOrSlug(id);
   if (!event) notFound();
 
-  const tickets = listTickets(id);
+  const tickets = listTickets(event.id);
   const recurrence = recurrenceText(event);
-  const organizer = getWorkspaceByEvent(id);
-  const engagement = getEventEngagement(id);
+  const organizer = getWorkspaceByEvent(event.id);
+  const collaborators = listAcceptedCollaborators(event.id);
+  const engagement = getEventEngagement(event.id);
   const price = priceLabel(tickets.map((t) => t.price));
 
   const sessions = [...event.sessions].sort((a, b) =>
@@ -89,11 +92,12 @@ export default async function PublicEventDetail({ params }: Params) {
     : null;
 
   const online = Boolean(event.venue.onlineUrl);
-  const showMap =
-    !online &&
-    !event.venue.hideAddress &&
-    event.venue.lat != null &&
-    event.venue.lng != null;
+  const pin =
+    !online && !event.venue.hideAddress
+      ? event.venue.lat != null && event.venue.lng != null
+        ? { lat: event.venue.lat, lng: event.venue.lng }
+        : cityCoords(event.venue.city)
+      : null;
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -107,14 +111,14 @@ export default async function PublicEventDetail({ params }: Params) {
           همه رویدادها
         </Link>
 
-        <div className="mt-4 grid gap-8 lg:grid-cols-[1fr_20rem] lg:items-start">
+        <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_20rem] lg:items-start">
           {/* Main column */}
           <div className="flex min-w-0 flex-col gap-8">
             {/* 1. Poster */}
             <EventCover
               seed={event.id}
               tags={event.tags}
-              className="aspect-[16/9] rounded-2xl border border-border"
+              className="aspect-[16/9] rounded-2xl"
             />
 
             <div>
@@ -136,11 +140,33 @@ export default async function PublicEventDetail({ params }: Params) {
             </div>
 
             {/* 2. Date & time (range-aware) */}
-            <DateTime
-              dateRange={dateRange}
-              sessions={sessions}
-              recurrence={recurrence}
-            />
+            <section className="flex items-start gap-3 border-t border-border pt-6">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-subtle text-foreground">
+                <CalendarDays className="size-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-base font-semibold text-foreground">
+                  {dateRange ?? "زمان‌بندی نشده"}
+                </p>
+                {recurrence ? (
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
+                    <Repeat className="size-3.5 text-faint" aria-hidden />
+                    {recurrence}
+                  </p>
+                ) : null}
+                {sessions.length > 0 ? (
+                  <ul className="mt-3 flex flex-col gap-1.5 text-sm text-muted">
+                    {sessions.map((s) => (
+                      <li key={s.id} className="flex items-center gap-2">
+                        <Clock className="size-3.5 shrink-0 text-faint" aria-hidden />
+                        {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
+                        {formatTime(s.endAt)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            </section>
 
             <EventRsvp
               eventId={event.id}
@@ -148,12 +174,16 @@ export default async function PublicEventDetail({ params }: Params) {
               baseInterested={engagement.interested}
             />
 
-            {/* 3. Ticket buy card — mobile position */}
-            <BuyCard eventId={event.id} price={price} className="lg:hidden" />
+            {/* 3. Ticket buy card — mobile */}
+            <BuyCard
+              eventId={event.id}
+              price={price}
+              className="border-t border-border pt-6 lg:hidden"
+            />
 
             {/* 4. Description */}
             {event.description ? (
-              <section>
+              <section className="border-t border-border pt-6">
                 <h2 className="mb-2 text-sm font-semibold text-foreground">
                   درباره رویداد
                 </h2>
@@ -163,17 +193,21 @@ export default async function PublicEventDetail({ params }: Params) {
               </section>
             ) : null}
 
-            {/* 5. Map / location */}
-            <Location event={event} online={online} showMap={showMap} />
+            {/* 5. Location / map */}
+            <Location event={event} online={online} pin={pin} />
 
-            {/* 6. Manager + collaborators — mobile position */}
-            <Hosts organizer={organizer} className="lg:hidden" />
+            {/* 6. Hosts — mobile */}
+            <Hosts
+              organizer={organizer}
+              collaborators={collaborators}
+              className="border-t border-border pt-6 lg:hidden"
+            />
           </div>
 
-          {/* Sidebar (desktop): sticky buy card + hosts */}
-          <aside className="hidden lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-4">
-            <BuyCard eventId={event.id} price={price} />
-            <Hosts organizer={organizer} />
+          {/* Sidebar (desktop) */}
+          <aside className="hidden lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-6">
+            <BuyCard eventId={event.id} price={price} boxed />
+            <Hosts organizer={organizer} collaborators={collaborators} />
           </aside>
         </div>
       </main>
@@ -182,65 +216,22 @@ export default async function PublicEventDetail({ params }: Params) {
   );
 }
 
-function DateTime({
-  dateRange,
-  sessions,
-  recurrence,
-}: {
-  dateRange: string | null;
-  sessions: Event["sessions"];
-  recurrence: string | null;
-}) {
-  return (
-    <section className="rounded-xl border border-border p-5">
-      <div className="flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-subtle text-foreground">
-          <CalendarDays className="size-5" aria-hidden />
-        </span>
-        <div>
-          <p className="text-sm font-semibold text-foreground">
-            {dateRange ?? "زمان‌بندی نشده"}
-          </p>
-          {recurrence ? (
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
-              <Repeat className="size-3.5 text-faint" aria-hidden />
-              {recurrence}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      {sessions.length > 0 ? (
-        <ul className="mt-4 flex flex-col gap-2 border-t border-border pt-4 text-sm text-muted">
-          {sessions.map((s) => (
-            <li key={s.id} className="flex items-center gap-2">
-              <Clock className="size-3.5 shrink-0 text-faint" aria-hidden />
-              {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
-              {formatTime(s.endAt)}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </section>
-  );
-}
-
 function BuyCard({
   eventId,
   price,
+  boxed,
   className,
 }: {
   eventId: string;
   price: string | null;
+  boxed?: boolean;
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-5", className)}>
+    <div className={cn(boxed && "rounded-2xl border border-border bg-card p-5", className)}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs text-muted">قیمت</span>
-        <span className="text-lg font-bold text-foreground">
-          {price ?? "به‌زودی"}
-        </span>
+        <span className="text-lg font-bold text-foreground">{price ?? "به‌زودی"}</span>
       </div>
       {price ? (
         <Link
@@ -262,21 +253,20 @@ function BuyCard({
 function Location({
   event,
   online,
-  showMap,
+  pin,
 }: {
   event: Event;
   online: boolean;
-  showMap: boolean;
+  pin: { lat: number; lng: number } | null;
 }) {
   const { venue } = event;
-  const d = 0.01;
-  const bbox =
-    showMap && venue.lat != null && venue.lng != null
-      ? `${venue.lng - d},${venue.lat - d},${venue.lng + d},${venue.lat + d}`
-      : "";
+  const d = 0.02;
+  const bbox = pin
+    ? `${pin.lng - d},${pin.lat - d},${pin.lng + d},${pin.lat + d}`
+    : "";
 
   return (
-    <section>
+    <section className="border-t border-border pt-6">
       <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
         {online ? (
           <Video className="size-4 text-faint" aria-hidden />
@@ -292,7 +282,7 @@ function Location({
           اختیار شما قرار می‌گیرد.
         </p>
       ) : (
-        <div className="rounded-xl border border-border p-5">
+        <div>
           {venue.name ? (
             <p className="text-sm font-medium text-foreground">{venue.name}</p>
           ) : null}
@@ -307,12 +297,12 @@ function Location({
             <p className="mt-1 text-sm text-muted">{venue.address}</p>
           ) : null}
 
-          {showMap ? (
+          {pin ? (
             <iframe
               title="نقشه مکان رویداد"
-              className="mt-4 h-56 w-full rounded-lg border border-border"
+              className="mt-4 h-64 w-full rounded-2xl border border-border"
               loading="lazy"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${venue.lat},${venue.lng}`}
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${pin.lat},${pin.lng}`}
             />
           ) : null}
         </div>
@@ -323,37 +313,82 @@ function Location({
 
 function Hosts({
   organizer,
+  collaborators,
   className,
 }: {
   organizer: Workspace | undefined;
+  collaborators: EventCollaborator[];
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-xl border border-border p-5", className)}>
+    <section className={className}>
       <h2 className="mb-3 text-sm font-semibold text-foreground">
         برگزارکننده و همکاران
       </h2>
-      {organizer ? (
-        <Link
-          href={`/w/${organizer.slug}`}
-          className="flex items-center gap-3 rounded-lg outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
-        >
-          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-foreground text-sm font-bold text-background">
-            {organizer.avatar}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1 text-sm font-medium text-foreground">
-              <span className="truncate">{organizer.name}</span>
-              {organizer.verified ? (
-                <BadgeCheck className="size-4 shrink-0 text-accent" aria-label="تأییدشده" />
-              ) : null}
-            </span>
-            <span className="block text-xs text-muted">برگزارکننده</span>
-          </span>
-        </Link>
-      ) : (
-        <p className="text-sm text-muted">—</p>
-      )}
+      <div className="flex flex-col gap-1">
+        {organizer ? (
+          <HostRow
+            href={`/w/${organizer.slug}`}
+            avatar={organizer.avatar}
+            name={organizer.name}
+            role="برگزارکننده"
+            verified={organizer.verified}
+          />
+        ) : null}
+        {collaborators.map((c) => (
+          <HostRow
+            key={c.id}
+            href={c.workspaceSlug ? `/w/${c.workspaceSlug}` : undefined}
+            avatar={c.avatar ?? "؟"}
+            name={c.label}
+            role="همکار"
+          />
+        ))}
+        {!organizer && collaborators.length === 0 ? (
+          <p className="text-sm text-muted">—</p>
+        ) : null}
+      </div>
     </section>
+  );
+}
+
+function HostRow({
+  href,
+  avatar,
+  name,
+  role,
+  verified,
+}: {
+  href?: string;
+  avatar: string;
+  name: string;
+  role: string;
+  verified?: boolean;
+}) {
+  const inner = (
+    <>
+      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-foreground text-sm font-bold text-background">
+        {avatar}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1 text-sm font-medium text-foreground">
+          <span className="truncate">{name}</span>
+          {verified ? (
+            <BadgeCheck className="size-4 shrink-0 text-accent" aria-label="تأییدشده" />
+          ) : null}
+        </span>
+        <span className="block text-xs text-muted">{role}</span>
+      </span>
+    </>
+  );
+  return href ? (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-lg p-1.5 outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
+    >
+      {inner}
+    </Link>
+  ) : (
+    <div className="flex items-center gap-3 p-1.5">{inner}</div>
   );
 }

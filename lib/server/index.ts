@@ -9,6 +9,8 @@ export * from "./tickets";
 export * from "./discounts";
 export * from "./engagement";
 export * from "./attendees";
+export * from "./guests";
+export * from "./collaborators";
 export * from "./workspaces";
 export * from "./campaigns";
 export * from "./checkins";

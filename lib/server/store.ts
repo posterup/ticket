@@ -7,7 +7,13 @@
  * before production — the exported arrays are the only stateful surface.
  */
 
-import type { Attendee, Event, TicketType } from "@/types";
+import type {
+  Attendee,
+  Event,
+  EventCollaborator,
+  EventGuest,
+  TicketType,
+} from "@/types";
 
 /** Seed events: real Tehran venues and Persian titles. */
 export const events: Event[] = [
@@ -325,3 +331,30 @@ export const attendees: Attendee[] = [
  * In-memory only — replace with real issued-ticket scan records later.
  */
 export const checkins: Set<string> = new Set();
+
+/** Guests invited to events (RSVP-only, no payment). */
+export const eventGuests: EventGuest[] = [
+  {
+    id: "g1000000-0000-4000-8000-000000000001",
+    eventId: "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
+    contact: "+989121110000",
+    channel: "phone",
+    status: "going",
+    createdAt: "2026-07-01T10:00:00.000Z",
+  },
+];
+
+/** Co-host / collaboration requests on events. */
+export const eventCollaborators: EventCollaborator[] = [
+  {
+    id: "cb100000-0000-4000-8000-000000000001",
+    eventId: "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
+    channel: "workspace",
+    label: "استودیو رویداد آوا",
+    sub: "@ava-events",
+    workspaceSlug: "ava-events",
+    avatar: "آ",
+    status: "accepted",
+    createdAt: "2026-07-02T12:00:00.000Z",
+  },
+];

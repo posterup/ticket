@@ -3,6 +3,9 @@ import type { IsoDateTime } from "./api";
 /** Lifecycle state of an event. */
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 
+/** Who may find and register: `public` = discoverable; `link` = only via link. */
+export type EventVisibility = "public" | "link";
+
 /**
  * Scheduling mode chosen in step 2 of the ticket-creation wizard.
  * - `one-time`: a single session at a fixed date/time.
@@ -82,6 +85,12 @@ export interface Event {
   recurrence?: RecurrenceRule;
   /** Free-form organiser-facing labels. */
   tags: string[];
+  /** Who can find/register: `public` (default) or `link`-only. */
+  visibility?: EventVisibility;
+  /** When true (link events), registrations need organiser approval. */
+  requiresApproval?: boolean;
+  /** Custom public URL slug for the event page; falls back to `id`. */
+  slug?: string;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
 }
