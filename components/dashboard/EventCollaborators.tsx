@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Handshake, Mail, Phone, AtSign, Clock, Check, X } from "lucide-react";
+import { Handshake, Phone, AtSign, Clock, Check, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ export interface WorkspaceLite {
   avatar: string;
 }
 
-type Channel = "workspace" | "email" | "phone" | "username";
+type Channel = "workspace" | "phone" | "username";
 type Status = "pending" | "accepted";
 
 interface Row {
@@ -26,7 +26,6 @@ interface Row {
   status: Status;
 }
 
-const isEmail = (v: string) => /@/.test(v) && /\./.test(v);
 const isPhone = (v: string) => /^[+\d][\d\s-]*$/.test(v);
 
 function toRow(c: EventCollaborator): Row {
@@ -121,10 +120,9 @@ export function EventCollaborators({
 
   function addRaw() {
     const v = query.trim().replace(/^@/, "");
-    if (!v) return setError("نام کاربری، ایمیل یا شماره تماس را وارد کنید.");
-    const channel: Channel = isEmail(v) ? "email" : isPhone(v) ? "phone" : "username";
-    const sub =
-      channel === "email" ? "ایمیل" : channel === "phone" ? "شماره تماس" : "نام کاربری";
+    if (!v) return setError("نام کاربری یا شماره تماس را وارد کنید.");
+    const channel: Channel = isPhone(v) ? "phone" : "username";
+    const sub = channel === "phone" ? "شماره تماس" : "نام کاربری";
     add({ key: `raw:${v}`, label: v, sub, channel });
   }
 
@@ -141,7 +139,7 @@ export function EventCollaborators({
           همکاری در رویداد
         </h2>
         <p className="mt-1 text-xs text-muted">
-          فضای کاری یا میزبان دیگری را با نام کاربری، ایمیل یا شماره تماس
+          فضای کاری یا میزبان دیگری را با نام کاربری یا شماره تماس
           جست‌وجو کنید و برای مدیریت مشترک این رویداد درخواست بفرستید.
         </p>
       </div>
@@ -157,7 +155,7 @@ export function EventCollaborators({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="نام کاربری، ایمیل یا شماره تماس"
+            placeholder="نام کاربری یا شماره تماس"
             dir="ltr"
             aria-label="جست‌وجوی همکار"
             className="h-11 flex-1 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none transition-colors placeholder:text-faint hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15"
@@ -234,7 +232,7 @@ function Leading({ row }: { row: Row }) {
       </span>
     );
   }
-  const Icon = row.channel === "email" ? Mail : row.channel === "phone" ? Phone : AtSign;
+  const Icon = row.channel === "phone" ? Phone : AtSign;
   return (
     <span className="grid size-8 shrink-0 place-items-center rounded-full bg-subtle text-muted">
       <Icon className="size-4" aria-hidden />

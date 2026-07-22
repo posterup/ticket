@@ -17,7 +17,7 @@ export function LoginForm() {
 
   function submit() {
     const next: { id?: string; pw?: string } = {};
-    if (!identifier.trim()) next.id = "ایمیل یا شماره موبایل را وارد کنید.";
+    if (!identifier.trim()) next.id = "شماره موبایل را وارد کنید.";
     if (!password) next.pw = "رمز عبور را وارد کنید.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -39,7 +39,7 @@ export function LoginForm() {
         }}
         className="mt-6 flex flex-col gap-4"
       >
-        <Field id="identifier" label="ایمیل یا شماره موبایل" error={errors.id}>
+        <Field id="identifier" label="شماره موبایل" error={errors.id}>
           <Input
             id="identifier"
             dir="ltr"

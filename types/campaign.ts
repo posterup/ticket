@@ -1,6 +1,6 @@
 import type { IsoDateTime } from "./api";
 
-export type CampaignChannel = "sms" | "email";
+export type CampaignChannel = "sms";
 export type CampaignStatus = "draft" | "scheduled" | "sent";
 
 /** A marketing campaign sent to an audience segment over a channel. */

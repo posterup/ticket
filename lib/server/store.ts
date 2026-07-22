@@ -300,7 +300,6 @@ export const attendees: Attendee[] = [
     id: "e1000000-0000-4000-8000-000000000001",
     fullName: "سارا محمدی",
     phone: "+989121234567",
-    email: "sara.mohammadi@example.com",
     tags: [{ id: "t1", label: "مشتری وفادار", color: "emerald" }],
     notes: "علاقه‌مند به رویدادهای موسیقی سنتی.",
     customFields: [{ key: "company", label: "سازمان", value: "شرکت آوای هنر" }],
@@ -318,7 +317,6 @@ export const attendees: Attendee[] = [
     id: "e1000000-0000-4000-8000-000000000003",
     fullName: "نگار کریمی",
     phone: "+989901234501",
-    email: "negar.karimi@example.com",
     tags: [{ id: "t3", label: "برگزارکننده", color: "violet" }],
     notes: "مدیر برنامه در چند رویداد استارتاپی.",
     customFields: [{ key: "role", label: "نقش", value: "مدیر محصول" }],
@@ -337,6 +335,7 @@ export const eventGuests: EventGuest[] = [
   {
     id: "g1000000-0000-4000-8000-000000000001",
     eventId: "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
+    sessionId: "c1000000-0000-4000-8000-000000000001",
     contact: "+989121110000",
     channel: "phone",
     status: "going",

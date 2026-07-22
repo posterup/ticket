@@ -159,11 +159,6 @@ export function ContactSheet({
                   <p className="truncate text-base font-semibold text-foreground">
                     {contact.fullName}
                   </p>
-                  {contact.email ? (
-                    <p className="mt-0.5 truncate text-xs text-faint" dir="ltr">
-                      {contact.email}
-                    </p>
-                  ) : null}
                   <p
                     className="mt-0.5 flex items-center gap-1.5 text-sm text-muted"
                     dir="ltr"

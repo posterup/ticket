@@ -24,7 +24,7 @@ export function SignupForm() {
   function submit() {
     const next: Record<string, string> = {};
     if (!fullName.trim()) next.name = "نام و نام خانوادگی الزامی است.";
-    if (!identifier.trim()) next.id = "ایمیل یا شماره موبایل را وارد کنید.";
+    if (!identifier.trim()) next.id = "شماره موبایل را وارد کنید.";
     if (password.length < 6) next.pw = "رمز عبور حداقل ۶ کاراکتر باشد.";
     if (!workspace.trim()) next.ws = "نام فضای کاری الزامی است.";
     setErrors(next);
@@ -56,7 +56,7 @@ export function SignupForm() {
             aria-invalid={Boolean(errors.name)}
           />
         </Field>
-        <Field id="identifier" label="ایمیل یا شماره موبایل" error={errors.id}>
+        <Field id="identifier" label="شماره موبایل" error={errors.id}>
           <Input
             id="identifier"
             dir="ltr"

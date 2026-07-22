@@ -27,7 +27,7 @@ const ROWS: SettingRow[] = [
   },
   {
     label: "اعلان‌ها",
-    hint: "تنظیمات اعلان‌های ایمیل و پیامک.",
+    hint: "تنظیمات اعلان‌های پیامکی.",
     icon: Bell,
     soon: true,
   },

@@ -16,7 +16,7 @@ export default function MarketingPage() {
           بازاریابی
         </h1>
         <p className="mt-1 text-sm text-muted">
-          کمپین‌های پیامکی و ایمیلی را برای مخاطبان خود بسازید و ارسال کنید.
+          کمپین‌های پیامکی را برای مخاطبان خود بسازید و ارسال کنید.
         </p>
       </div>
       <MarketingPanel seedCampaigns={campaigns} segments={segments} />

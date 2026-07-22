@@ -15,15 +15,17 @@ export function listGuests(eventId: string): EventGuest[] {
 }
 
 export interface AddGuestInput {
+  sessionId: string;
   contact: string;
-  channel: "phone" | "email";
+  channel: "phone" | "username";
 }
 
-/** Add a guest to an event; returns the stored record. */
+/** Add a guest to a session of an event; returns the stored record. */
 export function addGuest(eventId: string, input: AddGuestInput): EventGuest {
   const guest: EventGuest = {
     id: crypto.randomUUID(),
     eventId,
+    sessionId: input.sessionId,
     contact: input.contact,
     channel: input.channel,
     status: "pending",
