@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, ImagePlus } from "lucide-react";
+import { ChevronRight, ImagePlus, Eye } from "lucide-react";
 
 import type { Workspace } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkspaceBanner } from "@/components/workspace/WorkspaceBanner";
 
 const STORAGE_KEY = "poster-active-workspace";
 
@@ -57,14 +58,25 @@ export function EditProfileForm({ workspaces }: { workspaces: Workspace[] }) {
         >
           <ChevronRight className="size-5" aria-hidden />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             ویرایش پروفایل
           </h1>
           <p className="mt-1 text-sm text-muted">
-            لوگو، نام و معرفی فضای کاری شما.
+            بنر، لوگو، نام و معرفی فضای کاری شما.
           </p>
         </div>
+
+        {/* View the public page as a visitor would see it. */}
+        <Link
+          href={`/w/${active.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          <Eye className="size-4" aria-hidden />
+          مشاهده به‌عنوان بازدیدکننده
+        </Link>
       </div>
 
       <form
@@ -75,6 +87,22 @@ export function EditProfileForm({ workspaces }: { workspaces: Workspace[] }) {
         onChange={() => setSaved(false)}
         className="flex flex-col gap-5 rounded-lg border border-border bg-card p-6"
       >
+        {/* Banner */}
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-foreground">بنر</p>
+            <Button type="button" variant="secondary" size="sm" disabled>
+              <ImagePlus className="size-4" aria-hidden />
+              بارگذاری بنر (به‌زودی)
+            </Button>
+          </div>
+          <WorkspaceBanner
+            seed={active.slug}
+            banner={active.banner}
+            className="mt-2 h-28 w-full rounded-lg border border-border"
+          />
+        </div>
+
         {/* Logo / icon */}
         <div className="flex items-center gap-4">
           <span className="grid size-16 shrink-0 place-items-center rounded-full bg-foreground text-xl font-bold text-background">

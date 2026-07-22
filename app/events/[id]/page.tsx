@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Clock, Repeat, ChevronLeft } from "lucide-react";
+import {
+  MapPin,
+  CalendarDays,
+  Clock,
+  Repeat,
+  ChevronLeft,
+  BadgeCheck,
+  Ticket,
+  Video,
+} from "lucide-react";
 
 import {
   getEventById,
@@ -16,18 +25,14 @@ import {
   formatNumber,
 } from "@/lib/format";
 import { MODE_LABELS } from "@/lib/events/labels";
-import {
-  CATEGORY_LABELS,
-  FREQUENCY_LABELS,
-  WEEKDAY_LABELS,
-} from "@/lib/wizard/labels";
+import { FREQUENCY_LABELS, WEEKDAY_LABELS } from "@/lib/wizard/labels";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { EventRsvp } from "@/components/events/EventRsvp";
 import { EventCover } from "@/components/events/EventCover";
-import type { Event } from "@/types";
+import type { Event, Workspace } from "@/types";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -51,19 +56,49 @@ function recurrenceText(event: Event): string | null {
     : base;
 }
 
+function priceLabel(prices: number[]): string | null {
+  if (prices.length === 0) return null;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  if (min === 0 && max === 0) return "رایگان";
+  return min === max ? formatToman(min) : `از ${formatToman(min)}`;
+}
+
 export default async function PublicEventDetail({ params }: Params) {
   const { id } = await params;
   const event = getEventById(id);
   if (!event) notFound();
+
   const tickets = listTickets(id);
   const recurrence = recurrenceText(event);
   const organizer = getWorkspaceByEvent(id);
   const engagement = getEventEngagement(id);
+  const price = priceLabel(tickets.map((t) => t.price));
+
+  const sessions = [...event.sessions].sort((a, b) =>
+    a.startAt.localeCompare(b.startAt),
+  );
+  const firstS = sessions[0];
+  const lastS = sessions[sessions.length - 1];
+  const multiDay =
+    firstS && lastS && formatJalaliDate(firstS.startAt) !== formatJalaliDate(lastS.startAt);
+  const dateRange = firstS
+    ? multiDay
+      ? `${formatJalaliDate(firstS.startAt)} تا ${formatJalaliDate(lastS.startAt)}`
+      : formatJalaliDate(firstS.startAt)
+    : null;
+
+  const online = Boolean(event.venue.onlineUrl);
+  const showMap =
+    !online &&
+    !event.venue.hideAddress &&
+    event.venue.lat != null &&
+    event.venue.lng != null;
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <PublicHeader />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 sm:py-12">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <Link
           href="/events"
           className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
@@ -72,143 +107,253 @@ export default async function PublicEventDetail({ params }: Params) {
           همه رویدادها
         </Link>
 
-        <EventCover
-          seed={event.id}
-          tags={event.tags}
-          className="mt-4 aspect-[16/6] rounded-xl"
-        />
+        <div className="mt-4 grid gap-8 lg:grid-cols-[1fr_20rem] lg:items-start">
+          {/* Main column */}
+          <div className="flex min-w-0 flex-col gap-8">
+            {/* 1. Poster */}
+            <EventCover
+              seed={event.id}
+              tags={event.tags}
+              className="aspect-[16/9] rounded-2xl border border-border"
+            />
 
-        <div className="mt-6">
-          <span className="text-xs text-faint">{MODE_LABELS[event.mode]}</span>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            {event.title}
-          </h1>
-          {event.description ? (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-              {event.description}
-            </p>
-          ) : null}
-          {organizer ? (
-            <p className="mt-3 text-sm text-muted">
-              برگزارکننده:{" "}
-              <Link
-                href={`/w/${organizer.slug}`}
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-              >
-                {organizer.name}
-              </Link>
-            </p>
-          ) : null}
-        </div>
+            <div>
+              <span className="text-xs text-faint">{MODE_LABELS[event.mode]}</span>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                {event.title}
+              </h1>
+              {organizer ? (
+                <p className="mt-2 text-sm text-muted">
+                  توسط{" "}
+                  <Link
+                    href={`/w/${organizer.slug}`}
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    {organizer.name}
+                  </Link>
+                </p>
+              ) : null}
+            </div>
 
-        <div className="mt-5">
-          <EventRsvp
-            eventId={event.id}
-            baseGoing={engagement.going}
-            baseInterested={engagement.interested}
-          />
-        </div>
+            {/* 2. Date & time (range-aware) */}
+            <DateTime
+              dateRange={dateRange}
+              sessions={sessions}
+              recurrence={recurrence}
+            />
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border border-border p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Clock className="size-4 text-faint" aria-hidden />
-              زمان
-            </h2>
-            <ul className="flex flex-col gap-2 text-sm text-muted">
-              {event.sessions.map((s) => (
-                <li key={s.id}>
-                  {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
-                  {formatTime(s.endAt)}
-                </li>
-              ))}
-            </ul>
-            {recurrence ? (
-              <p className="mt-3 flex items-center gap-2 text-xs text-muted">
-                <Repeat className="size-3.5 text-faint" aria-hidden />
-                {recurrence}
-              </p>
+            <EventRsvp
+              eventId={event.id}
+              baseGoing={engagement.going}
+              baseInterested={engagement.interested}
+            />
+
+            {/* 3. Ticket buy card — mobile position */}
+            <BuyCard eventId={event.id} price={price} className="lg:hidden" />
+
+            {/* 4. Description */}
+            {event.description ? (
+              <section>
+                <h2 className="mb-2 text-sm font-semibold text-foreground">
+                  درباره رویداد
+                </h2>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-muted">
+                  {event.description}
+                </p>
+              </section>
             ) : null}
+
+            {/* 5. Map / location */}
+            <Location event={event} online={online} showMap={showMap} />
+
+            {/* 6. Manager + collaborators — mobile position */}
+            <Hosts organizer={organizer} className="lg:hidden" />
           </div>
 
-          <div className="rounded-lg border border-border p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-              <MapPin className="size-4 text-faint" aria-hidden />
-              مکان
-            </h2>
-            {event.venue.name ? (
-              <p className="text-sm text-foreground">{event.venue.name}</p>
-            ) : null}
-            <p
-              className={cn(
-                "text-sm text-muted",
-                event.venue.name ? "mt-1" : undefined,
-              )}
-            >
-              {[event.venue.province, event.venue.city].filter(Boolean).join("، ")}
-            </p>
-            {event.venue.hideAddress ? (
-              <p className="mt-1 text-xs text-faint">
-                آدرس دقیق و موقعیت روی نقشه برای این رویداد نمایش داده نمی‌شود.
-              </p>
-            ) : event.venue.address ? (
-              <p className="mt-1 text-sm text-muted">{event.venue.address}</p>
-            ) : null}
-          </div>
+          {/* Sidebar (desktop): sticky buy card + hosts */}
+          <aside className="hidden lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-4">
+            <BuyCard eventId={event.id} price={price} />
+            <Hosts organizer={organizer} />
+          </aside>
         </div>
-
-        <section className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">
-            انتخاب بلیت
-          </h2>
-          {tickets.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted">
-              فروش بلیت برای این رویداد هنوز آغاز نشده است.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {tickets.map((t) => (
-                <li
-                  key={t.id}
-                  className="flex flex-col gap-4 rounded-lg border border-border p-5 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-foreground">
-                        {t.name}
-                      </p>
-                      <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted">
-                        {CATEGORY_LABELS[t.category]}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted">
-                      ظرفیت {formatNumber(t.capacity)} · فروش تا{" "}
-                      {formatJalaliDate(t.salesEndAt)}
-                    </p>
-                    {t.description ? (
-                      <p className="mt-1 text-xs text-muted">{t.description}</p>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
-                    <span className="text-sm font-semibold text-foreground">
-                      {formatToman(t.price)}
-                    </span>
-                    <Link
-                      href={`/events/${event.id}/checkout?ticket=${t.id}`}
-                      className={cn(
-                        buttonVariants({ variant: "primary", size: "sm" }),
-                      )}
-                    >
-                      تهیه بلیت
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       </main>
       <Footer />
     </div>
+  );
+}
+
+function DateTime({
+  dateRange,
+  sessions,
+  recurrence,
+}: {
+  dateRange: string | null;
+  sessions: Event["sessions"];
+  recurrence: string | null;
+}) {
+  return (
+    <section className="rounded-xl border border-border p-5">
+      <div className="flex items-center gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-subtle text-foreground">
+          <CalendarDays className="size-5" aria-hidden />
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-foreground">
+            {dateRange ?? "زمان‌بندی نشده"}
+          </p>
+          {recurrence ? (
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
+              <Repeat className="size-3.5 text-faint" aria-hidden />
+              {recurrence}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      {sessions.length > 0 ? (
+        <ul className="mt-4 flex flex-col gap-2 border-t border-border pt-4 text-sm text-muted">
+          {sessions.map((s) => (
+            <li key={s.id} className="flex items-center gap-2">
+              <Clock className="size-3.5 shrink-0 text-faint" aria-hidden />
+              {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
+              {formatTime(s.endAt)}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
+function BuyCard({
+  eventId,
+  price,
+  className,
+}: {
+  eventId: string;
+  price: string | null;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-xl border border-border bg-card p-5", className)}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs text-muted">قیمت</span>
+        <span className="text-lg font-bold text-foreground">
+          {price ?? "به‌زودی"}
+        </span>
+      </div>
+      {price ? (
+        <Link
+          href={`/events/${eventId}/checkout`}
+          className={cn(buttonVariants({ variant: "primary", size: "lg" }), "mt-4 w-full")}
+        >
+          <Ticket aria-hidden />
+          تهیه بلیت
+        </Link>
+      ) : (
+        <p className="mt-4 rounded-md border border-dashed border-border p-3 text-center text-xs text-muted">
+          فروش بلیت هنوز آغاز نشده است.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Location({
+  event,
+  online,
+  showMap,
+}: {
+  event: Event;
+  online: boolean;
+  showMap: boolean;
+}) {
+  const { venue } = event;
+  const d = 0.01;
+  const bbox =
+    showMap && venue.lat != null && venue.lng != null
+      ? `${venue.lng - d},${venue.lat - d},${venue.lng + d},${venue.lat + d}`
+      : "";
+
+  return (
+    <section>
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+        {online ? (
+          <Video className="size-4 text-faint" aria-hidden />
+        ) : (
+          <MapPin className="size-4 text-faint" aria-hidden />
+        )}
+        {online ? "رویداد آنلاین" : "مکان"}
+      </h2>
+
+      {online ? (
+        <p className="text-sm text-muted">
+          این رویداد به‌صورت آنلاین برگزار می‌شود. لینک ورود پس از تهیه بلیت در
+          اختیار شما قرار می‌گیرد.
+        </p>
+      ) : (
+        <div className="rounded-xl border border-border p-5">
+          {venue.name ? (
+            <p className="text-sm font-medium text-foreground">{venue.name}</p>
+          ) : null}
+          <p className={cn("text-sm text-muted", venue.name && "mt-1")}>
+            {[venue.province, venue.city].filter(Boolean).join("، ")}
+          </p>
+          {venue.hideAddress ? (
+            <p className="mt-1 text-xs text-faint">
+              آدرس دقیق و موقعیت روی نقشه برای این رویداد نمایش داده نمی‌شود.
+            </p>
+          ) : venue.address ? (
+            <p className="mt-1 text-sm text-muted">{venue.address}</p>
+          ) : null}
+
+          {showMap ? (
+            <iframe
+              title="نقشه مکان رویداد"
+              className="mt-4 h-56 w-full rounded-lg border border-border"
+              loading="lazy"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${venue.lat},${venue.lng}`}
+            />
+          ) : null}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Hosts({
+  organizer,
+  className,
+}: {
+  organizer: Workspace | undefined;
+  className?: string;
+}) {
+  return (
+    <section className={cn("rounded-xl border border-border p-5", className)}>
+      <h2 className="mb-3 text-sm font-semibold text-foreground">
+        برگزارکننده و همکاران
+      </h2>
+      {organizer ? (
+        <Link
+          href={`/w/${organizer.slug}`}
+          className="flex items-center gap-3 rounded-lg outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-foreground text-sm font-bold text-background">
+            {organizer.avatar}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1 text-sm font-medium text-foreground">
+              <span className="truncate">{organizer.name}</span>
+              {organizer.verified ? (
+                <BadgeCheck className="size-4 shrink-0 text-accent" aria-label="تأییدشده" />
+              ) : null}
+            </span>
+            <span className="block text-xs text-muted">برگزارکننده</span>
+          </span>
+        </Link>
+      ) : (
+        <p className="text-sm text-muted">—</p>
+      )}
+    </section>
   );
 }

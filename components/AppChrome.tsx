@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
@@ -59,17 +60,31 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
 function BackBar() {
   const router = useRouter();
+  const pathname = usePathname();
+  const [title, setTitle] = useState("");
+
+  // Show the current page's title next to the back arrow. Derived from the
+  // document title (set per-page via metadata), stripped of the " | پوستر"
+  // suffix, so it works for every second-level page without extra plumbing.
+  useEffect(() => {
+    const raw = typeof document !== "undefined" ? document.title : "";
+    setTitle(raw.split("|")[0].trim());
+  }, [pathname]);
+
   return (
     <header className="fixed inset-x-0 top-0 z-40 border-b border-border bg-card/90 backdrop-blur-lg lg:hidden">
-      <div className="mx-auto flex h-14 max-w-6xl items-center px-2">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-1 px-2">
         <button
           type="button"
           onClick={() => router.back()}
           aria-label="بازگشت"
-          className="grid size-10 place-items-center rounded-full text-foreground outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="grid size-10 shrink-0 place-items-center rounded-full text-foreground outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           <ArrowRight className="size-5" aria-hidden />
         </button>
+        <span className="truncate text-lg font-bold text-foreground">
+          {title}
+        </span>
       </div>
     </header>
   );
