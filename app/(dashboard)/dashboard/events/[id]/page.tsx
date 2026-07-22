@@ -80,6 +80,7 @@ export default async function EventDetailPage({ params }: Params) {
     .map((w) => ({ slug: w.slug, name: w.name, avatar: w.avatar }));
   const guests = listGuests(event.id).map((g) => ({
     id: g.id,
+    sessionId: g.sessionId,
     contact: g.contact,
     channel: g.channel,
     status: g.status,
@@ -157,7 +158,11 @@ export default async function EventDetailPage({ params }: Params) {
             label: "پذیرش و مهمانان",
             content: (
               <div className="flex flex-col gap-6">
-                <GuestInvite eventId={event.id} initial={guests} />
+                <GuestInvite
+                  eventId={event.id}
+                  sessions={sessionOptions}
+                  initial={guests}
+                />
                 <CheckinPanel
                   events={checkinEvents}
                   initialChecked={listCheckedHolderIds()}

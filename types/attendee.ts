@@ -24,7 +24,6 @@ export interface Attendee {
   fullName: string;
   /** E.164-ish Iranian mobile number, e.g. `+989121234567`. */
   phone: string;
-  email?: string;
   tags: AttendeeTag[];
   notes?: string;
   customFields: CustomField[];
@@ -35,7 +34,6 @@ export interface Attendee {
 export interface CreateAttendeeInput {
   fullName: string;
   phone: string;
-  email?: string;
   tags?: AttendeeTag[];
   notes?: string;
   customFields?: CustomField[];

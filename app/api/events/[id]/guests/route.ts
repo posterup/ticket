@@ -12,7 +12,7 @@ export async function GET(
   return NextResponse.json({ data: listGuests(id) });
 }
 
-/** POST /api/events/:id/guests — invite a guest by phone or email. */
+/** POST /api/events/:id/guests — invite a guest to a session by phone/username. */
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -31,13 +31,15 @@ export async function POST(
 
   const c = body as Record<string, unknown>;
   const contact = typeof c.contact === "string" ? c.contact.trim() : "";
-  const channel = c.channel === "email" ? "email" : c.channel === "phone" ? "phone" : null;
-  if (!contact || channel === null) {
+  const sessionId = typeof c.sessionId === "string" ? c.sessionId : "";
+  const channel =
+    c.channel === "username" ? "username" : c.channel === "phone" ? "phone" : null;
+  if (!contact || channel === null || !sessionId) {
     return NextResponse.json(
-      { error: { message: "A contact and channel are required.", code: "INVALID_BODY" } },
+      { error: { message: "A session, contact and channel are required.", code: "INVALID_BODY" } },
       { status: 400 },
     );
   }
 
-  return NextResponse.json({ data: addGuest(id, { contact, channel }) });
+  return NextResponse.json({ data: addGuest(id, { sessionId, contact, channel }) });
 }

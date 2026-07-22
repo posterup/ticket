@@ -5,7 +5,6 @@ import type { ApiResponse, EventCollaborator, CollaboratorChannel } from "@/type
 
 const CHANNELS: readonly CollaboratorChannel[] = [
   "workspace",
-  "email",
   "phone",
   "username",
 ];

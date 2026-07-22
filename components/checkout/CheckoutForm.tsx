@@ -52,7 +52,6 @@ export function CheckoutForm({
   const [ticketId, setTicketId] = useState(initialTicketId);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [orderCode, setOrderCode] = useState<string | null>(null);
@@ -199,16 +198,6 @@ export function CheckoutForm({
             />
           </Field>
         </div>
-
-        <Field id="email" label="ایمیل (اختیاری)">
-          <Input
-            id="email"
-            type="email"
-            dir="ltr"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </Field>
       </div>
 
       <aside className="flex h-fit flex-col gap-4 rounded-lg border border-border bg-subtle p-6">

@@ -23,7 +23,6 @@ export default function CustomersPage() {
       id: a.id,
       fullName: a.fullName,
       phone: a.phone,
-      email: a.email,
       tags: a.tags.map((t) => t.label),
       events: joined.map((e) => ({
         id: e.id,
@@ -59,7 +58,7 @@ export default function CustomersPage() {
             className={cn(buttonVariants({ variant: "primary", size: "sm" }))}
           >
             <Megaphone aria-hidden />
-            کمپین پیامک/ایمیل
+            کمپین پیامکی
           </Link>
         </div>
       </div>

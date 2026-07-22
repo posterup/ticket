@@ -21,7 +21,7 @@ const campaigns: Campaign[] = [
   {
     id: "cmp10000-0000-4000-8000-000000000002",
     name: "تخفیف زودهنگام همایش استارتاپی",
-    channel: "email",
+    channel: "sms",
     segment: "برگزارکننده",
     status: "sent",
     recipients: 1,
@@ -49,13 +49,6 @@ function segmentAttendees(segmentId: string) {
 /** Mobile numbers for a segment (for the SMS gateway). */
 export function segmentMobiles(segmentId: string): string[] {
   return segmentAttendees(segmentId).map((a) => a.phone);
-}
-
-/** Email addresses for a segment (for the email gateway). */
-export function segmentEmails(segmentId: string): string[] {
-  return segmentAttendees(segmentId)
-    .map((a) => a.email)
-    .filter((e): e is string => Boolean(e));
 }
 
 /** Audience segments derived from attendee tags (plus an "all" segment). */

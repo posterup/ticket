@@ -1,11 +1,11 @@
 import type { IsoDateTime } from "./api";
 
-export type CollaboratorChannel = "workspace" | "email" | "phone" | "username";
+export type CollaboratorChannel = "workspace" | "phone" | "username";
 export type CollaboratorStatus = "pending" | "accepted";
 
 /**
  * Another host or workspace invited to co-manage an event. A request may target
- * an existing workspace (by slug) or a raw username / email / phone.
+ * an existing workspace (by slug) or a raw username / phone.
  */
 export interface EventCollaborator {
   id: string;

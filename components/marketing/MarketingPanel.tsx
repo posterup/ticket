@@ -1,22 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, MessageSquare, Check, Send, CircleAlert } from "lucide-react";
+import { MessageSquare, Check, Send, CircleAlert } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { formatNumber, formatJalaliDate } from "@/lib/format";
-import type { Campaign, CampaignChannel } from "@/types";
+import type { Campaign } from "@/types";
 import type { Segment } from "@/lib/server/campaigns";
-
-const CHANNELS: { value: CampaignChannel; label: string }[] = [
-  { value: "sms", label: "پیامک" },
-  { value: "email", label: "ایمیل" },
-];
 
 export function MarketingPanel({
   seedCampaigns,
@@ -27,7 +21,6 @@ export function MarketingPanel({
 }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>(seedCampaigns);
   const [name, setName] = useState("");
-  const [channel, setChannel] = useState<CampaignChannel>("sms");
   const [segmentId, setSegmentId] = useState(segments[0]?.id ?? "all");
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -49,15 +42,10 @@ export function MarketingPanel({
     setSendError(null);
     setSentInfo(null);
     try {
-      const endpoint = channel === "sms" ? "/api/sms/send" : "/api/email/send";
-      const payload =
-        channel === "sms"
-          ? { segmentId, message: message.trim() }
-          : { segmentId, subject: name.trim(), message: message.trim() };
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/sms/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ segmentId, message: message.trim() }),
       });
       const json = await res.json();
       if (!res.ok || !("data" in json)) {
@@ -67,7 +55,7 @@ export function MarketingPanel({
       const campaign: Campaign = {
         id: crypto.randomUUID(),
         name: name.trim(),
-        channel,
+        channel: "sms",
         segment: segment.label,
         status: "sent",
         recipients: sent,
@@ -103,33 +91,6 @@ export function MarketingPanel({
           />
         </Field>
 
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-foreground">کانال</span>
-          <div className="grid grid-cols-2 gap-2">
-            {CHANNELS.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                aria-pressed={channel === c.value}
-                onClick={() => setChannel(c.value)}
-                className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
-                  channel === c.value
-                    ? "border-foreground bg-subtle text-foreground"
-                    : "border-border text-muted hover:border-border-strong",
-                )}
-              >
-                {c.value === "sms" ? (
-                  <MessageSquare className="size-4" aria-hidden />
-                ) : (
-                  <Mail className="size-4" aria-hidden />
-                )}
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <Field id="segment" label="مخاطبان">
           <Select
             id="segment"
@@ -149,11 +110,7 @@ export function MarketingPanel({
           label="متن پیام"
           required
           error={errors.message}
-          hint={
-            channel === "sms"
-              ? `${formatNumber(message.length)} کاراکتر · ${formatNumber(parts)} پیامک`
-              : `${formatNumber(message.length)} کاراکتر`
-          }
+          hint={`${formatNumber(message.length)} کاراکتر · ${formatNumber(parts)} پیامک`}
         >
           <Textarea
             id="message"
@@ -202,7 +159,7 @@ export function MarketingPanel({
                   {c.name}
                 </p>
                 <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-                  <ChannelTag channel={c.channel} />
+                  <ChannelTag />
                   <span>·</span>
                   <span>{c.segment}</span>
                   <span>·</span>
@@ -223,15 +180,11 @@ export function MarketingPanel({
   );
 }
 
-function ChannelTag({ channel }: { channel: CampaignChannel }) {
+function ChannelTag() {
   return (
     <span className="inline-flex items-center gap-1 text-foreground">
-      {channel === "sms" ? (
-        <MessageSquare className="size-3.5 text-faint" aria-hidden />
-      ) : (
-        <Mail className="size-3.5 text-faint" aria-hidden />
-      )}
-      {channel === "sms" ? "پیامک" : "ایمیل"}
+      <MessageSquare className="size-3.5 text-faint" aria-hidden />
+      پیامک
     </span>
   );
 }

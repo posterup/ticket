@@ -16,7 +16,6 @@ export interface Contact {
   id: string;
   fullName: string;
   phone: string;
-  email?: string;
   tags: string[];
   events: ContactEvent[];
   /** Total Toman earned from this contact (mock, derived from joined events). */

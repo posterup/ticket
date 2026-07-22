@@ -4,14 +4,16 @@ import type { IsoDateTime } from "./api";
 export type GuestRsvp = "pending" | "going" | "declined";
 
 /**
- * A guest invited to an event by phone or email. Guests don't pay — they only
- * RSVP (coming or not) and appear in the event's guest list.
+ * A guest invited to a specific session of an event by phone or username.
+ * Guests don't pay — they only RSVP (coming or not).
  */
 export interface EventGuest {
   id: string;
   eventId: string;
+  /** The سانس (session) the guest is invited to. */
+  sessionId: string;
   contact: string;
-  channel: "phone" | "email";
+  channel: "phone" | "username";
   status: GuestRsvp;
   createdAt: IsoDateTime;
 }
