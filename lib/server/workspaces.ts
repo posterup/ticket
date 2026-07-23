@@ -65,9 +65,20 @@ const EVENT_WORKSPACE: Record<string, string[]> = {
     "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03",
     "3f1a6c2e-0005-4a10-9b21-1a2b3c4d5e05",
     "3f1a6c2e-0007-4a10-9b21-1a2b3c4d5e07",
+    "3f1a6c2e-0008-4a10-9b21-1a2b3c4d5e08",
+    "3f1a6c2e-0009-4a10-9b21-1a2b3c4d5e09",
+    "3f1a6c2e-0011-4a10-9b21-1a2b3c4d5e11",
+    "3f1a6c2e-0012-4a10-9b21-1a2b3c4d5e12",
+    "3f1a6c2e-0013-4a10-9b21-1a2b3c4d5e13",
   ],
-  "negar-karimi": ["3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02"],
-  "chef-collective": ["3f1a6c2e-0004-4a10-9b21-1a2b3c4d5e04"],
+  "negar-karimi": [
+    "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02",
+    "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10",
+  ],
+  "chef-collective": [
+    "3f1a6c2e-0004-4a10-9b21-1a2b3c4d5e04",
+    "3f1a6c2e-0014-4a10-9b21-1a2b3c4d5e14",
+  ],
   "iran-runners": ["3f1a6c2e-0006-4a10-9b21-1a2b3c4d5e06"],
 };
 
@@ -85,10 +96,14 @@ export function listEventsByWorkspace(slug: string): Event[] {
   return listEvents().filter((e) => ids.has(e.id));
 }
 
-/** The workspace that owns a given event, if any. */
+/**
+ * The workspace that owns a given event. Every event always has an organiser:
+ * unmapped events fall back to the first workspace so the public page never
+ * shows an event without a manager.
+ */
 export function getWorkspaceByEvent(eventId: string): Workspace | undefined {
   const slug = Object.keys(EVENT_WORKSPACE).find((s) =>
     EVENT_WORKSPACE[s].includes(eventId),
   );
-  return slug ? getWorkspaceBySlug(slug) : undefined;
+  return (slug ? getWorkspaceBySlug(slug) : undefined) ?? workspaces[0];
 }

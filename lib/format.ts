@@ -15,8 +15,14 @@ export function formatTime(iso: string): string {
   });
 }
 
-/** Format an integer count/amount with Persian digits and grouping. */
-export function formatNumber(n: number): string {
+/**
+ * Format an integer count/amount with Persian digits and grouping.
+ *
+ * Guards non-finite input (undefined/null/NaN) by returning "" instead of
+ * throwing — `undefined.toLocaleString()` was a real crash.
+ */
+export function formatNumber(n?: number | null): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "";
   return n.toLocaleString("fa-IR");
 }
 

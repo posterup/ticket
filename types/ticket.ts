@@ -24,6 +24,8 @@ export interface TicketType {
   price: Money;
   /** Number of tickets of this type available for sale. */
   capacity: number;
+  /** Tickets already sold of this type; defaults to 0 when absent. */
+  sold?: number;
   salesStartAt: IsoDateTime;
   salesEndAt: IsoDateTime;
   category: TicketCategory;

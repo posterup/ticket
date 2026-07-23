@@ -11,7 +11,7 @@ import { Disclosure, Toggle } from "@/components/create/ui";
 import { TICKET_KIND_LABELS, TICKET_KIND_HINTS } from "@/lib/create/labels";
 import type { TicketKind, TicketTypeDraft } from "@/lib/create/types";
 
-const KINDS: TicketKind[] = ["paid", "free", "donation", "group", "addon"];
+const KINDS: TicketKind[] = ["paid", "free", "addon"];
 
 export interface SessionOption {
   id: string;
@@ -82,44 +82,6 @@ export function TicketEditor({
           </Field>
         ) : null}
 
-        {t.kind === "donation" ? (
-          <Field id={`min-${t.id}`} label="حداقل مبلغ (تومان)">
-            <Input
-              id={`min-${t.id}`}
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={t.minPrice}
-              onChange={(e) => onChange({ minPrice: e.target.value })}
-              placeholder="۰"
-            />
-          </Field>
-        ) : null}
-
-        {t.kind === "group" ? (
-          <>
-            <Field id={`gprice-${t.id}`} label="قیمت بسته (تومان)" required>
-              <Input
-                id={`gprice-${t.id}`}
-                type="number"
-                min={0}
-                inputMode="numeric"
-                value={t.price}
-                onChange={(e) => onChange({ price: e.target.value })}
-              />
-            </Field>
-            <Field id={`gsize-${t.id}`} label="تعداد افراد در بسته" required>
-              <Input
-                id={`gsize-${t.id}`}
-                type="number"
-                min={2}
-                inputMode="numeric"
-                value={t.groupSize}
-                onChange={(e) => onChange({ groupSize: e.target.value })}
-              />
-            </Field>
-          </>
-        ) : null}
       </div>
 
       {/* Capacity + description (visible, not advanced) */}
