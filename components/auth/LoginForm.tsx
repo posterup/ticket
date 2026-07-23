@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { setLoggedIn } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ id?: string; pw?: string }>({});
@@ -21,9 +22,11 @@ export function LoginForm() {
     if (!password) next.pw = "رمز عبور را وارد کنید.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    // Mock auth: flip the logged-in flag, then enter the dashboard.
+    // Mock auth: flip the logged-in flag, then continue to the requested page
+    // (e.g. back to an event after tapping "notify me") or the dashboard.
     setLoggedIn();
-    router.push("/dashboard");
+    const dest = searchParams.get("next");
+    router.push(dest && dest.startsWith("/") ? dest : "/dashboard");
     router.refresh();
   }
 

@@ -28,6 +28,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { EventCover } from "@/components/events/EventCover";
+import { NotifyMe } from "@/components/events/NotifyMe";
 import type { Event, EventCollaborator, Workspace } from "@/types";
 
 interface Params {
@@ -209,9 +210,12 @@ function BuyCard({
           تهیه بلیت
         </Link>
       ) : (
-        <p className="mt-4 rounded-md border border-dashed border-border p-3 text-center text-xs text-muted">
-          فروش بلیت هنوز آغاز نشده است.
-        </p>
+        <>
+          <p className="mt-4 rounded-md border border-dashed border-border p-3 text-center text-xs text-muted">
+            فروش بلیت هنوز آغاز نشده است.
+          </p>
+          <NotifyMe eventId={eventId} />
+        </>
       )}
     </div>
   );

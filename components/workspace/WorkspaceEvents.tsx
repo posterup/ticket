@@ -1,11 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { CalendarDays, MapPin } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/format";
 import { EventCover } from "@/components/events/EventCover";
 
 export interface WsEvent {
@@ -26,28 +24,12 @@ function monthLabel(iso: string): string {
   });
 }
 
-/** Luma-calendar-style event list with Upcoming/Past tabs, grouped by month. */
+/** Luma-calendar-style event timeline, grouped by month (newest first). */
 export function WorkspaceEvents({ events }: { events: WsEvent[] }) {
-  const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
-  const now = Date.now();
-
-  const { upcoming, past } = useMemo(() => {
-    const up: WsEvent[] = [];
-    const pa: WsEvent[] = [];
-    for (const e of events) {
-      const t = new Date(e.start).getTime();
-      (Number.isFinite(t) && t >= now ? up : pa).push(e);
-    }
-    up.sort((a, b) => a.start.localeCompare(b.start));
-    pa.sort((a, b) => b.start.localeCompare(a.start));
-    return { upcoming: up, past: pa };
-  }, [events, now]);
-
-  const list = tab === "upcoming" ? upcoming : past;
-
   const groups = useMemo(() => {
+    const sorted = [...events].sort((a, b) => b.start.localeCompare(a.start));
     const g: { label: string; items: WsEvent[] }[] = [];
-    for (const e of list) {
+    for (const e of sorted) {
       const label = monthLabel(e.start);
       let grp = g.find((x) => x.label === label);
       if (!grp) {
@@ -57,73 +39,62 @@ export function WorkspaceEvents({ events }: { events: WsEvent[] }) {
       grp.items.push(e);
     }
     return g;
-  }, [list]);
+  }, [events]);
+
+  if (groups.length === 0) {
+    return (
+      <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted">
+        رویدادی وجود ندارد.
+      </p>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Upcoming / Past tabs */}
-      <div className="flex w-fit gap-1 rounded-full border border-border bg-card p-1">
-        <TabButton active={tab === "upcoming"} onClick={() => setTab("upcoming")}>
-          به‌زودی ({formatNumber(upcoming.length)})
-        </TabButton>
-        <TabButton active={tab === "past"} onClick={() => setTab("past")}>
-          گذشته ({formatNumber(past.length)})
-        </TabButton>
-      </div>
-
-      {groups.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted">
-          {tab === "upcoming"
-            ? "رویداد پیش‌رویی وجود ندارد."
-            : "رویداد گذشته‌ای وجود ندارد."}
-        </p>
-      ) : (
-        groups.map((group) => (
-          <section key={group.label} className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold text-muted">{group.label}</h3>
-            <ul className="flex flex-col gap-3">
-              {group.items.map((e) => (
-                <EventRow key={e.id} e={e} />
-              ))}
-            </ul>
-          </section>
-        ))
-      )}
+    <div className="flex flex-col">
+      {groups.map((group) => (
+        <section key={group.label} className="flex flex-col">
+          {/* Month marker — rail passes through, no bullet */}
+          <div className="flex gap-4">
+            <Rail />
+            <h3 className="py-2 text-sm font-semibold text-muted">
+              {group.label}
+            </h3>
+          </div>
+          {group.items.map((e) => (
+            <div key={e.id} className="flex gap-4">
+              <Rail bullet />
+              <div className="min-w-0 flex-1 pb-4">
+                <EventRow e={e} />
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
     </div>
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+/** One cell of the timeline gutter: a continuous vertical line, optionally with an event node. */
+function Rail({ bullet }: { bullet?: boolean }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "rounded-full px-3.5 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
-        active ? "bg-foreground text-background" : "text-muted hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
+    <div className="relative flex w-3 shrink-0 justify-center">
+      <span className="absolute inset-y-0 w-px bg-border" aria-hidden />
+      {bullet ? (
+        <span
+          className="relative mt-6 size-3 rounded-full bg-accent ring-4 ring-background"
+          aria-hidden
+        />
+      ) : null}
+    </div>
   );
 }
 
 function EventRow({ e }: { e: WsEvent }) {
   return (
-    <li>
-      <Link
-        href={`/events/${e.id}`}
-        className="flex gap-4 overflow-hidden rounded-xl border border-border bg-card p-3 transition-colors hover:border-border-strong"
-      >
+    <Link
+      href={`/events/${e.id}`}
+      className="flex gap-4 overflow-hidden rounded-xl border border-border bg-card p-3 transition-colors hover:border-border-strong"
+    >
         <EventCover
           seed={e.id}
           tags={e.tags}
@@ -141,13 +112,26 @@ function EventRow({ e }: { e: WsEvent }) {
             <MapPin className="size-3.5 shrink-0 text-faint" aria-hidden />
             <span className="truncate">{e.place}</span>
           </span>
-          {e.price ? (
-            <span className="mt-0.5 text-sm font-medium text-foreground">
-              {e.price}
-            </span>
-          ) : null}
         </div>
-      </Link>
-    </li>
+        {e.price ? (
+          <div className="relative flex w-20 shrink-0 flex-col items-end justify-center border-s border-dashed border-border ps-3 text-end">
+            {/* ticket perforation — notch cut-outs at the ends of the tear line */}
+            <span
+              className="absolute -top-3 start-0 -ms-1.5 size-3 -translate-y-1/2 rounded-full bg-background"
+              aria-hidden
+            />
+            <span
+              className="absolute -bottom-3 start-0 -ms-1.5 size-3 translate-y-1/2 rounded-full bg-background"
+              aria-hidden
+            />
+            <span className="text-sm font-bold leading-tight text-accent sm:text-base">
+              {e.price === "رایگان" ? "رایگان" : e.price.replace(" تومان", "")}
+            </span>
+            {e.price !== "رایگان" ? (
+              <span className="text-[10px] text-muted">تومان</span>
+            ) : null}
+          </div>
+        ) : null}
+    </Link>
   );
 }

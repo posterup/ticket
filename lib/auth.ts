@@ -19,3 +19,11 @@ export function setLoggedIn(): void {
 export function clearLoggedIn(): void {
   document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
 }
+
+/** Client-side read of the mock auth cookie. Safe to call only in the browser. */
+export function isLoggedIn(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie
+    .split("; ")
+    .some((c) => c === `${AUTH_COOKIE}=1`);
+}

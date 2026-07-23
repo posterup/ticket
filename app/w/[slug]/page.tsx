@@ -21,7 +21,7 @@ function fromPrice(eventId: string): string | null {
   const prices = listTickets(eventId).map((t) => t.price);
   if (prices.length === 0) return null;
   const min = Math.min(...prices);
-  return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
+  return min === 0 ? "رایگان" : formatToman(min);
 }
 
 interface Params {
@@ -38,7 +38,6 @@ export default async function WorkspacePage({ params }: Params) {
   const { slug } = await params;
   const workspace = getWorkspaceBySlug(slug);
   if (!workspace) notFound();
-  const typeLabel = workspace.type === "business" ? "کسب‌وکار" : "شخصی";
 
   const events: WsEvent[] = listEventsByWorkspace(slug).map((e) => {
     const start =
@@ -80,10 +79,6 @@ export default async function WorkspacePage({ params }: Params) {
                 <BadgeCheck className="size-5 text-accent" aria-label="تأییدشده" />
               ) : null}
             </div>
-            <span className="mt-1 inline-flex rounded-full border border-border bg-subtle px-2.5 py-0.5 text-xs text-muted">
-              {typeLabel}
-            </span>
-
             {workspace.bio ? (
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
                 {workspace.bio}
@@ -91,11 +86,7 @@ export default async function WorkspacePage({ params }: Params) {
             ) : null}
 
             <div className="mt-4">
-              <WorkspaceFollow
-                slug={workspace.slug}
-                followers={workspace.followers}
-                following={workspace.following}
-              />
+              <WorkspaceFollow slug={workspace.slug} />
             </div>
           </div>
         </div>
