@@ -3,36 +3,30 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   MapPin,
-  CalendarDays,
   Clock,
-  Repeat,
   ChevronLeft,
   BadgeCheck,
   Ticket,
   Video,
+  User,
 } from "lucide-react";
 
 import {
   getEventByIdOrSlug,
   listTickets,
   getWorkspaceByEvent,
-  getEventEngagement,
   listAcceptedCollaborators,
 } from "@/lib/server";
 import {
   formatJalaliDate,
   formatTime,
   formatToman,
-  formatNumber,
 } from "@/lib/format";
-import { MODE_LABELS } from "@/lib/events/labels";
-import { FREQUENCY_LABELS, WEEKDAY_LABELS } from "@/lib/wizard/labels";
 import { cityCoords } from "@/lib/geo/iran";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
-import { EventRsvp } from "@/components/events/EventRsvp";
 import { EventCover } from "@/components/events/EventCover";
 import type { Event, EventCollaborator, Workspace } from "@/types";
 
@@ -44,18 +38,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
   const event = getEventByIdOrSlug(id);
   return { title: event ? `${event.title} | پوستر` : "رویداد | پوستر" };
-}
-
-function recurrenceText(event: Event): string | null {
-  if (!event.recurrence) return null;
-  const { frequency, interval, byDay } = event.recurrence;
-  const base =
-    interval > 1
-      ? `هر ${formatNumber(interval)} بار، ${FREQUENCY_LABELS[frequency]}`
-      : FREQUENCY_LABELS[frequency];
-  return byDay && byDay.length > 0
-    ? `${base} · ${byDay.map((d) => WEEKDAY_LABELS[d]).join("، ")}`
-    : base;
 }
 
 function priceLabel(prices: number[]): string | null {
@@ -72,24 +54,13 @@ export default async function PublicEventDetail({ params }: Params) {
   if (!event) notFound();
 
   const tickets = listTickets(event.id);
-  const recurrence = recurrenceText(event);
   const organizer = getWorkspaceByEvent(event.id);
   const collaborators = listAcceptedCollaborators(event.id);
-  const engagement = getEventEngagement(event.id);
   const price = priceLabel(tickets.map((t) => t.price));
 
   const sessions = [...event.sessions].sort((a, b) =>
     a.startAt.localeCompare(b.startAt),
   );
-  const firstS = sessions[0];
-  const lastS = sessions[sessions.length - 1];
-  const multiDay =
-    firstS && lastS && formatJalaliDate(firstS.startAt) !== formatJalaliDate(lastS.startAt);
-  const dateRange = firstS
-    ? multiDay
-      ? `${formatJalaliDate(firstS.startAt)} تا ${formatJalaliDate(lastS.startAt)}`
-      : formatJalaliDate(firstS.startAt)
-    : null;
 
   const online = Boolean(event.venue.onlineUrl);
   const pin =
@@ -121,73 +92,69 @@ export default async function PublicEventDetail({ params }: Params) {
               className="aspect-[16/9] rounded-2xl"
             />
 
+            {/* 1b. Title + meta */}
             <div>
-              <span className="text-xs text-faint">{MODE_LABELS[event.mode]}</span>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 {event.title}
               </h1>
-              {organizer ? (
-                <p className="mt-2 text-sm text-muted">
-                  توسط{" "}
+
+              {/* location · organizer */}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <p className="flex items-center gap-1.5 text-sm text-muted">
+                  {online ? (
+                    <Video className="size-4 shrink-0 text-faint" aria-hidden />
+                  ) : (
+                    <MapPin className="size-4 shrink-0 text-faint" aria-hidden />
+                  )}
+                  {online
+                    ? "رویداد آنلاین"
+                    : [event.venue.name, event.venue.city]
+                        .filter(Boolean)
+                        .join("، ") || "مکان نامشخص"}
+                </p>
+                {organizer ? (
                   <Link
                     href={`/w/${organizer.slug}`}
-                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                    className="flex items-center gap-1.5 text-sm text-muted underline-offset-4 hover:text-foreground hover:underline"
                   >
-                    {organizer.name}
+                    <User className="size-4 shrink-0 text-faint" aria-hidden />
+                    <span className="font-medium text-foreground">
+                      {organizer.name}
+                    </span>
                   </Link>
-                </p>
-              ) : null}
-            </div>
-
-            {/* 2. Date & time (range-aware) */}
-            <section className="flex items-start gap-3 border-t border-border pt-6">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-subtle text-foreground">
-                <CalendarDays className="size-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-base font-semibold text-foreground">
-                  {dateRange ?? "زمان‌بندی نشده"}
-                </p>
-                {recurrence ? (
-                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
-                    <Repeat className="size-3.5 text-faint" aria-hidden />
-                    {recurrence}
-                  </p>
-                ) : null}
-                {sessions.length > 0 ? (
-                  <ul className="mt-3 flex flex-col gap-1.5 text-sm text-muted">
-                    {sessions.map((s) => (
-                      <li key={s.id} className="flex items-center gap-2">
-                        <Clock className="size-3.5 shrink-0 text-faint" aria-hidden />
-                        {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
-                        {formatTime(s.endAt)}
-                      </li>
-                    ))}
-                  </ul>
                 ) : null}
               </div>
-            </section>
 
-            <EventRsvp
-              eventId={event.id}
-              baseGoing={engagement.going}
-              baseInterested={engagement.interested}
-            />
+              {/* sessions — chips */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {sessions.map((s) => (
+                  <span
+                    key={s.id}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-subtle px-3 py-1 text-xs font-medium text-muted"
+                  >
+                    <Clock className="size-3.5 text-faint" aria-hidden />
+                    {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
+                    {formatTime(s.endAt)}
+                  </span>
+                ))}
+              </div>
+            </div>
 
             {/* 3. Ticket buy card — mobile */}
             <BuyCard
               eventId={event.id}
               price={price}
-              className="border-t border-border pt-6 lg:hidden"
+              boxed
+              className="lg:hidden"
             />
 
             {/* 4. Description */}
             {event.description ? (
-              <section className="border-t border-border pt-6">
-                <h2 className="mb-2 text-sm font-semibold text-foreground">
+              <section>
+                <h2 className="mb-3 text-base font-semibold text-foreground">
                   درباره رویداد
                 </h2>
-                <p className="whitespace-pre-line text-sm leading-relaxed text-muted">
+                <p className="whitespace-pre-line text-base leading-8 text-foreground/80">
                   {event.description}
                 </p>
               </section>
@@ -200,7 +167,7 @@ export default async function PublicEventDetail({ params }: Params) {
             <Hosts
               organizer={organizer}
               collaborators={collaborators}
-              className="border-t border-border pt-6 lg:hidden"
+              className="lg:hidden"
             />
           </div>
 
@@ -228,7 +195,7 @@ function BuyCard({
   className?: string;
 }) {
   return (
-    <div className={cn(boxed && "rounded-2xl border border-border bg-card p-5", className)}>
+    <div className={cn(boxed && "rounded-2xl border border-border bg-card p-5 shadow-lg", className)}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs text-muted">قیمت</span>
         <span className="text-lg font-bold text-foreground">{price ?? "به‌زودی"}</span>
@@ -260,13 +227,16 @@ function Location({
   pin: { lat: number; lng: number } | null;
 }) {
   const { venue } = event;
+  const fullAddress = [venue.name, venue.province, venue.city, venue.address]
+    .filter(Boolean)
+    .join("، ");
   const d = 0.02;
   const bbox = pin
     ? `${pin.lng - d},${pin.lat - d},${pin.lng + d},${pin.lat + d}`
     : "";
 
   return (
-    <section className="border-t border-border pt-6">
+    <section>
       <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
         {online ? (
           <Video className="size-4 text-faint" aria-hidden />
@@ -281,31 +251,39 @@ function Location({
           این رویداد به‌صورت آنلاین برگزار می‌شود. لینک ورود پس از تهیه بلیت در
           اختیار شما قرار می‌گیرد.
         </p>
-      ) : (
-        <div>
-          {venue.name ? (
-            <p className="text-sm font-medium text-foreground">{venue.name}</p>
-          ) : null}
-          <p className={cn("text-sm text-muted", venue.name && "mt-1")}>
-            {[venue.province, venue.city].filter(Boolean).join("، ")}
-          </p>
-          {venue.hideAddress ? (
-            <p className="mt-1 text-xs text-faint">
-              آدرس دقیق و موقعیت روی نقشه برای این رویداد نمایش داده نمی‌شود.
-            </p>
-          ) : venue.address ? (
-            <p className="mt-1 text-sm text-muted">{venue.address}</p>
-          ) : null}
-
+      ) : venue.hideAddress ? (
+        <p className="text-sm text-faint">
+          آدرس دقیق و موقعیت روی نقشه برای این رویداد نمایش داده نمی‌شود.
+        </p>
+      ) : fullAddress ? (
+        <div className="overflow-hidden rounded-2xl border border-border">
           {pin ? (
             <iframe
               title="نقشه مکان رویداد"
-              className="mt-4 h-64 w-full rounded-2xl border border-border"
+              className="block h-72 w-full"
               loading="lazy"
               src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${pin.lat},${pin.lng}`}
             />
           ) : null}
+          <div className="flex items-start justify-between gap-4 bg-card p-4">
+            <p className="flex items-start gap-2 text-sm leading-6 text-foreground">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-faint" aria-hidden />
+              {fullAddress}
+            </p>
+            {pin ? (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 text-sm font-medium text-accent underline-offset-4 hover:underline"
+              >
+                مسیریابی
+              </a>
+            ) : null}
+          </div>
         </div>
+      ) : (
+        <p className="text-sm text-muted">مکان رویداد اعلام نشده است.</p>
       )}
     </section>
   );
@@ -321,7 +299,12 @@ function Hosts({
   className?: string;
 }) {
   return (
-    <section className={className}>
+    <section
+      className={cn(
+        "rounded-2xl border border-border bg-card p-5 shadow-lg",
+        className,
+      )}
+    >
       <h2 className="mb-3 text-sm font-semibold text-foreground">
         برگزارکننده و همکاران
       </h2>
