@@ -20,25 +20,33 @@ export interface DiscoverEvent {
   price: string | null;
   going: number;
   tags: string[];
+  categories: string[];
   org: { slug: string; name: string; avatar: string; verified: boolean } | null;
 }
 
 const ALL_CITIES = "همه شهرها";
 
-/** Coming weekend range (Iran: Thu–Fri). Uses the current date at render. */
-function weekendRange(): { start: number; end: number } {
-  const now = new Date();
-  const day = now.getDay(); // 0 Sun … 5 Fri, 6 Sat
-  // Days until the coming Friday (Fri=5); if today is Fri, that's today.
-  const untilFri = (5 - day + 7) % 7;
-  const fri = new Date(now);
-  fri.setDate(now.getDate() + untilFri);
-  const thu = new Date(fri);
-  thu.setDate(fri.getDate() - 1);
-  thu.setHours(0, 0, 0, 0);
-  fri.setHours(23, 59, 59, 999);
-  return { start: thu.getTime(), end: fri.getTime() };
+/** Discovery categories, in display order. «رایگان» is derived from price. */
+const CATEGORIES = [
+  "خلق",
+  "فرهنگی",
+  "گردشگر",
+  "مهارت",
+  "هیجان",
+  "بازی",
+  "آشپزی",
+  "گفتگو",
+  "هنر",
+  "رایگان",
+] as const;
+
+/** Whether an event belongs to a category. «رایگان» keys off the free price. */
+function inCategory(e: DiscoverEvent, cat: string): boolean {
+  return cat === "رایگان" ? e.price === "رایگان" : e.categories.includes(cat);
 }
+
+/** How many events a filtered grid reveals before "view more". */
+const PAGE = 8;
 
 export function EventsExplorer({
   events,
@@ -49,6 +57,8 @@ export function EventsExplorer({
 }) {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState(defaultCity ?? ALL_CITIES);
+  const [category, setCategory] = useState<string | null>(null);
+  const [visible, setVisible] = useState(PAGE);
 
   const cities = useMemo(
     () =>
@@ -75,25 +85,30 @@ export function EventsExplorer({
     [scoped],
   );
 
-  const rows = useMemo(() => {
-    const popular = [...scoped].sort((a, b) => b.going - a.going);
+  // Which category chips actually have events under the current city/query.
+  const activeCategories = useMemo(
+    () => CATEGORIES.filter((c) => scoped.some((e) => inCategory(e, c))),
+    [scoped],
+  );
 
-    const { start, end } = weekendRange();
-    const weekend = scoped.filter((e) => {
-      const t = e.sortKey ? new Date(e.sortKey).getTime() : NaN;
-      return Number.isFinite(t) && t >= start && t <= end;
-    });
+  // No filter → one carousel per non-empty category.
+  const categoryRows = useMemo(
+    () =>
+      activeCategories.map((cat) => ({
+        cat,
+        events: scoped.filter((e) => inCategory(e, cat)),
+      })),
+    [activeCategories, scoped],
+  );
 
-    const upcoming = [...scoped].sort((a, b) =>
-      a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0,
-    );
+  // A filter → the full list for that category.
+  const filtered = useMemo(
+    () => (category ? scoped.filter((e) => inCategory(e, category)) : []),
+    [scoped, category],
+  );
 
-    return [
-      { key: "popular", title: "پرطرفدارها", ranked: true, events: popular },
-      { key: "weekend", title: "این آخر هفته", ranked: false, events: weekend },
-      { key: "upcoming", title: "به‌زودی", ranked: false, events: upcoming },
-    ].filter((r) => r.events.length > 0);
-  }, [scoped]);
+  // Reset pagination whenever the selection or the underlying set changes.
+  useEffect(() => setVisible(PAGE), [category, city, query]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -127,22 +142,120 @@ export function EventsExplorer({
         </div>
       ) : (
         <>
-          {featured.length > 0 ? <Hero events={featured} /> : null}
+          {/* Hero — only in the default (no-filter) view */}
+          {category === null && featured.length > 0 ? (
+            <Hero events={featured} />
+          ) : null}
 
-          {rows.map((row) => (
-            <Carousel key={row.key} title={row.title} count={row.events.length}>
-              {row.events.map((e, i) => (
-                <EventCard
-                  key={e.id}
-                  event={e}
-                  rank={row.ranked ? i + 1 : undefined}
-                />
-              ))}
-            </Carousel>
-          ))}
+          {/* Category filter chips */}
+          <FilterBar
+            categories={activeCategories}
+            selected={category}
+            onSelect={setCategory}
+          />
+
+          {category === null ? (
+            // No filter → a carousel per category
+            categoryRows.map((row) => (
+              <Carousel
+                key={row.cat}
+                title={row.cat}
+                count={row.events.length}
+                onViewMore={() => setCategory(row.cat)}
+              >
+                {row.events.map((e) => (
+                  <EventCard key={e.id} event={e} />
+                ))}
+              </Carousel>
+            ))
+          ) : (
+            // A filter → a grid with "view more"
+            <section className="flex flex-col gap-5">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-lg font-bold text-foreground">{category}</h2>
+                <span className="text-xs text-muted">
+                  {formatNumber(filtered.length)} رویداد
+                </span>
+              </div>
+
+              {filtered.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted">
+                  رویدادی در این دسته یافت نشد.
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+                    {filtered.slice(0, visible).map((e) => (
+                      <EventCard key={e.id} event={e} carousel={false} />
+                    ))}
+                  </div>
+                  {visible < filtered.length ? (
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setVisible((v) => v + PAGE)}
+                        className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-accent focus-visible:ring-2 focus-visible:ring-ring/40"
+                      >
+                        مشاهده بیشتر
+                      </button>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </section>
+          )}
         </>
       )}
     </div>
+  );
+}
+
+function FilterBar({
+  categories,
+  selected,
+  onSelect,
+}: {
+  categories: readonly string[];
+  selected: string | null;
+  onSelect: (cat: string | null) => void;
+}) {
+  return (
+    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+      <Chip active={selected === null} onClick={() => onSelect(null)}>
+        همه
+      </Chip>
+      {categories.map((c) => (
+        <Chip key={c} active={selected === c} onClick={() => onSelect(c)}>
+          {c}
+        </Chip>
+      ))}
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        "shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+        active
+          ? "border-foreground bg-foreground text-background"
+          : "border-border text-muted hover:border-border-strong hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -297,10 +410,12 @@ function CityHeader({
 function Carousel({
   title,
   count,
+  onViewMore,
   children,
 }: {
   title: string;
   count: number;
+  onViewMore?: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -308,6 +423,15 @@ function Carousel({
       <div className="flex items-baseline gap-2">
         <h2 className="text-lg font-bold text-foreground">{title}</h2>
         <span className="text-xs text-muted">{formatNumber(count)} رویداد</span>
+        {onViewMore ? (
+          <button
+            type="button"
+            onClick={onViewMore}
+            className="ms-auto text-xs font-medium text-accent underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            مشاهده همه
+          </button>
+        ) : null}
       </div>
       <div className="-mx-4 flex snap-x gap-4 overflow-x-auto scroll-px-4 px-4 pb-1 sm:mx-0 sm:px-0">
         {children}
@@ -316,11 +440,22 @@ function Carousel({
   );
 }
 
-function EventCard({ event: e, rank }: { event: DiscoverEvent; rank?: number }) {
+function EventCard({
+  event: e,
+  rank,
+  carousel = true,
+}: {
+  event: DiscoverEvent;
+  rank?: number;
+  carousel?: boolean;
+}) {
   return (
     <Link
       href={`/events/${e.id}`}
-      className="flex w-64 shrink-0 snap-start flex-col sm:w-72"
+      className={cn(
+        "flex flex-col",
+        carousel ? "w-64 shrink-0 snap-start sm:w-72" : "w-full",
+      )}
     >
       <div className="relative">
         <EventCover

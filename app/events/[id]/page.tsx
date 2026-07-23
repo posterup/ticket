@@ -21,6 +21,7 @@ import {
   formatJalaliDate,
   formatTime,
   formatToman,
+  formatNumber,
 } from "@/lib/format";
 import { cityCoords } from "@/lib/geo/iran";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,13 @@ import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { EventCover } from "@/components/events/EventCover";
 import { NotifyMe } from "@/components/events/NotifyMe";
-import type { Event, EventCollaborator, Workspace } from "@/types";
+import { BuyBox, type BadgeTone } from "@/components/events/BuyBox";
+import type {
+  Event,
+  EventCollaborator,
+  TicketType,
+  Workspace,
+} from "@/types";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -57,7 +64,6 @@ export default async function PublicEventDetail({ params }: Params) {
   const tickets = listTickets(event.id);
   const organizer = getWorkspaceByEvent(event.id);
   const collaborators = listAcceptedCollaborators(event.id);
-  const price = priceLabel(tickets.map((t) => t.price));
 
   const sessions = [...event.sessions].sort((a, b) =>
     a.startAt.localeCompare(b.startAt),
@@ -142,12 +148,7 @@ export default async function PublicEventDetail({ params }: Params) {
             </div>
 
             {/* 3. Ticket buy card — mobile */}
-            <BuyCard
-              eventId={event.id}
-              price={price}
-              boxed
-              className="lg:hidden"
-            />
+            <BuyCard event={event} tickets={tickets} className="lg:hidden" />
 
             {/* 4. Description */}
             {event.description ? (
@@ -174,7 +175,7 @@ export default async function PublicEventDetail({ params }: Params) {
 
           {/* Sidebar (desktop) */}
           <aside className="hidden lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-6">
-            <BuyCard eventId={event.id} price={price} boxed />
+            <BuyCard event={event} tickets={tickets} />
             <Hosts organizer={organizer} collaborators={collaborators} />
           </aside>
         </div>
@@ -184,40 +185,199 @@ export default async function PublicEventDetail({ params }: Params) {
   );
 }
 
+/** How the buy-box action behaves for a given sales state. */
+type BuyAction =
+  | { type: "buy"; label: string }
+  | { type: "approval"; label: string }
+  | { type: "notify"; label: string }
+  | { type: "waitlist"; label: string }
+  | { type: "closed"; label: string };
+
+interface BuyState {
+  badge?: { label: string; tone: BadgeTone };
+  title: string;
+  /** Struck-through original price when `title` is a discounted deal. */
+  original?: string;
+  subtitle?: string;
+  action: BuyAction;
+}
+
+const toIso = (ms: number) => new Date(ms).toISOString();
+
+/**
+ * Resolve the single sales state to show for an event, from ticket windows,
+ * price, stock, and the approval/waitlist flags.
+ */
+function resolveBuyState(event: Event, tickets: TicketType[]): BuyState {
+  const now = Date.now();
+  const prices = tickets.map((t) => t.price);
+  const price = priceLabel(prices);
+  const starts = tickets.map((t) => new Date(t.salesStartAt).getTime());
+  const ends = tickets.map((t) => new Date(t.salesEndAt).getTime());
+  const salesStart = starts.length ? Math.min(...starts) : Infinity;
+  const salesEnd = ends.length ? Math.max(...ends) : -Infinity;
+  const capacity = tickets.reduce((sum, t) => sum + (t.capacity || 0), 0);
+  const sold = tickets.reduce((sum, t) => sum + (t.sold ?? 0), 0);
+  const remaining = capacity - sold;
+
+  // 2. Sales haven't started (or no tickets yet).
+  if (tickets.length === 0 || now < salesStart) {
+    return {
+      badge: { label: "به‌زودی", tone: "neutral" },
+      title: "فروش هنوز شروع نشده",
+      subtitle: tickets.length
+        ? `شروع فروش: ${formatJalaliDate(toIso(salesStart))}`
+        : undefined,
+      action: { type: "notify", label: "خبرم کن" },
+    };
+  }
+
+  // 7 & 8. Sold out — stock exhausted or the sales window has ended.
+  const soldOut = (capacity > 0 && remaining <= 0) || now > salesEnd;
+  if (soldOut) {
+    return event.waitlist
+      ? {
+          badge: { label: "تکمیل ظرفیت", tone: "danger" },
+          title: "بلیت‌ها تمام شد",
+          subtitle: "برای لیست انتظار ثبت‌نام کنید",
+          action: { type: "waitlist", label: "لیست انتظار" },
+        }
+      : {
+          badge: { label: "تکمیل ظرفیت", tone: "danger" },
+          title: "بلیت‌ها تمام شد",
+          subtitle: "فروش این رویداد پایان یافت",
+          action: { type: "closed", label: "فروش بسته شد" },
+        };
+  }
+
+  // 4. Registration needs organiser approval.
+  if (event.requiresApproval) {
+    return {
+      badge: { label: "با تأیید میزبان", tone: "accent" },
+      title: price ?? "ثبت درخواست",
+      subtitle: "پس از تأیید میزبان قطعی می‌شود",
+      action: { type: "approval", label: "درخواست ثبت‌نام" },
+    };
+  }
+
+  // 1. Free.
+  if (Math.min(...prices) === 0) {
+    return {
+      badge: { label: "رایگان", tone: "success" },
+      title: "ورود آزاد",
+      subtitle: "بلیت این رویداد رایگان است",
+      action: { type: "buy", label: "دریافت بلیت" },
+    };
+  }
+
+  // 3. An early-bird ticket is currently on sale.
+  const early = tickets.filter(
+    (t) =>
+      t.category === "early-bird" &&
+      new Date(t.salesStartAt).getTime() <= now &&
+      now <= new Date(t.salesEndAt).getTime(),
+  );
+  if (early.length) {
+    const earlyEnd = Math.min(
+      ...early.map((t) => new Date(t.salesEndAt).getTime()),
+    );
+    const dealPrice = Math.min(...early.map((t) => t.price));
+    const regular = tickets
+      .filter((t) => t.category !== "early-bird")
+      .map((t) => t.price);
+    const fullPrice = regular.length ? Math.min(...regular) : dealPrice;
+    return {
+      badge: { label: "فروش ویژه", tone: "accent" },
+      title: formatToman(dealPrice),
+      original:
+        fullPrice > dealPrice ? formatToman(fullPrice) : undefined,
+      subtitle: `بلیت زودهنگام — تا ${formatJalaliDate(toIso(earlyEnd))}`,
+      action: { type: "buy", label: "تهیه بلیت" },
+    };
+  }
+
+  // 5. Almost done — low remaining stock (≤ 10% of capacity).
+  if (capacity > 0 && remaining > 0 && remaining <= Math.max(1, capacity * 0.1)) {
+    return {
+      badge: { label: "آخرین بلیت‌ها", tone: "warning" },
+      title: price ?? "",
+      subtitle: `تنها ${formatNumber(remaining)} بلیت باقی مانده`,
+      action: { type: "buy", label: "تهیه بلیت" },
+    };
+  }
+
+  // 6. Normal on-sale.
+  return {
+    badge: undefined,
+    title: price ?? "",
+    subtitle: undefined,
+    action: { type: "buy", label: "تهیه بلیت" },
+  };
+}
+
 function BuyCard({
-  eventId,
-  price,
-  boxed,
+  event,
+  tickets,
   className,
 }: {
-  eventId: string;
-  price: string | null;
-  boxed?: boolean;
+  event: Event;
+  tickets: TicketType[];
   className?: string;
 }) {
-  return (
-    <div className={cn(boxed && "rounded-2xl border border-border bg-card p-5 shadow-lg", className)}>
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-muted">قیمت</span>
-        <span className="text-lg font-bold text-foreground">{price ?? "به‌زودی"}</span>
-      </div>
-      {price ? (
+  const state = resolveBuyState(event, tickets);
+  const { action } = state;
+  const checkout = `/events/${event.id}/checkout`;
+
+  let node: React.ReactNode;
+  switch (action.type) {
+    case "buy":
+    case "approval":
+      node = (
         <Link
-          href={`/events/${eventId}/checkout`}
-          className={cn(buttonVariants({ variant: "primary", size: "lg" }), "mt-4 w-full")}
+          href={checkout}
+          className={buttonVariants({ variant: "primary", size: "lg" })}
         >
           <Ticket aria-hidden />
-          تهیه بلیت
+          {action.label}
         </Link>
-      ) : (
-        <>
-          <p className="mt-4 rounded-md border border-dashed border-border p-3 text-center text-xs text-muted">
-            فروش بلیت هنوز آغاز نشده است.
-          </p>
-          <NotifyMe eventId={eventId} />
-        </>
-      )}
-    </div>
+      );
+      break;
+    case "notify":
+      node = <NotifyMe eventId={event.id} idleLabel={action.label} />;
+      break;
+    case "waitlist":
+      node = (
+        <NotifyMe
+          eventId={event.id}
+          idleLabel={action.label}
+          activeLabel="در لیست انتظار"
+        />
+      );
+      break;
+    case "closed":
+      node = (
+        <span
+          aria-disabled
+          className={cn(
+            buttonVariants({ variant: "secondary", size: "lg" }),
+            "cursor-not-allowed opacity-60",
+          )}
+        >
+          {action.label}
+        </span>
+      );
+      break;
+  }
+
+  return (
+    <BuyBox
+      badge={state.badge}
+      title={state.title}
+      original={state.original}
+      subtitle={state.subtitle}
+      action={node}
+      className={className}
+    />
   );
 }
 
@@ -310,7 +470,7 @@ function Hosts({
       )}
     >
       <h2 className="mb-3 text-sm font-semibold text-foreground">
-        برگزارکننده و همکاران
+        برگزارکنندگان
       </h2>
       <div className="flex flex-col gap-1">
         {organizer ? (

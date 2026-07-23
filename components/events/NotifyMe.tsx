@@ -9,11 +9,24 @@ import { isLoggedIn } from "@/lib/auth";
 import { isNotified, setNotified } from "@/lib/notify";
 
 /**
- * "Notify me" button shown while ticket sales haven't started. If the visitor
- * isn't logged in, it routes to login (returning here afterwards). Once logged
- * in, it toggles a persisted reminder and flips to an active state.
+ * Reminder toggle used for the "notify me" (sales not started) and "waitlist"
+ * (sold out) states. If the visitor isn't logged in it routes to login,
+ * returning here afterwards; once logged in it toggles a persisted reminder and
+ * flips to an active label.
  */
-export function NotifyMe({ eventId }: { eventId: string }) {
+export function NotifyMe({
+  eventId,
+  idleLabel = "خبرم کن",
+  activeLabel = "خبرتان می‌کنیم",
+  size = "lg",
+  className,
+}: {
+  eventId: string;
+  idleLabel?: string;
+  activeLabel?: string;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [notified, setNotifiedState] = useState(false);
@@ -36,20 +49,20 @@ export function NotifyMe({ eventId }: { eventId: string }) {
     <Button
       type="button"
       variant="secondary"
-      size="lg"
+      size={size}
       onClick={onClick}
       aria-pressed={notified}
-      className="mt-4 w-full"
+      className={className}
     >
       {notified ? (
         <>
           <BellRing aria-hidden />
-          خبرتان می‌کنیم
+          {activeLabel}
         </>
       ) : (
         <>
           <Bell aria-hidden />
-          خبرم کن
+          {idleLabel}
         </>
       )}
     </Button>

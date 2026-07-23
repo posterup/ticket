@@ -85,10 +85,14 @@ export interface Event {
   recurrence?: RecurrenceRule;
   /** Free-form organiser-facing labels. */
   tags: string[];
+  /** Discovery categories for the explore page (e.g. «هنر»، «آشپزی»). */
+  categories?: string[];
   /** Who can find/register: `public` (default) or `link`-only. */
   visibility?: EventVisibility;
   /** When true (link events), registrations need organiser approval. */
   requiresApproval?: boolean;
+  /** When true, a sold-out event offers a waitlist instead of closing sales. */
+  waitlist?: boolean;
   /** Custom public URL slug for the event page; falls back to `id`. */
   slug?: string;
   createdAt: IsoDateTime;

@@ -48,6 +48,7 @@ export default async function PublicEventsPage() {
           price: fromPrice(event.id),
           going: getEventEngagement(event.id).going,
           tags: event.tags,
+          categories: event.categories ?? [],
           org: org
             ? {
                 slug: org.slug,
