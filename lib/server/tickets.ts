@@ -33,3 +33,39 @@ export function createTicketType(input: CreateTicketTypeInput): TicketType {
   ticketTypes.push(ticketType);
   return ticketType;
 }
+
+/** Fields an organizer may edit on an existing ticket type. */
+export type TicketTypeUpdate = Partial<
+  Pick<
+    TicketType,
+    | "name"
+    | "price"
+    | "capacity"
+    | "salesStartAt"
+    | "salesEndAt"
+    | "category"
+    | "description"
+  >
+>;
+
+/**
+ * Update a ticket type in place. Returns the record, or `undefined` when no
+ * ticket type has the given id.
+ */
+export function updateTicketType(
+  id: string,
+  patch: TicketTypeUpdate,
+): TicketType | undefined {
+  const ticket = ticketTypes.find((t) => t.id === id);
+  if (!ticket) return undefined;
+  if (patch.name !== undefined) ticket.name = patch.name;
+  if (patch.price !== undefined) ticket.price = patch.price;
+  if (patch.capacity !== undefined) ticket.capacity = patch.capacity;
+  if (patch.salesStartAt !== undefined) ticket.salesStartAt = patch.salesStartAt;
+  if (patch.salesEndAt !== undefined) ticket.salesEndAt = patch.salesEndAt;
+  if (patch.category !== undefined) ticket.category = patch.category;
+  if (patch.description !== undefined) {
+    ticket.description = patch.description || undefined;
+  }
+  return ticket;
+}
