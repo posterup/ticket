@@ -15,9 +15,8 @@ import {
   listAttendeeTags,
 } from "@/lib/server";
 import { buildHolders } from "@/lib/checkin/data";
-import { formatJalaliDate, formatTime, formatNumber } from "@/lib/format";
+import { formatJalaliDate, formatTime } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
-import { FREQUENCY_LABELS, WEEKDAY_LABELS } from "@/lib/wizard/labels";
 import { EditEventForm } from "@/components/dashboard/EditEventForm";
 import { EditVenueForm } from "@/components/dashboard/EditVenueForm";
 import { EventLinkForm } from "@/components/dashboard/EventLinkForm";
@@ -25,13 +24,13 @@ import { EventCollaborators } from "@/components/dashboard/EventCollaborators";
 import { SessionsManager } from "@/components/dashboard/SessionsManager";
 import { EventTickets } from "@/components/dashboard/EventTickets";
 import { EventAccessSettings } from "@/components/dashboard/EventAccessSettings";
+import { RecurrenceEditor } from "@/components/dashboard/RecurrenceEditor";
 import { GuestInvite } from "@/components/dashboard/GuestInvite";
 import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
 import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
 import { CheckinPanel } from "@/components/checkin/CheckinPanel";
 import type { TicketSample } from "@/components/tickets/TicketPreview";
-import type { Event } from "@/types";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -43,19 +42,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return { title: event ? `${event.title} | پوستر` : "رویداد | پوستر" };
 }
 
-function recurrenceText(event: Event): string | null {
-  if (!event.recurrence) return null;
-  const { frequency, interval, byDay } = event.recurrence;
-  const base =
-    interval > 1
-      ? `هر ${formatNumber(interval)} بار، ${FREQUENCY_LABELS[frequency]}`
-      : FREQUENCY_LABELS[frequency];
-  if (byDay && byDay.length > 0) {
-    return `${base} · ${byDay.map((d) => WEEKDAY_LABELS[d]).join("، ")}`;
-  }
-  return base;
-}
-
 export default async function EventDetailPage({ params }: Params) {
   const { id } = await params;
   const event = getEventById(id);
@@ -63,7 +49,6 @@ export default async function EventDetailPage({ params }: Params) {
 
   const tickets = listTickets(id);
   const discounts = listDiscounts(id);
-  const recurrence = recurrenceText(event);
   const sessionOptions = event.sessions.map((s) => ({
     id: s.id,
     label: `${formatJalaliDate(s.startAt)} · ${formatTime(s.startAt)}`,
@@ -145,9 +130,15 @@ export default async function EventDetailPage({ params }: Params) {
                     eventId={event.id}
                     sessions={event.sessions}
                     modeLabel={modeLabel(event.mode)}
-                    recurrence={recurrence}
                   />
                 </div>
+
+                {event.mode === "recurring" ? (
+                  <RecurrenceEditor
+                    eventId={event.id}
+                    recurrence={event.recurrence}
+                  />
+                ) : null}
 
                 <EventCollaborators
                   eventId={event.id}

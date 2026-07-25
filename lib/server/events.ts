@@ -75,6 +75,7 @@ export type EventUpdate = Partial<
     | "audienceTags"
     | "requiresApproval"
     | "slug"
+    | "recurrence"
   >
 >;
 
@@ -91,6 +92,7 @@ export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
     event.requiresApproval = patch.requiresApproval;
   }
   if (patch.slug !== undefined) event.slug = patch.slug;
+  if (patch.recurrence !== undefined) event.recurrence = patch.recurrence;
   event.updatedAt = new Date().toISOString();
   return event;
 }

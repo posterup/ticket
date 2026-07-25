@@ -562,7 +562,7 @@ export function EventComposer() {
         {step === 1 ? (
         <SectionCard
           title="زمان‌بندی"
-          description="بازهٔ تاریخ و سانس‌ها را تعیین کنید؛ برای اجرای تکرارشونده «زمان‌بندی تقویمی» را فعال کنید."
+          description="بازهٔ تاریخ و سانس‌ها را تعیین کنید؛ برای اجرای تقویمی «زمان‌بندی تقویمی» را فعال کنید."
         >
           <SessionsEditor
             schedule={draft.schedule}

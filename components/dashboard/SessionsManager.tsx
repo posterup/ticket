@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, Repeat, Pencil, Ban, RotateCcw, Check, X, Plus } from "lucide-react";
+import { Clock, Pencil, Ban, RotateCcw, Check, X, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,16 +26,10 @@ interface Props {
   eventId: string;
   sessions: EventSession[];
   modeLabel: string | null;
-  recurrence: string | null;
 }
 
 /** Schedule list with per-سانس reschedule and cancel/restore controls. */
-export function SessionsManager({
-  eventId,
-  sessions,
-  modeLabel,
-  recurrence,
-}: Props) {
+export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -216,13 +210,6 @@ export function SessionsManager({
           </button>
         )}
       </div>
-
-      {recurrence ? (
-        <p className="mt-3 flex items-center gap-2 text-xs text-muted">
-          <Repeat className="size-3.5 text-faint" aria-hidden />
-          {recurrence}
-        </p>
-      ) : null}
     </section>
   );
 }

@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { getEventById, updateEvent, type EventUpdate } from "@/lib/server";
-import type { ApiResponse, Event, EventStatus } from "@/types";
+import type {
+  ApiResponse,
+  Event,
+  EventStatus,
+  RecurrenceFrequency,
+  RecurrenceRule,
+  WeekDay,
+} from "@/types";
 
 const EVENT_STATUSES: readonly EventStatus[] = [
   "draft",
@@ -9,6 +16,65 @@ const EVENT_STATUSES: readonly EventStatus[] = [
   "cancelled",
   "completed",
 ];
+
+const FREQUENCIES: readonly RecurrenceFrequency[] = [
+  "daily",
+  "weekly",
+  "monthly",
+  "weekday",
+];
+
+const WEEKDAYS: readonly WeekDay[] = [
+  "SA",
+  "SU",
+  "MO",
+  "TU",
+  "WE",
+  "TH",
+  "FR",
+];
+
+/** Validate a recurrence rule payload, returning a clean rule or `null`. */
+function parseRecurrence(value: unknown): RecurrenceRule | null {
+  if (typeof value !== "object" || value === null) return null;
+  const r = value as Record<string, unknown>;
+
+  if (!FREQUENCIES.includes(r.frequency as RecurrenceFrequency)) return null;
+  if (
+    typeof r.interval !== "number" ||
+    !Number.isInteger(r.interval) ||
+    r.interval < 1
+  ) {
+    return null;
+  }
+
+  const rule: RecurrenceRule = {
+    frequency: r.frequency as RecurrenceFrequency,
+    interval: r.interval,
+  };
+
+  if ("byDay" in r && r.byDay !== undefined) {
+    if (
+      !Array.isArray(r.byDay) ||
+      !r.byDay.every((d) => WEEKDAYS.includes(d as WeekDay))
+    ) {
+      return null;
+    }
+    if (r.byDay.length > 0) rule.byDay = r.byDay as WeekDay[];
+  }
+  if ("count" in r && r.count !== undefined) {
+    if (typeof r.count !== "number" || !Number.isInteger(r.count) || r.count < 1) {
+      return null;
+    }
+    rule.count = r.count;
+  }
+  if ("until" in r && r.until !== undefined) {
+    if (typeof r.until !== "string" || r.until.trim() === "") return null;
+    rule.until = r.until;
+  }
+
+  return rule;
+}
 
 /** GET /api/events/:id — fetch one event. 404 when it does not exist. */
 export async function GET(
@@ -110,6 +176,11 @@ function parseEventUpdate(body: unknown): EventUpdate | null {
   if ("slug" in c) {
     if (typeof c.slug !== "string" || c.slug.trim() === "") return null;
     patch.slug = c.slug.trim();
+  }
+  if ("recurrence" in c) {
+    const rule = parseRecurrence(c.recurrence);
+    if (rule === null) return null;
+    patch.recurrence = rule;
   }
 
   return Object.keys(patch).length > 0 ? patch : null;
