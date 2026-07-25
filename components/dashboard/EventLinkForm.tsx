@@ -65,7 +65,7 @@ export function EventLinkForm({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
+    <div>
       <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Link2 className="size-4 text-faint" aria-hidden />
         لینک صفحه رویداد

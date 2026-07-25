@@ -20,6 +20,19 @@ export function getAttendeeById(id: string): Attendee | undefined {
   return attendees.find((a) => a.id === id);
 }
 
+/** Distinct CRM tag labels with how many contacts carry each, most-used first. */
+export function listAttendeeTags(): { label: string; count: number }[] {
+  const byLabel = new Map<string, number>();
+  for (const a of attendees) {
+    for (const tag of a.tags) {
+      byLabel.set(tag.label, (byLabel.get(tag.label) ?? 0) + 1);
+    }
+  }
+  return [...byLabel.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 /** Replace a contact's tags (from string labels); returns it, or `undefined`. */
 export function setAttendeeTags(
   id: string,

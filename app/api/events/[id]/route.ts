@@ -85,8 +85,23 @@ function parseEventUpdate(body: unknown): EventUpdate | null {
     patch.status = c.status as EventStatus;
   }
   if ("visibility" in c) {
-    if (c.visibility !== "public" && c.visibility !== "link") return null;
+    if (
+      c.visibility !== "public" &&
+      c.visibility !== "link" &&
+      c.visibility !== "audience"
+    ) {
+      return null;
+    }
     patch.visibility = c.visibility;
+  }
+  if ("audienceTags" in c) {
+    if (
+      !Array.isArray(c.audienceTags) ||
+      !c.audienceTags.every((t) => typeof t === "string")
+    ) {
+      return null;
+    }
+    patch.audienceTags = c.audienceTags as string[];
   }
   if ("requiresApproval" in c) {
     if (typeof c.requiresApproval !== "boolean") return null;
