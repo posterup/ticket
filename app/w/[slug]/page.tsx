@@ -5,9 +5,8 @@ import { BadgeCheck } from "lucide-react";
 import {
   getWorkspaceBySlug,
   listEventsByWorkspace,
-  listTickets,
 } from "@/lib/server";
-import { formatJalaliDate, formatToman } from "@/lib/format";
+import { formatJalaliDate } from "@/lib/format";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { WorkspaceFollow } from "@/components/workspace/WorkspaceFollow";
@@ -16,13 +15,6 @@ import {
   WorkspaceEvents,
   type WsEvent,
 } from "@/components/workspace/WorkspaceEvents";
-
-function fromPrice(eventId: string): string | null {
-  const prices = listTickets(eventId).map((t) => t.price);
-  if (prices.length === 0) return null;
-  const min = Math.min(...prices);
-  return min === 0 ? "رایگان" : formatToman(min);
-}
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -50,7 +42,6 @@ export default async function WorkspacePage({ params }: Params) {
       place: e.venue.onlineUrl
         ? "آنلاین"
         : [e.venue.name, e.venue.city].filter(Boolean).join("، "),
-      price: fromPrice(e.id),
       tags: e.tags,
     };
   });
