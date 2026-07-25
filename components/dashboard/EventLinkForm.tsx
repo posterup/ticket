@@ -68,7 +68,7 @@ export function EventLinkForm({
     <div>
       <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Link2 className="size-4 text-faint" aria-hidden />
-        لینک صفحه رویداد
+        لینک صفحه
       </h2>
       <p className="mt-1 text-xs text-muted">
         این لینک را به اشتراک بگذارید تا مخاطبان بلیت بخرند.
