@@ -61,6 +61,7 @@ const workspaces: Workspace[] = [
 /** slug -> owned event ids (stand-in for event.workspaceId). */
 const EVENT_WORKSPACE: Record<string, string[]> = {
   "ava-events": [
+    "3f1a6c2e-0015-4a10-9b21-1a2b3c4d5e15",
     "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
     "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03",
     "3f1a6c2e-0005-4a10-9b21-1a2b3c4d5e05",
