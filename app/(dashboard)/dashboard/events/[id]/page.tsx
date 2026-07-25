@@ -229,11 +229,13 @@ export default async function EventDetailPage({ params }: Params) {
             label: "پذیرش و مهمانان",
             content: (
               <div className="flex flex-col gap-6">
-                <GuestInvite
-                  eventId={event.id}
-                  sessions={sessionOptions}
-                  initial={guests}
-                />
+                {event.mode !== "recurring" ? (
+                  <GuestInvite
+                    eventId={event.id}
+                    sessions={sessionOptions}
+                    initial={guests}
+                  />
+                ) : null}
                 <CheckinPanel
                   events={checkinEvents}
                   initialChecked={listCheckedHolderIds()}
