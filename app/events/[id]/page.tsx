@@ -132,31 +132,41 @@ export default async function PublicEventDetail({ params }: Params) {
                 </Link>
               ) : null}
 
-              {/* location */}
-              <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
-                {online ? (
-                  <Video className="size-4 shrink-0 text-faint" aria-hidden />
-                ) : (
-                  <MapPin className="size-4 shrink-0 text-faint" aria-hidden />
-                )}
-                {online
-                  ? "رویداد آنلاین"
-                  : [event.venue.name, event.venue.city]
-                      .filter(Boolean)
-                      .join("، ") || "مکان نامشخص"}
-              </p>
-
-              {/* sessions — chips */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                {sessions.map((s) => (
-                  <span
-                    key={s.id}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-subtle px-3 py-1 text-xs font-medium text-muted"
-                  >
-                    <Clock className="size-3.5 text-faint" aria-hidden />
-                    {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
-                    {formatTime(s.endAt)}
+              {/* location + sessions — chips sharing the organizer pill
+                  design: a filled circular icon badge inside a bordered pill. */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {/* location */}
+                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pe-3 ps-1">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-foreground text-background">
+                    {online ? (
+                      <Video className="size-3.5" aria-hidden />
+                    ) : (
+                      <MapPin className="size-3.5" aria-hidden />
+                    )}
                   </span>
+                  <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                    {online
+                      ? "رویداد آنلاین"
+                      : [event.venue.name, event.venue.city]
+                          .filter(Boolean)
+                          .join("، ") || "مکان نامشخص"}
+                  </span>
+                </div>
+
+                {/* sessions */}
+                {sessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pe-3 ps-1"
+                  >
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-foreground text-background">
+                      <Clock className="size-3.5" aria-hidden />
+                    </span>
+                    <span className="text-sm font-medium text-foreground">
+                      {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
+                      {formatTime(s.endAt)}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
