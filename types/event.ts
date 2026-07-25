@@ -74,6 +74,30 @@ export interface RecurrenceRule {
   count?: number;
 }
 
+/** A default سانس time-slot (`HH:mm`) applied to each performance day. */
+export interface ScheduleSlot {
+  id: string;
+  startTime: string;
+  endTime: string;
+}
+
+/**
+ * Calendar schedule of a `recurring` (تقویمی) event, mirroring the create
+ * composer: a `[startDate, endDate]` range, the performance weekdays
+ * (`byDay`), the default سانس time-slots applied to each day (`slots`), and
+ * dates to skip (`exceptions`). Concrete {@link EventSession}s are generated
+ * from this spec. Dates are `YYYY-MM-DD`.
+ */
+export interface RecurrenceSchedule {
+  startDate: string;
+  endDate: string;
+  byDay: WeekDay[];
+  slots: ScheduleSlot[];
+  /** Extra سانس‌ها for a specific weekday, added on top of `slots`. */
+  daySlots?: Partial<Record<WeekDay, ScheduleSlot[]>>;
+  exceptions: string[];
+}
+
 /** A single concrete occurrence of an event. */
 export interface EventSession {
   id: string;
@@ -103,6 +127,12 @@ export interface Event {
   sessions: EventSession[];
   /** Present only when `mode === "recurring"`. */
   recurrence?: RecurrenceRule;
+  /**
+   * Calendar schedule that generates the sessions of a `recurring` event
+   * (date range, performance weekdays, per-day سانس‌ها, exceptions). Mirrors
+   * the create composer so the dashboard can edit it identically.
+   */
+  recurrenceSchedule?: RecurrenceSchedule;
   /** Free-form organiser-facing labels. */
   tags: string[];
   /** Discovery categories for the explore page (e.g. «هنر»، «آشپزی»). */
