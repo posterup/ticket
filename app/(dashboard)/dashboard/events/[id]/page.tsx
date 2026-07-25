@@ -31,9 +31,64 @@ import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
 import { CheckinPanel } from "@/components/checkin/CheckinPanel";
 import type { TicketSample } from "@/components/tickets/TicketPreview";
+import { emptySlot, type ScheduleDraft } from "@/lib/create/types";
+import type { Event } from "@/types";
 
 interface Params {
   params: Promise<{ id: string }>;
+}
+
+/**
+ * Build the create-composer schedule draft for a recurring event, from its
+ * stored {@link RecurrenceSchedule} or (legacy) derived from its sessions.
+ */
+function buildScheduleDraft(event: Event): ScheduleDraft {
+  const rs = event.recurrenceSchedule;
+  const toSlot = (s: { id: string; startTime: string; endTime: string }) => ({
+    id: s.id,
+    date: "",
+    startTime: s.startTime,
+    endTime: s.endTime,
+  });
+  if (rs) {
+    return {
+      calendar: true,
+      startDate: rs.startDate,
+      endDate: rs.endDate,
+      byDay: rs.byDay,
+      slots: rs.slots.length > 0 ? rs.slots.map(toSlot) : [emptySlot("slot-1")],
+      daySlots: Object.fromEntries(
+        Object.entries(rs.daySlots ?? {}).map(([d, arr]) => [
+          d,
+          (arr ?? []).map(toSlot),
+        ]),
+      ),
+      exceptions: rs.exceptions,
+    };
+  }
+  // Legacy recurring events: derive the schedule from concrete sessions.
+  const dates = [
+    ...new Set(event.sessions.map((s) => s.startAt.slice(0, 10))),
+  ].sort();
+  const seen = new Map<string, { id: string; startTime: string; endTime: string }>();
+  for (const s of event.sessions) {
+    const startTime = s.startAt.slice(11, 16);
+    const endTime = s.endAt.slice(11, 16);
+    const key = `${startTime}-${endTime}`;
+    if (!seen.has(key)) {
+      seen.set(key, { id: `slot-${seen.size + 1}`, startTime, endTime });
+    }
+  }
+  const slots = [...seen.values()].map(toSlot);
+  return {
+    calendar: true,
+    startDate: dates[0] ?? "",
+    endDate: dates[dates.length - 1] ?? "",
+    byDay: event.recurrence?.byDay ?? [],
+    slots: slots.length > 0 ? slots : [emptySlot("slot-1")],
+    daySlots: {},
+    exceptions: [],
+  };
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -123,22 +178,25 @@ export default async function EventDetailPage({ params }: Params) {
                   title={event.title}
                   description={event.description}
                 />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <EditVenueForm eventId={event.id} venue={event.venue} />
-
-                  <SessionsManager
-                    eventId={event.id}
-                    sessions={event.sessions}
-                    modeLabel={modeLabel(event.mode)}
-                  />
-                </div>
-
                 {event.mode === "recurring" ? (
-                  <RecurrenceEditor
-                    eventId={event.id}
-                    recurrence={event.recurrence}
-                  />
-                ) : null}
+                  <>
+                    <EditVenueForm eventId={event.id} venue={event.venue} />
+                    <RecurrenceEditor
+                      eventId={event.id}
+                      schedule={buildScheduleDraft(event)}
+                    />
+                  </>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <EditVenueForm eventId={event.id} venue={event.venue} />
+
+                    <SessionsManager
+                      eventId={event.id}
+                      sessions={event.sessions}
+                      modeLabel={modeLabel(event.mode)}
+                    />
+                  </div>
+                )}
 
                 <EventCollaborators
                   eventId={event.id}

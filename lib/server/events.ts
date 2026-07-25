@@ -7,9 +7,11 @@ import type {
   CreateEventInput,
   Event,
   EventSession,
+  RecurrenceSchedule,
   SessionAvailability,
   Venue,
 } from "@/types";
+import { expandSchedule, type ScheduleDraft } from "@/lib/create/types";
 
 import { events } from "./store";
 
@@ -75,9 +77,60 @@ export type EventUpdate = Partial<
     | "audienceTags"
     | "requiresApproval"
     | "slug"
-    | "recurrence"
+    | "recurrenceSchedule"
   >
 >;
+
+/** ScheduleDraft equivalent of a stored {@link RecurrenceSchedule}. */
+function toScheduleDraft(spec: RecurrenceSchedule): ScheduleDraft {
+  const toSlot = (s: { id: string; startTime: string; endTime: string }) => ({
+    id: s.id,
+    date: "",
+    startTime: s.startTime,
+    endTime: s.endTime,
+  });
+  return {
+    calendar: true,
+    startDate: spec.startDate,
+    endDate: spec.endDate,
+    byDay: spec.byDay,
+    slots: spec.slots.map(toSlot),
+    daySlots: Object.fromEntries(
+      Object.entries(spec.daySlots ?? {}).map(([d, arr]) => [
+        d,
+        (arr ?? []).map(toSlot),
+      ]),
+    ),
+    exceptions: spec.exceptions,
+  };
+}
+
+/**
+ * Regenerate an event's concrete sessions from a calendar schedule, preserving
+ * each surviving session's id, availability, and cancelled flag by matching on
+ * date + start time so existing references stay intact.
+ */
+function sessionsFromSchedule(
+  event: Event,
+  spec: RecurrenceSchedule,
+): EventSession[] {
+  const prev = new Map(
+    event.sessions.map((s) => [`${s.startAt.slice(0, 16)}`, s]),
+  );
+  return expandSchedule(toScheduleDraft(spec)).map((s) => {
+    const startAt = `${s.date}T${s.startTime}:00.000Z`;
+    const endAt = `${s.date}T${s.endTime || s.startTime}:00.000Z`;
+    const match = prev.get(startAt.slice(0, 16));
+    return {
+      id: match?.id ?? `${event.id}-${s.date}-${s.id}`,
+      eventId: event.id,
+      startAt,
+      endAt,
+      ...(match?.availability ? { availability: match.availability } : {}),
+      ...(match?.cancelled ? { cancelled: match.cancelled } : {}),
+    };
+  });
+}
 
 /** Apply an in-place update to an event; returns it, or `undefined` if absent. */
 export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
@@ -92,7 +145,17 @@ export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
     event.requiresApproval = patch.requiresApproval;
   }
   if (patch.slug !== undefined) event.slug = patch.slug;
-  if (patch.recurrence !== undefined) event.recurrence = patch.recurrence;
+  if (patch.recurrenceSchedule !== undefined) {
+    event.recurrenceSchedule = patch.recurrenceSchedule;
+    event.sessions = sessionsFromSchedule(event, patch.recurrenceSchedule);
+    event.recurrence = {
+      frequency: "weekly",
+      interval: 1,
+      ...(patch.recurrenceSchedule.byDay.length > 0
+        ? { byDay: patch.recurrenceSchedule.byDay }
+        : {}),
+    };
+  }
   event.updatedAt = new Date().toISOString();
   return event;
 }

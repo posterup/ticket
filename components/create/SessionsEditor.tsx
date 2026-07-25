@@ -17,6 +17,8 @@ interface Props {
   schedule: ScheduleDraft;
   generatedCount: number;
   error?: string;
+  /** Hide the «زمان‌بندی تقویمی» toggle (dashboard edits are always calendar). */
+  hideToggle?: boolean;
   onScheduleChange: (patch: Partial<ScheduleDraft>) => void;
   onSlotChange: (id: string, patch: Partial<TimeSlot>) => void;
   onAddSlot: () => void;
@@ -101,6 +103,7 @@ export function SessionsEditor(props: Props) {
     schedule,
     generatedCount,
     error,
+    hideToggle = false,
     onScheduleChange,
     onSlotChange,
     onAddSlot,
@@ -145,12 +148,14 @@ export function SessionsEditor(props: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <Toggle
-        label="زمان‌بندی تقویمی"
-        hint="برای رویدادهای تقویمی روی روزهای مشخص هفته فعال کنید."
-        checked={schedule.calendar}
-        onChange={(v) => onScheduleChange({ calendar: v })}
-      />
+      {!hideToggle ? (
+        <Toggle
+          label="زمان‌بندی تقویمی"
+          hint="برای رویدادهای تقویمی روی روزهای مشخص هفته فعال کنید."
+          checked={schedule.calendar}
+          onChange={(v) => onScheduleChange({ calendar: v })}
+        />
+      ) : null}
 
       {!schedule.calendar ? (
         // Non-calendar: each سانس carries its own date.

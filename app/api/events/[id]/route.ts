@@ -5,8 +5,8 @@ import type {
   ApiResponse,
   Event,
   EventStatus,
-  RecurrenceFrequency,
-  RecurrenceRule,
+  RecurrenceSchedule,
+  ScheduleSlot,
   WeekDay,
 } from "@/types";
 
@@ -15,13 +15,6 @@ const EVENT_STATUSES: readonly EventStatus[] = [
   "published",
   "cancelled",
   "completed",
-];
-
-const FREQUENCIES: readonly RecurrenceFrequency[] = [
-  "daily",
-  "weekly",
-  "monthly",
-  "weekday",
 ];
 
 const WEEKDAYS: readonly WeekDay[] = [
@@ -34,46 +27,69 @@ const WEEKDAYS: readonly WeekDay[] = [
   "FR",
 ];
 
-/** Validate a recurrence rule payload, returning a clean rule or `null`. */
-function parseRecurrence(value: unknown): RecurrenceRule | null {
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+/** Validate one سانس time-slot, returning a clean slot or `null`. */
+function parseSlot(value: unknown): ScheduleSlot | null {
+  if (typeof value !== "object" || value === null) return null;
+  const s = value as Record<string, unknown>;
+  if (typeof s.id !== "string" || s.id === "") return null;
+  if (typeof s.startTime !== "string" || !TIME_RE.test(s.startTime)) return null;
+  const endTime =
+    typeof s.endTime === "string" && TIME_RE.test(s.endTime)
+      ? s.endTime
+      : s.startTime;
+  return { id: s.id, startTime: s.startTime, endTime };
+}
+
+/** Validate a calendar-schedule payload, returning a clean spec or `null`. */
+function parseRecurrenceSchedule(value: unknown): RecurrenceSchedule | null {
   if (typeof value !== "object" || value === null) return null;
   const r = value as Record<string, unknown>;
 
-  if (!FREQUENCIES.includes(r.frequency as RecurrenceFrequency)) return null;
+  if (typeof r.startDate !== "string" || !DATE_RE.test(r.startDate)) return null;
+  const endDate =
+    typeof r.endDate === "string" && DATE_RE.test(r.endDate)
+      ? r.endDate
+      : r.startDate;
+
   if (
-    typeof r.interval !== "number" ||
-    !Number.isInteger(r.interval) ||
-    r.interval < 1
+    !Array.isArray(r.byDay) ||
+    !r.byDay.every((d) => WEEKDAYS.includes(d as WeekDay))
   ) {
     return null;
   }
+  if (!Array.isArray(r.slots)) return null;
+  const slots = r.slots.map(parseSlot);
+  if (slots.some((s) => s === null) || slots.length === 0) return null;
 
-  const rule: RecurrenceRule = {
-    frequency: r.frequency as RecurrenceFrequency,
-    interval: r.interval,
+  const exceptions =
+    Array.isArray(r.exceptions) &&
+    r.exceptions.every((d) => typeof d === "string" && DATE_RE.test(d))
+      ? (r.exceptions as string[])
+      : [];
+
+  const spec: RecurrenceSchedule = {
+    startDate: r.startDate,
+    endDate,
+    byDay: r.byDay as WeekDay[],
+    slots: slots as ScheduleSlot[],
+    exceptions,
   };
 
-  if ("byDay" in r && r.byDay !== undefined) {
-    if (
-      !Array.isArray(r.byDay) ||
-      !r.byDay.every((d) => WEEKDAYS.includes(d as WeekDay))
-    ) {
-      return null;
+  if ("daySlots" in r && r.daySlots && typeof r.daySlots === "object") {
+    const out: Partial<Record<WeekDay, ScheduleSlot[]>> = {};
+    for (const [day, arr] of Object.entries(r.daySlots as object)) {
+      if (!WEEKDAYS.includes(day as WeekDay) || !Array.isArray(arr)) continue;
+      const parsed = arr.map(parseSlot);
+      if (parsed.some((s) => s === null)) return null;
+      if (parsed.length > 0) out[day as WeekDay] = parsed as ScheduleSlot[];
     }
-    if (r.byDay.length > 0) rule.byDay = r.byDay as WeekDay[];
-  }
-  if ("count" in r && r.count !== undefined) {
-    if (typeof r.count !== "number" || !Number.isInteger(r.count) || r.count < 1) {
-      return null;
-    }
-    rule.count = r.count;
-  }
-  if ("until" in r && r.until !== undefined) {
-    if (typeof r.until !== "string" || r.until.trim() === "") return null;
-    rule.until = r.until;
+    if (Object.keys(out).length > 0) spec.daySlots = out;
   }
 
-  return rule;
+  return spec;
 }
 
 /** GET /api/events/:id — fetch one event. 404 when it does not exist. */
@@ -177,10 +193,10 @@ function parseEventUpdate(body: unknown): EventUpdate | null {
     if (typeof c.slug !== "string" || c.slug.trim() === "") return null;
     patch.slug = c.slug.trim();
   }
-  if ("recurrence" in c) {
-    const rule = parseRecurrence(c.recurrence);
-    if (rule === null) return null;
-    patch.recurrence = rule;
+  if ("recurrenceSchedule" in c) {
+    const spec = parseRecurrenceSchedule(c.recurrenceSchedule);
+    if (spec === null) return null;
+    patch.recurrenceSchedule = spec;
   }
 
   return Object.keys(patch).length > 0 ? patch : null;

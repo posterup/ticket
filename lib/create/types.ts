@@ -248,8 +248,16 @@ const MAX_SESSIONS = 366;
  * with each defined سانس time-slot. Client preview and submit share this.
  */
 export function expandSessions(draft: CreateDraft): SessionDraft[] {
+  return expandSchedule(draft.schedule);
+}
+
+/**
+ * Resolve a {@link ScheduleDraft} into concrete sessions. Shared by the create
+ * composer and the dashboard recurrence editor so both generate identically.
+ */
+export function expandSchedule(schedule: ScheduleDraft): SessionDraft[] {
   const { calendar, startDate, endDate, byDay, slots, daySlots, exceptions } =
-    draft.schedule;
+    schedule;
 
   // Non-calendar: each سانس is its own dated showtime.
   if (!calendar) {

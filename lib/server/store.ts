@@ -46,6 +46,13 @@ export const events: Event[] = [
       byDay: ["TU"],
       count: 12,
     },
+    recurrenceSchedule: {
+      startDate: "2026-07-28",
+      endDate: "2026-10-13",
+      byDay: ["TU"],
+      slots: [{ id: "rs-0015-1", startTime: "15:30", endTime: "17:30" }],
+      exceptions: [],
+    },
     tags: ["کتاب", "ادبیات", "گفت‌وگو"],
     categories: ["فرهنگی", "آموزش"],
     createdAt: "2026-07-25T09:00:00.000Z",
