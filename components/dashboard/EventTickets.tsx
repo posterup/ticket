@@ -5,11 +5,6 @@ import { useRouter } from "next/navigation";
 import { Ticket, Plus, Pencil, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { MoneyInput } from "@/components/ui/money-input";
-import { Textarea } from "@/components/ui/textarea";
-import { DateField } from "@/components/ui/date-field";
 import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
 import { CATEGORY_LABELS } from "@/lib/wizard/labels";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
@@ -31,6 +26,58 @@ function ticketPrice(t: TicketTypeDraft): number {
 
 function iso(date: string, time: string): string {
   return `${date}T${time}:00.000Z`;
+}
+
+/**
+ * The persisted fields a draft resolves to — the single draft→ticket mapping
+ * shared by the add and edit forms (and mirroring the create composer). The
+ * rich advanced options live only in the draft UI; persistence keeps the same
+ * flat shape everywhere.
+ */
+function ticketBody(draft: TicketTypeDraft) {
+  return {
+    name: draft.name.trim(),
+    price: ticketPrice(draft),
+    capacity: Math.max(0, Math.floor(Number(draft.capacity) || 0)),
+    salesStartAt:
+      draft.salesSchedule && draft.salesStart
+        ? iso(draft.salesStart, "00:00")
+        : new Date().toISOString(),
+    salesEndAt:
+      draft.salesSchedule && draft.salesEnd
+        ? iso(draft.salesEnd, "23:59")
+        : new Date().toISOString(),
+    description: draft.description.trim(),
+  };
+}
+
+/** Reconstruct an editable draft from a stored ticket type. */
+function draftFromTicket(ticket: TicketType): TicketTypeDraft {
+  return {
+    ...emptyTicket(ticket.id),
+    name: ticket.name,
+    kind: ticket.price === 0 ? "free" : "paid",
+    price: String(ticket.price),
+    capacity: ticket.capacity ? String(ticket.capacity) : "",
+    description: ticket.description ?? "",
+    salesSchedule: true,
+    salesStart: ticket.salesStartAt.slice(0, 10),
+    salesEnd: ticket.salesEndAt.slice(0, 10),
+  };
+}
+
+/** Validate a ticket draft; returns an error message, or null when valid. */
+function validateDraft(t: TicketTypeDraft): string | null {
+  if (!t.name.trim()) return "نام بلیت الزامی است.";
+  const priced = t.kind === "paid" || t.kind === "group" || t.kind === "addon";
+  if (priced && !(Number(t.price) > 0)) return "قیمت را وارد کنید.";
+  if (t.kind === "donation" && Number(t.minPrice) < 0) {
+    return "حداقل مبلغ نامعتبر است.";
+  }
+  if (t.salesSchedule && t.salesStart && t.salesEnd && t.salesEnd < t.salesStart) {
+    return "پایان فروش نباید پیش از شروع آن باشد.";
+  }
+  return null;
 }
 
 /** Ticket-types list for an event, with an inline full "add ticket type" editor. */
@@ -82,6 +129,7 @@ export function EventTickets({ eventId, tickets, sessions }: Props) {
               <EditTicketForm
                 key={t.id}
                 ticket={t}
+                sessions={sessions}
                 onDone={() => {
                   setEditingId(null);
                   router.refresh();
@@ -132,48 +180,41 @@ export function EventTickets({ eventId, tickets, sessions }: Props) {
   );
 }
 
-/** Inline editor for one existing ticket type, mirroring the read-only card. */
+/**
+ * Inline editor for one existing ticket type. Reuses the create composer's
+ * {@link TicketEditor} so the dashboard's edit form exposes exactly the same
+ * options (kind, per-order limits, sales window, early-bird, buyout,
+ * per-session) as the event-creation flow.
+ */
 function EditTicketForm({
   ticket,
+  sessions,
   onDone,
   onCancel,
 }: {
   ticket: TicketType;
+  sessions: SessionOption[];
   onDone: () => void;
   onCancel: () => void;
 }) {
-  const [form, setForm] = useState({
-    name: ticket.name,
-    price: String(ticket.price),
-    capacity: String(ticket.capacity),
-    salesStart: ticket.salesStartAt.slice(0, 10),
-    salesEnd: ticket.salesEndAt.slice(0, 10),
-    description: ticket.description ?? "",
-  });
+  const [draft, setDraft] = useState<TicketTypeDraft>(() =>
+    draftFromTicket(ticket),
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   async function save() {
-    if (!form.name.trim()) return setError("نام بلیت الزامی است.");
-    if (form.salesStart && form.salesEnd && form.salesEnd < form.salesStart) {
-      return setError("پایان فروش نباید پیش از شروع آن باشد.");
-    }
+    const msg = validateDraft(draft);
+    if (msg) return setError(msg);
     setSaving(true);
     setError("");
     try {
+      // Category is not represented in the draft model; omit it so the stored
+      // category (e.g. VIP/student) is preserved rather than reset.
       const res = await fetch(`/api/tickets/${ticket.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          price: Math.max(0, Math.floor(Number(form.price) || 0)),
-          capacity: Math.max(0, Math.floor(Number(form.capacity) || 0)),
-          ...(form.salesStart
-            ? { salesStartAt: iso(form.salesStart, "00:00") }
-            : {}),
-          ...(form.salesEnd ? { salesEndAt: iso(form.salesEnd, "23:59") } : {}),
-          description: form.description.trim(),
-        }),
+        body: JSON.stringify(ticketBody(draft)),
       });
       if (!res.ok) throw new Error("خطا در ذخیرهٔ بلیت.");
       onDone();
@@ -185,76 +226,30 @@ function EditTicketForm({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex flex-col gap-4">
-        <Field id={`t-name-${ticket.id}`} label="نام بلیت" required>
-          <Input
-            id={`t-name-${ticket.id}`}
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field id={`t-price-${ticket.id}`} label="قیمت (تومان)">
-            <MoneyInput
-              id={`t-price-${ticket.id}`}
-              value={form.price}
-              onChange={(v) => setForm((f) => ({ ...f, price: v }))}
-            />
-          </Field>
-          <Field id={`t-cap-${ticket.id}`} label="ظرفیت">
-            <Input
-              id={`t-cap-${ticket.id}`}
-              type="number"
-              min={0}
-              value={form.capacity}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, capacity: e.target.value }))
-              }
-            />
-          </Field>
-          <Field id={`t-start-${ticket.id}`} label="شروع فروش">
-            <DateField
-              id={`t-start-${ticket.id}`}
-              value={form.salesStart}
-              onChange={(v) => setForm((f) => ({ ...f, salesStart: v }))}
-            />
-          </Field>
-          <Field id={`t-end-${ticket.id}`} label="پایان فروش">
-            <DateField
-              id={`t-end-${ticket.id}`}
-              value={form.salesEnd}
-              onChange={(v) => setForm((f) => ({ ...f, salesEnd: v }))}
-            />
-          </Field>
-        </div>
-        <Field id={`t-desc-${ticket.id}`} label="توضیحات">
-          <Textarea
-            id={`t-desc-${ticket.id}`}
-            rows={2}
-            value={form.description}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
-          />
-        </Field>
-        {error ? <p className="text-xs text-danger">{error}</p> : null}
-        <div className="flex items-center gap-2">
-          <Button type="button" size="sm" onClick={save} disabled={saving}>
-            <Check aria-hidden />
-            {saving ? "در حال ذخیره…" : "ذخیره"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            disabled={saving}
-          >
-            <X aria-hidden />
-            انصراف
-          </Button>
-        </div>
+    <div className="flex flex-col gap-4 sm:col-span-2">
+      <TicketEditor
+        ticket={draft}
+        sessions={sessions}
+        canRemove={false}
+        onChange={(p) => setDraft((d) => ({ ...d, ...p }))}
+        onRemove={() => {}}
+      />
+      {error ? <p className="text-xs text-danger">{error}</p> : null}
+      <div className="flex items-center gap-2">
+        <Button type="button" size="sm" onClick={save} disabled={saving}>
+          <Check aria-hidden />
+          {saving ? "در حال ذخیره…" : "ذخیره"}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          disabled={saving}
+        >
+          <X aria-hidden />
+          انصراف
+        </Button>
       </div>
     </div>
   );
@@ -277,16 +272,8 @@ function AddTicketForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  function validate(t: TicketTypeDraft): string | null {
-    if (!t.name.trim()) return "نام بلیت الزامی است.";
-    const priced = t.kind === "paid" || t.kind === "group" || t.kind === "addon";
-    if (priced && !(Number(t.price) > 0)) return "قیمت را وارد کنید.";
-    if (t.kind === "donation" && Number(t.minPrice) < 0) return "حداقل مبلغ نامعتبر است.";
-    return null;
-  }
-
   async function save() {
-    const msg = validate(draft);
+    const msg = validateDraft(draft);
     if (msg) return setError(msg);
     setSaving(true);
     setError("");
@@ -296,19 +283,8 @@ function AddTicketForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventId,
-          name: draft.name.trim(),
-          price: ticketPrice(draft),
-          capacity: Math.max(0, Math.floor(Number(draft.capacity) || 0)),
+          ...ticketBody(draft),
           category: draft.kind === "group" ? "group" : "general",
-          salesStartAt:
-            draft.salesSchedule && draft.salesStart
-              ? iso(draft.salesStart, "00:00")
-              : new Date().toISOString(),
-          salesEndAt:
-            draft.salesSchedule && draft.salesEnd
-              ? iso(draft.salesEnd, "23:59")
-              : new Date().toISOString(),
-          description: draft.description.trim() || undefined,
         }),
       });
       if (!res.ok) throw new Error("خطا در ساخت بلیت.");
