@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { addSession } from "@/lib/server";
-import type { ApiResponse, EventSession } from "@/types";
+import type { ApiResponse, EventSession, SessionAvailability } from "@/types";
 
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?Z?$/;
+
+const AVAILABILITY: SessionAvailability[] = [
+  "full",
+  "almost-full",
+  "soon",
+  "available",
+];
 
 /** POST /api/events/:id/sessions — add a new سانس (startAt/endAt). */
 export async function POST(
@@ -28,7 +35,7 @@ export async function POST(
       { status: 400 },
     );
   }
-  const { startAt, endAt } = body as Record<string, unknown>;
+  const { startAt, endAt, availability } = body as Record<string, unknown>;
   if (
     typeof startAt !== "string" ||
     !ISO.test(startAt) ||
@@ -41,8 +48,21 @@ export async function POST(
       { status: 400 },
     );
   }
+  if (
+    availability !== undefined &&
+    !AVAILABILITY.includes(availability as SessionAvailability)
+  ) {
+    return NextResponse.json(
+      { error: { message: "Invalid availability value.", code: "INVALID_BODY" } },
+      { status: 400 },
+    );
+  }
 
-  const session = addSession(id, { startAt, endAt });
+  const session = addSession(id, {
+    startAt,
+    endAt,
+    ...(availability ? { availability: availability as SessionAvailability } : {}),
+  });
   if (session === undefined) {
     return NextResponse.json(
       { error: { message: `Event "${id}" was not found.`, code: "NOT_FOUND" } },

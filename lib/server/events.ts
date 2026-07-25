@@ -3,7 +3,13 @@
  * Replace the array operations with real queries when a datastore is added.
  */
 
-import type { CreateEventInput, Event, EventSession, Venue } from "@/types";
+import type {
+  CreateEventInput,
+  Event,
+  EventSession,
+  SessionAvailability,
+  Venue,
+} from "@/types";
 
 import { events } from "./store";
 
@@ -92,7 +98,7 @@ export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
 /** Append a new سانس (session) to an event; returns it, or `undefined`. */
 export function addSession(
   eventId: string,
-  input: { startAt: string; endAt: string },
+  input: { startAt: string; endAt: string; availability?: SessionAvailability },
 ): EventSession | undefined {
   const event = events.find((e) => e.id === eventId);
   if (!event) return undefined;
@@ -101,6 +107,7 @@ export function addSession(
     eventId,
     startAt: input.startAt,
     endAt: input.endAt,
+    ...(input.availability ? { availability: input.availability } : {}),
   };
   event.sessions.push(session);
   event.updatedAt = new Date().toISOString();
