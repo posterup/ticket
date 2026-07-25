@@ -25,11 +25,10 @@ import { SessionsManager } from "@/components/dashboard/SessionsManager";
 import { EventTickets } from "@/components/dashboard/EventTickets";
 import { EventAccessSettings } from "@/components/dashboard/EventAccessSettings";
 import { RecurrenceEditor } from "@/components/dashboard/RecurrenceEditor";
-import { GuestInvite } from "@/components/dashboard/GuestInvite";
+import { AttendanceManager } from "@/components/dashboard/AttendanceManager";
 import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
 import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
-import { CheckinPanel } from "@/components/checkin/CheckinPanel";
 import type { TicketSample } from "@/components/tickets/TicketPreview";
 import { emptySlot, type ScheduleDraft } from "@/lib/create/types";
 import type { Event } from "@/types";
@@ -135,14 +134,7 @@ export default async function EventDetailPage({ params }: Params) {
     venue: [event.venue.name, event.venue.city].filter(Boolean).join("، "),
   };
 
-  const checkinEvents = [
-    {
-      id: event.id,
-      title: event.title,
-      sessions: sessionOptions,
-      holders: buildHolders(event.id, 0, sessionOptions),
-    },
-  ];
+  const holders = buildHolders(event.id, 0, sessionOptions);
 
   return (
     <div className="flex flex-col gap-6">
@@ -228,19 +220,16 @@ export default async function EventDetailPage({ params }: Params) {
             id: "checkin",
             label: "پذیرش و مهمانان",
             content: (
-              <div className="flex flex-col gap-6">
-                {event.mode !== "recurring" ? (
-                  <GuestInvite
-                    eventId={event.id}
-                    sessions={sessionOptions}
-                    initial={guests}
-                  />
-                ) : null}
-                <CheckinPanel
-                  events={checkinEvents}
-                  initialChecked={listCheckedHolderIds()}
-                />
-              </div>
+              <AttendanceManager
+                eventId={event.id}
+                eventTitle={event.title}
+                sessions={sessionOptions}
+                holders={holders}
+                capacity={event.venue.capacity}
+                guests={guests}
+                initialChecked={listCheckedHolderIds()}
+                allowGuests={event.mode !== "recurring"}
+              />
             ),
           },
           {
