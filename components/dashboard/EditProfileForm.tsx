@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, ImagePlus, Eye } from "lucide-react";
+import { ChevronRight, ImagePlus } from "lucide-react";
 
 import type { Workspace } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -50,34 +50,15 @@ export function EditProfileForm({ workspaces }: { workspaces: Workspace[] }) {
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <Link
-          href="/dashboard/profile"
-          aria-label="بازگشت به پروفایل"
-          className="hidden size-9 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40 lg:grid"
-        >
-          <ChevronRight className="size-5" aria-hidden />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            ویرایش پروفایل
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            بنر، لوگو، نام و معرفی فضای کاری شما.
-          </p>
-        </div>
-
-        {/* View the public page as a visitor would see it. */}
-        <Link
-          href={`/w/${active.slug}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring/40"
-        >
-          <Eye className="size-4" aria-hidden />
-          مشاهده به‌عنوان بازدیدکننده
-        </Link>
-      </div>
+      {/* Desktop-only back link — on mobile the shell's header carries the
+          page title and a back control. */}
+      <Link
+        href="/dashboard/profile"
+        aria-label="بازگشت به پروفایل"
+        className="hidden size-9 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40 lg:grid"
+      >
+        <ChevronRight className="size-5" aria-hidden />
+      </Link>
 
       <form
         onSubmit={(e) => {
