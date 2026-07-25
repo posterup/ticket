@@ -26,7 +26,7 @@ export function LoginForm() {
     // (e.g. back to an event after tapping "notify me") or the dashboard.
     setLoggedIn();
     const dest = searchParams.get("next");
-    router.push(dest && dest.startsWith("/") ? dest : "/dashboard");
+    router.push(dest && dest.startsWith("/") ? dest : "/dashboard/events");
     router.refresh();
   }
 

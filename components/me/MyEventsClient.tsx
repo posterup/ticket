@@ -75,7 +75,7 @@ export function MyEventsClient({ events }: { events: MeEvent[] }) {
           </span>
         </Link>
         <Link
-          href="/dashboard"
+          href="/dashboard/events"
           className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-border-strong"
         >
           <span className="flex items-center gap-3">

@@ -7,14 +7,14 @@ import { Ticket, Plus, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
 import { DateField } from "@/components/ui/date-field";
 import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
-import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/wizard/labels";
+import { CATEGORY_LABELS } from "@/lib/wizard/labels";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
 import { emptyTicket, type TicketTypeDraft } from "@/lib/create/types";
-import type { TicketCategory, TicketType } from "@/types";
+import type { TicketType } from "@/types";
 
 interface Props {
   eventId: string;
@@ -144,7 +144,6 @@ function EditTicketForm({
 }) {
   const [form, setForm] = useState({
     name: ticket.name,
-    category: ticket.category,
     price: String(ticket.price),
     capacity: String(ticket.capacity),
     salesStart: ticket.salesStartAt.slice(0, 10),
@@ -167,7 +166,6 @@ function EditTicketForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(),
-          category: form.category,
           price: Math.max(0, Math.floor(Number(form.price) || 0)),
           capacity: Math.max(0, Math.floor(Number(form.capacity) || 0)),
           ...(form.salesStart
@@ -197,31 +195,11 @@ function EditTicketForm({
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id={`t-cat-${ticket.id}`} label="دسته‌بندی">
-            <Select
-              id={`t-cat-${ticket.id}`}
-              value={form.category}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  category: e.target.value as TicketCategory,
-                }))
-              }
-            >
-              {CATEGORY_ORDER.map((c) => (
-                <option key={c} value={c}>
-                  {CATEGORY_LABELS[c]}
-                </option>
-              ))}
-            </Select>
-          </Field>
           <Field id={`t-price-${ticket.id}`} label="قیمت (تومان)">
-            <Input
+            <MoneyInput
               id={`t-price-${ticket.id}`}
-              type="number"
-              min={0}
               value={form.price}
-              onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+              onChange={(v) => setForm((f) => ({ ...f, price: v }))}
             />
           </Field>
           <Field id={`t-cap-${ticket.id}`} label="ظرفیت">

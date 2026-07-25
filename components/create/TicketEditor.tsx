@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
 import { DateField } from "@/components/ui/date-field";
 import { Disclosure, Toggle } from "@/components/create/ui";
@@ -71,13 +72,10 @@ export function TicketEditor({
 
         {priced ? (
           <Field id={`price-${t.id}`} label="قیمت (تومان)" required>
-            <Input
+            <MoneyInput
               id={`price-${t.id}`}
-              type="number"
-              min={0}
-              inputMode="numeric"
               value={t.price}
-              onChange={(e) => onChange({ price: e.target.value })}
+              onChange={(v) => onChange({ price: v })}
             />
           </Field>
         ) : null}
@@ -171,13 +169,10 @@ export function TicketEditor({
           {t.earlyBird ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id={`eb-price-${t.id}`} label="قیمت زودهنگام (تومان)">
-                <Input
+                <MoneyInput
                   id={`eb-price-${t.id}`}
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
                   value={t.earlyBirdPrice}
-                  onChange={(e) => onChange({ earlyBirdPrice: e.target.value })}
+                  onChange={(v) => onChange({ earlyBirdPrice: v })}
                 />
               </Field>
               <Field id={`eb-until-${t.id}`} label="تا تاریخ">
@@ -202,24 +197,18 @@ export function TicketEditor({
           {t.buyout ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id={`buyout-base-${t.id}`} label="قیمت پایهٔ دربست (تومان)">
-                <Input
+                <MoneyInput
                   id={`buyout-base-${t.id}`}
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
                   value={t.buyoutBasePrice}
-                  onChange={(e) => onChange({ buyoutBasePrice: e.target.value })}
+                  onChange={(v) => onChange({ buyoutBasePrice: v })}
                   placeholder="مثلاً ۱۰٬۰۰۰٬۰۰۰"
                 />
               </Field>
               <Field id={`buyout-pp-${t.id}`} label="هزینه به‌ازای هر نفر (تومان)">
-                <Input
+                <MoneyInput
                   id={`buyout-pp-${t.id}`}
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
                   value={t.buyoutPerPerson}
-                  onChange={(e) => onChange({ buyoutPerPerson: e.target.value })}
+                  onChange={(v) => onChange({ buyoutPerPerson: v })}
                   placeholder="مثلاً ۲۰۰٬۰۰۰"
                 />
               </Field>
