@@ -13,7 +13,6 @@ export interface WsEvent {
   start: string;
   dateLabel: string;
   place: string;
-  price: string | null;
   tags: string[];
 }
 
@@ -113,25 +112,6 @@ function EventRow({ e }: { e: WsEvent }) {
             <span className="truncate">{e.place}</span>
           </span>
         </div>
-        {e.price ? (
-          <div className="relative flex w-20 shrink-0 flex-col items-end justify-center border-s border-dashed border-border ps-3 text-end">
-            {/* ticket perforation — notch cut-outs at the ends of the tear line */}
-            <span
-              className="absolute -top-3 start-0 -ms-1.5 size-3 -translate-y-1/2 rounded-full bg-background"
-              aria-hidden
-            />
-            <span
-              className="absolute -bottom-3 start-0 -ms-1.5 size-3 translate-y-1/2 rounded-full bg-background"
-              aria-hidden
-            />
-            <span className="text-sm font-bold leading-tight text-accent sm:text-base">
-              {e.price === "رایگان" ? "رایگان" : e.price.replace(" تومان", "")}
-            </span>
-            {e.price !== "رایگان" ? (
-              <span className="text-[10px] text-muted">تومان</span>
-            ) : null}
-          </div>
-        ) : null}
     </Link>
   );
 }
