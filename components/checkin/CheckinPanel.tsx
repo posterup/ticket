@@ -23,15 +23,24 @@ type Feedback = { kind: "ok" | "dup" | "err" | "warn"; msg: string };
 export function CheckinPanel({
   events,
   initialChecked = [],
+  sessionId: controlledSessionId,
+  onSessionChange,
+  hideControls = false,
 }: {
   events: CheckinEvent[];
   /** Holder ids already checked in (from the server), so state survives refresh. */
   initialChecked?: string[];
+  /** Controlled سانس id — when provided, the parent owns session selection. */
+  sessionId?: string;
+  onSessionChange?: (id: string) => void;
+  /** Hide the event/سانس selectors (the parent provides its own picker). */
+  hideControls?: boolean;
 }) {
   const [eventIdx, setEventIdx] = useState(0);
   const event = events[eventIdx];
   const sessions = event?.sessions ?? [];
-  const [sessionId, setSessionId] = useState(sessions[0]?.id ?? "");
+  const [innerSessionId, setInnerSessionId] = useState(sessions[0]?.id ?? "");
+  const sessionId = controlledSessionId ?? innerSessionId;
   const [checked, setChecked] = useState<Set<string>>(
     () => new Set(initialChecked),
   );
@@ -68,7 +77,8 @@ export function CheckinPanel({
   }, [sessionHolders, query]);
 
   function switchSession(id: string) {
-    setSessionId(id);
+    if (onSessionChange) onSessionChange(id);
+    else setInnerSessionId(id);
     setFeedback(null);
     setQuery("");
   }
@@ -108,49 +118,53 @@ export function CheckinPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        {events.length > 1 ? (
-          <Field id="event" label="رویداد">
-            <Select
-              id="event"
-              value={String(eventIdx)}
-              onChange={(e) => {
-                const idx = Number(e.target.value);
-                setEventIdx(idx);
-                setSessionId(events[idx]?.sessions[0]?.id ?? "");
-                setFeedback(null);
-                setQuery("");
-              }}
-            >
-              {events.map((ev, i) => (
-                <option key={ev.id} value={i}>
-                  {ev.title}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        ) : null}
+      {events.length > 1 || (!hideControls && sessions.length > 0) ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {events.length > 1 ? (
+            <Field id="event" label="رویداد">
+              <Select
+                id="event"
+                value={String(eventIdx)}
+                onChange={(e) => {
+                  const idx = Number(e.target.value);
+                  setEventIdx(idx);
+                  const first = events[idx]?.sessions[0]?.id ?? "";
+                  if (onSessionChange) onSessionChange(first);
+                  else setInnerSessionId(first);
+                  setFeedback(null);
+                  setQuery("");
+                }}
+              >
+                {events.map((ev, i) => (
+                  <option key={ev.id} value={i}>
+                    {ev.title}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
 
-        {sessions.length > 0 ? (
-          <Field
-            id="session"
-            label="سانس"
-            hint="ورودها فقط برای سانس انتخاب‌شده ثبت می‌شوند."
-          >
-            <Select
+          {!hideControls && sessions.length > 0 ? (
+            <Field
               id="session"
-              value={sessionId}
-              onChange={(e) => switchSession(e.target.value)}
+              label="سانس"
+              hint="ورودها فقط برای سانس انتخاب‌شده ثبت می‌شوند."
             >
-              {sessions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        ) : null}
-      </div>
+              <Select
+                id="session"
+                value={sessionId}
+                onChange={(e) => switchSession(e.target.value)}
+              >
+                {sessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
         {/* Scan / code entry + progress */}
