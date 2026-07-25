@@ -138,6 +138,23 @@ export default async function EventDetailPage({ params }: Params) {
                   title={event.title}
                   description={event.description}
                 />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <EditVenueForm eventId={event.id} venue={event.venue} />
+
+                  <SessionsManager
+                    eventId={event.id}
+                    sessions={event.sessions}
+                    modeLabel={modeLabel(event.mode)}
+                    recurrence={recurrence}
+                  />
+                </div>
+
+                <EventCollaborators
+                  eventId={event.id}
+                  workspaces={collabWorkspaces}
+                  initial={collaborators}
+                />
+
                 <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
                   <div className="p-5">
                     <EventLinkForm
@@ -155,22 +172,6 @@ export default async function EventDetailPage({ params }: Params) {
                     />
                   </div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <EditVenueForm eventId={event.id} venue={event.venue} />
-
-                  <SessionsManager
-                    eventId={event.id}
-                    sessions={event.sessions}
-                    modeLabel={modeLabel(event.mode)}
-                    recurrence={recurrence}
-                  />
-                </div>
-
-                <EventCollaborators
-                  eventId={event.id}
-                  workspaces={collabWorkspaces}
-                  initial={collaborators}
-                />
               </div>
             ),
           },
