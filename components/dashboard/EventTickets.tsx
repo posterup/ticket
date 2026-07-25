@@ -6,7 +6,6 @@ import { Ticket, Plus, Pencil, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
-import { CATEGORY_LABELS } from "@/lib/wizard/labels";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
 import { emptyTicket, type TicketTypeDraft } from "@/lib/create/types";
 import type { TicketType } from "@/types";
@@ -141,9 +140,6 @@ export function EventTickets({ eventId, tickets, sessions }: Props) {
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium text-foreground">{t.name}</p>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted">
-                      {CATEGORY_LABELS[t.category]}
-                    </span>
                     <Button
                       type="button"
                       variant="ghost"
