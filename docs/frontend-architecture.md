@@ -8,10 +8,9 @@ that the same conventions scale to the future organizer dashboard.
 
 - **Server Components by default.** Only components that need motion or browser
   APIs are Client Components (`"use client"`), isolated as leaves.
-- **RTL and Persian only.** The document is `<html lang="fa" dir="rtl">`. All
-  user-facing copy is Persian; English appears only in code and docs. Logical
-  properties and Tailwind's RTL-aware utilities (`me-*`, `ms-*`) are preferred
-  over physical left/right.
+- **RTL and Persian only.** Prefer logical properties and Tailwind's RTL-aware
+  utilities (`me-*`, `ms-*`) over physical left/right. See the RTL &
+  Persian-first rule in `CLAUDE.md`.
 - **Design tokens over ad-hoc values.** Colors, radii, and fonts come from CSS
   variables defined in `app/globals.css` and surfaced to Tailwind through
   `@theme inline`. See `docs/design-system.md`.

@@ -1,8 +1,7 @@
 # Backend Architecture
 
-This document describes the backend layer of **پوستر (Poster)** - a Persian-first
-Event CRM & ticketing platform built on Next.js 15 (App Router), React 19 and
-strict TypeScript.
+This document describes the backend layer of **پوستر (Poster)**. For the tech
+stack and cross-cutting conventions, see `CLAUDE.md`.
 
 ## Frontend / backend separation
 
@@ -10,7 +9,7 @@ The App Router lets frontend and backend live in one Next.js project while
 staying cleanly separated by directory and runtime:
 
 - **Frontend** - React Server/Client Components under `app/` (pages, layouts,
-  UI). Delivered on a separate branch.
+  UI).
 - **Backend** - three server-only concerns, none of which import UI:
   - `types/` - the shared domain model (also consumed by the frontend for
     type-safety across the wire).

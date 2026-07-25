@@ -2,7 +2,7 @@
 
 This document describes the surfaces of the Poster platform: what exists today
 (the public landing page and the ticket-creation wizard) and the anticipated
-future dashboard. All UI is Persian and renders right-to-left.
+future dashboard.
 
 ## Surface overview
 

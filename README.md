@@ -8,32 +8,11 @@ scaffolding that anticipates the future dashboard and API surface.
 > right-to-left (`<html lang="fa" dir="rtl">`). English appears only in code
 > and documentation.
 
-## Tech stack
+## Tech stack & structure
 
-- **Next.js 15** (App Router) + **React 19**
-- **TypeScript** (strict)
-- **Tailwind CSS v4**
-- **shadcn/ui**-style primitives (owned components under `components/ui`)
-- **Framer Motion** for entrance and micro-interactions
-- **Lucide React** icons
-- **Vazirmatn** via `next/font/google`
-
-## Project structure
-
-```
-app/            # App Router routes + root layout (frontend shell)
-  api/          # Route Handlers (backend surface)
-components/      # UI components (frontend)
-  ui/           # Reusable design-system primitives
-lib/            # Shared utilities (cn, motion variants)
-  server/       # Backend data-access layer
-types/          # Shared domain types
-docs/           # Product, design, frontend & backend documentation
-```
-
-The frontend (routes, components) and backend (route handlers, data layer)
-are separated following Next.js App Router conventions. See `docs/` for
-detailed architecture notes.
+See [`CLAUDE.md`](CLAUDE.md) for the full tech stack, the folder map, and the
+architecture conventions. Deeper per-file layouts live in
+`docs/frontend-architecture.md` and `docs/backend-architecture.md`.
 
 ## Getting started
 

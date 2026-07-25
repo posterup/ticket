@@ -120,9 +120,8 @@ Capabilities are grouped by area. Each item is tagged:
    record or act on it. Ticketing is the acquisition channel, not the goal.
 2. **Professional, not playful.** Poster is business software. Calm, spacious,
    and precise beats loud and decorative. The UI should earn a team's trust.
-3. **Persian-first and RTL-native.** The product renders right-to-left with
-   Persian copy and Persian numerals. RTL is the default design case, never an
-   afterthought.
+3. **Persian-first and RTL-native.** RTL is the default design case, never an
+   afterthought (see the RTL & Persian-first rule in `CLAUDE.md`).
 4. **Clarity over configuration.** Prefer sensible defaults and progressive
    disclosure. Power is available, but the common path stays short (the
    three-step wizard is the model).
