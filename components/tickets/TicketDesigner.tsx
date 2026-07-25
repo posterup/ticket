@@ -25,7 +25,6 @@ const SAMPLE: TicketSample = {
 };
 
 const FIELD_TOGGLES: { key: keyof TicketTemplate; label: string }[] = [
-  { key: "showCategory", label: "نمایش دسته بلیت" },
   { key: "showDate", label: "نمایش تاریخ" },
   { key: "showVenue", label: "نمایش مکان" },
 ];
@@ -46,7 +45,7 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
     bgColor: null,
     bgImage: null,
     logo: null,
-    showCategory: true,
+    showCategory: false,
     showDate: true,
     showVenue: true,
     note: "این بلیت را هنگام ورود ارائه دهید.",
@@ -97,8 +96,8 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <div className="flex flex-col gap-6 lg:order-1">
+    <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card lg:order-1">
         {/* Brand color */}
         <ControlGroup label="رنگ برند">
           <div className="flex flex-wrap items-center gap-2.5">
@@ -231,11 +230,10 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
               </button>
             ) : null}
           </div>
+          {uploadError ? (
+            <p className="text-sm text-danger">{uploadError}</p>
+          ) : null}
         </ControlGroup>
-
-        {uploadError ? (
-          <p className="text-sm text-danger">{uploadError}</p>
-        ) : null}
 
         {/* Field toggles */}
         <ControlGroup label="فیلدهای بلیت">
@@ -251,16 +249,18 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
           </div>
         </ControlGroup>
 
-        <Field id="note" label="یادداشت روی بلیت">
-          <Input
-            id="note"
-            value={template.note}
-            onChange={(e) => patch({ note: e.target.value })}
-            placeholder="مثلاً: این بلیت را هنگام ورود ارائه دهید."
-          />
-        </Field>
+        <div className="p-5">
+          <Field id="note" label="یادداشت روی بلیت">
+            <Input
+              id="note"
+              value={template.note}
+              onChange={(e) => patch({ note: e.target.value })}
+              placeholder="مثلاً: این بلیت را هنگام ورود ارائه دهید."
+            />
+          </Field>
+        </div>
 
-        <div>
+        <div className="p-5">
           <Button type="button" onClick={() => setSaved(true)}>
             {saved ? (
               <>
@@ -274,13 +274,13 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
         </div>
       </div>
 
-      <div className="lg:order-2">
-        <div className="lg:sticky lg:top-8">
-          <p className="mb-4 text-sm font-medium text-muted">پیش‌نمایش زنده</p>
+      <div className="lg:order-2 lg:sticky lg:top-8">
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-subtle/40 p-5 sm:p-6">
+          <p className="text-sm font-medium text-muted">پیش‌نمایش زنده</p>
           <div ref={previewRef}>
             <TicketPreview template={template} sample={sample} />
           </div>
-          <div className="mt-5 flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2 border-t border-border pt-4">
             <Button
               type="button"
               variant="secondary"
@@ -312,7 +312,7 @@ function ControlGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 p-5">
       <h2 className="text-sm font-semibold text-foreground">{label}</h2>
       {children}
     </div>
