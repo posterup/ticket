@@ -8,7 +8,6 @@ import {
   BadgeCheck,
   Ticket,
   Video,
-  User,
 } from "lucide-react";
 
 import {
@@ -105,32 +104,47 @@ export default async function PublicEventDetail({ params }: Params) {
                 {event.title}
               </h1>
 
-              {/* location · organizer */}
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <p className="flex items-center gap-1.5 text-sm text-muted">
-                  {online ? (
-                    <Video className="size-4 shrink-0 text-faint" aria-hidden />
-                  ) : (
-                    <MapPin className="size-4 shrink-0 text-faint" aria-hidden />
-                  )}
-                  {online
-                    ? "رویداد آنلاین"
-                    : [event.venue.name, event.venue.city]
-                        .filter(Boolean)
-                        .join("، ") || "مکان نامشخص"}
-                </p>
-                {organizer ? (
-                  <Link
-                    href={`/w/${organizer.slug}`}
-                    className="flex items-center gap-1.5 text-sm text-muted underline-offset-4 hover:text-foreground hover:underline"
-                  >
-                    <User className="size-4 shrink-0 text-faint" aria-hidden />
-                    <span className="font-medium text-foreground">
-                      {organizer.name}
-                    </span>
-                  </Link>
-                ) : null}
-              </div>
+              {/* organizer — attribution chip; a bordered pill with the
+                  workspace avatar + a chevron reads clearly as tappable. */}
+              {organizer ? (
+                <Link
+                  href={`/w/${organizer.slug}`}
+                  aria-label={`صفحهٔ برگزارکننده: ${organizer.name}`}
+                  className="group mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pe-2.5 ps-1 outline-none transition-colors hover:border-border-strong hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
+                >
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
+                    {organizer.avatar}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted">برگزارکننده</span>
+                  <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
+                    <span className="truncate">{organizer.name}</span>
+                    {organizer.verified ? (
+                      <BadgeCheck
+                        className="size-4 shrink-0 text-accent"
+                        aria-label="تأییدشده"
+                      />
+                    ) : null}
+                  </span>
+                  <ChevronLeft
+                    className="size-4 shrink-0 text-faint transition-colors group-hover:text-muted"
+                    aria-hidden
+                  />
+                </Link>
+              ) : null}
+
+              {/* location */}
+              <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
+                {online ? (
+                  <Video className="size-4 shrink-0 text-faint" aria-hidden />
+                ) : (
+                  <MapPin className="size-4 shrink-0 text-faint" aria-hidden />
+                )}
+                {online
+                  ? "رویداد آنلاین"
+                  : [event.venue.name, event.venue.city]
+                      .filter(Boolean)
+                      .join("، ") || "مکان نامشخص"}
+              </p>
 
               {/* sessions — chips */}
               <div className="mt-4 flex flex-wrap gap-2">
