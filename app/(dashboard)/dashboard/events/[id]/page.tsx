@@ -206,18 +206,18 @@ export default async function EventDetailPage({ params }: Params) {
 
                 <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
                   <div className="p-5">
-                    <EventLinkForm
-                      eventId={event.id}
-                      slug={event.slug ?? event.id}
-                    />
-                  </div>
-                  <div className="p-5">
                     <EventAccessSettings
                       eventId={event.id}
                       visibility={event.visibility}
                       requiresApproval={event.requiresApproval}
                       audienceTags={event.audienceTags}
                       availableTags={audienceTags}
+                    />
+                  </div>
+                  <div className="p-5">
+                    <EventLinkForm
+                      eventId={event.id}
+                      slug={event.slug ?? event.id}
                     />
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Check, Plus, Trash2, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatJalaliDate } from "@/lib/format";
@@ -117,6 +117,20 @@ export function SessionsEditor(props: Props) {
   } = props;
 
   const [exceptionDate, setExceptionDate] = useState("");
+  // Per-day سانس‌ها that are open for editing. A row stays open (start + end
+  // fields) until confirmed, so setting the start time doesn't collapse it into
+  // a chip before the user can finish entering the end time.
+  const [editingDaySlots, setEditingDaySlots] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const openDaySlot = (id: string) =>
+    setEditingDaySlots((prev) => new Set(prev).add(id));
+  const closeDaySlot = (id: string) =>
+    setEditingDaySlots((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   const activeDays = WEEKDAY_ORDER.filter((d) => schedule.byDay.includes(d));
 
   const slotsSection = (
@@ -216,8 +230,14 @@ export function SessionsEditor(props: Props) {
               <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border">
                 {activeDays.map((day) => {
                   const extra = schedule.daySlots[day] ?? [];
-                  const timed = extra.filter((s) => s.startTime);
-                  const untimed = extra.filter((s) => !s.startTime);
+                  // A row is open while it's being edited or has no start time
+                  // yet; entered-and-confirmed سانس‌ها collapse into chips.
+                  const openRows = extra.filter(
+                    (s) => editingDaySlots.has(s.id) || !s.startTime,
+                  );
+                  const chips = extra.filter(
+                    (s) => s.startTime && !editingDaySlots.has(s.id),
+                  );
                   return (
                     <div key={day} className="flex flex-col gap-2.5 p-4">
                       <div className="flex flex-wrap items-center gap-2">
@@ -235,13 +255,19 @@ export function SessionsEditor(props: Props) {
                               {s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime}
                             </span>
                           ))}
-                        {/* per-day extra سانس‌ها as removable chips */}
-                        {timed.map((s) => (
+                        {/* per-day extra سانس‌ها as editable/removable chips */}
+                        {chips.map((s) => (
                           <span
                             key={s.id}
                             className="inline-flex items-center gap-1.5 rounded-full border border-foreground bg-foreground px-3 py-1 text-xs text-background"
                           >
-                            {s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime}
+                            <button
+                              type="button"
+                              onClick={() => openDaySlot(s.id)}
+                              className="outline-none hover:underline"
+                            >
+                              {s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime}
+                            </button>
                             <button
                               type="button"
                               onClick={() => onRemoveDaySlot(day, s.id)}
@@ -261,8 +287,8 @@ export function SessionsEditor(props: Props) {
                           افزودن سانس
                         </button>
                       </div>
-                      {/* time entry for just-added (untimed) day سانس‌ها */}
-                      {untimed.map((s) => (
+                      {/* time entry for open day سانس‌ها; stays open until confirmed */}
+                      {openRows.map((s) => (
                         <div
                           key={s.id}
                           className="grid gap-3 rounded-md bg-subtle p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
@@ -271,7 +297,12 @@ export function SessionsEditor(props: Props) {
                             <TimeField
                               id={`d-start-${day}-${s.id}`}
                               value={s.startTime}
-                              onChange={(v) => onDaySlotChange(day, s.id, { startTime: v })}
+                              onChange={(v) => {
+                                onDaySlotChange(day, s.id, { startTime: v });
+                                // Keep the row open so the end time can still be
+                                // set instead of collapsing into a chip.
+                                openDaySlot(s.id);
+                              }}
                             />
                           </Field>
                           <Field id={`d-end-${day}-${s.id}`} label="پایان">
@@ -281,14 +312,28 @@ export function SessionsEditor(props: Props) {
                               onChange={(v) => onDaySlotChange(day, s.id, { endTime: v })}
                             />
                           </Field>
-                          <button
-                            type="button"
-                            onClick={() => onRemoveDaySlot(day, s.id)}
-                            aria-label="حذف سانس"
-                            className="mb-1 grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-background hover:text-danger"
-                          >
-                            <Trash2 className="size-4" aria-hidden />
-                          </button>
+                          <div className="mb-1 flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => closeDaySlot(s.id)}
+                              disabled={!s.startTime}
+                              aria-label="تأیید سانس"
+                              className="grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-40"
+                            >
+                              <Check className="size-4" aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeDaySlot(s.id);
+                                onRemoveDaySlot(day, s.id);
+                              }}
+                              aria-label="حذف سانس"
+                              className="grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-background hover:text-danger focus-visible:ring-2 focus-visible:ring-ring/40"
+                            >
+                              <Trash2 className="size-4" aria-hidden />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
