@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Check, X } from "lucide-react";
+import { FileText, Pencil, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -16,7 +16,7 @@ interface Props {
 }
 
 /**
- * Event header with an inline edit mode for title and description. Event
+ * Overview-tab card for editing the event title and description. Event
  * lifecycle status is not editable here — hosts manage state per سانس instead.
  */
 export function EditEventForm({ eventId, title, description }: Props) {
@@ -60,33 +60,40 @@ export function EditEventForm({ eventId, title, description }: Props) {
 
   if (!editing) {
     return (
-      <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {title}
-          </h1>
+      <section className="rounded-lg border border-border p-5">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <FileText className="size-4 text-faint" aria-hidden />
+            عنوان و توضیحات
+          </h2>
           <Button
             type="button"
             variant="secondary"
             size="sm"
-            className="ms-auto"
             onClick={() => setEditing(true)}
           >
             <Pencil aria-hidden />
             ویرایش
           </Button>
         </div>
+        <p className="text-sm font-medium text-foreground">{title}</p>
         {description ? (
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+          <p className="mt-1 text-sm leading-relaxed text-muted">
             {description}
           </p>
-        ) : null}
-      </div>
+        ) : (
+          <p className="mt-1 text-sm text-faint">بدون توضیحات</p>
+        )}
+      </section>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
+    <section className="rounded-lg border border-border bg-card p-5">
+      <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+        <FileText className="size-4 text-faint" aria-hidden />
+        عنوان و توضیحات
+      </h2>
       <div className="flex flex-col gap-4">
         <Field id="edit-title" label="عنوان" required>
           <Input
@@ -123,6 +130,6 @@ export function EditEventForm({ eventId, title, description }: Props) {
           </Button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

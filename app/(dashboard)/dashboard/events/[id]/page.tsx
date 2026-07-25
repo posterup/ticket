@@ -113,11 +113,16 @@ export default async function EventDetailPage({ params }: Params) {
         بازگشت به رویدادها
       </Link>
 
-      <EditEventForm
-        eventId={event.id}
-        title={event.title}
-        description={event.description}
-      />
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          {event.title}
+        </h1>
+        {event.description ? (
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+            {event.description}
+          </p>
+        ) : null}
+      </div>
 
       <EventConsole
         tabs={[
@@ -126,6 +131,11 @@ export default async function EventDetailPage({ params }: Params) {
             label: "نمای کلی",
             content: (
               <div className="flex flex-col gap-4">
+                <EditEventForm
+                  eventId={event.id}
+                  title={event.title}
+                  description={event.description}
+                />
                 <EventLinkForm eventId={event.id} slug={event.slug ?? event.id} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <EditVenueForm eventId={event.id} venue={event.venue} />
