@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { formatJalaliDate, formatTime, formatNumber } from "@/lib/format";
-import { MODE_LABELS } from "@/lib/events/labels";
+import { modeLabel } from "@/lib/events/labels";
 import { groupEventsByMonth } from "@/lib/events/timeline";
 import { EventStatusBadge } from "@/components/dashboard/EventStatusBadge";
 import type { Event } from "@/types";
@@ -75,8 +75,8 @@ function EventCard({ event, start }: { event: Event; start: string }) {
             {formatJalaliDate(start)} · {formatTime(start)}
           </p>
           <p className="mt-1 truncate text-xs text-muted">
-            {MODE_LABELS[event.mode]} · {place} ·{" "}
-            {formatNumber(event.venue.capacity)} نفر
+            {modeLabel(event.mode) ? `${modeLabel(event.mode)} · ` : ""}
+            {place} · {formatNumber(event.venue.capacity)} نفر
           </p>
         </div>
         <ChevronLeft className="mt-0.5 size-4 shrink-0 text-faint" aria-hidden />

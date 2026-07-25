@@ -9,7 +9,7 @@ import {
 } from "@/lib/server";
 import { cityFromEnglish } from "@/lib/geo/iran";
 import { formatJalaliDate, formatToman } from "@/lib/format";
-import { MODE_LABELS } from "@/lib/events/labels";
+import { modeLabel } from "@/lib/events/labels";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import {
@@ -40,7 +40,7 @@ export default async function PublicEventsPage() {
         event: {
           id: event.id,
           title: event.title,
-          modeLabel: MODE_LABELS[event.mode],
+          modeLabel: modeLabel(event.mode),
           city: event.venue.city,
           venueName: event.venue.name,
           dateLabel: firstSession ? formatJalaliDate(firstSession.startAt) : "",

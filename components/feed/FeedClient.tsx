@@ -12,7 +12,7 @@ import { EventCover } from "@/components/events/EventCover";
 export interface FeedEvent {
   id: string;
   title: string;
-  modeLabel: string;
+  modeLabel: string | null;
   venue: string;
   dateLabel: string;
   price: string | null;
@@ -83,7 +83,9 @@ export function FeedClient({
               tags={e.tags}
               className="mb-4 aspect-[16/7] rounded-lg"
             />
-            <span className="text-xs text-faint">{e.modeLabel}</span>
+            {e.modeLabel ? (
+              <span className="text-xs text-faint">{e.modeLabel}</span>
+            ) : null}
             <h2 className="mt-1 text-base font-semibold text-foreground hover:underline">
               {e.title}
             </h2>
