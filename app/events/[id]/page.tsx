@@ -132,41 +132,37 @@ export default async function PublicEventDetail({ params }: Params) {
                 </Link>
               ) : null}
 
-              {/* location + sessions — chips sharing the organizer pill
-                  design: a filled circular icon badge inside a bordered pill. */}
-              <div className="mt-3 flex flex-wrap gap-2">
+              {/* location + sessions — plain icon + text rows, one per line,
+                  stacked as tightly as possible. */}
+              <div className="mt-3 flex flex-col gap-1">
                 {/* location */}
-                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pe-3 ps-1">
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-foreground text-background">
-                    {online ? (
-                      <Video className="size-3.5" aria-hidden />
-                    ) : (
-                      <MapPin className="size-3.5" aria-hidden />
-                    )}
-                  </span>
-                  <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                <p className="flex items-center gap-1.5 text-sm text-muted">
+                  {online ? (
+                    <Video className="size-4 shrink-0 text-faint" aria-hidden />
+                  ) : (
+                    <MapPin className="size-4 shrink-0 text-faint" aria-hidden />
+                  )}
+                  <span className="min-w-0 truncate">
                     {online
                       ? "رویداد آنلاین"
                       : [event.venue.name, event.venue.city]
                           .filter(Boolean)
                           .join("، ") || "مکان نامشخص"}
                   </span>
-                </div>
+                </p>
 
                 {/* sessions */}
                 {sessions.map((s) => (
-                  <div
+                  <p
                     key={s.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pe-3 ps-1"
+                    className="flex items-center gap-1.5 text-sm text-muted"
                   >
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-foreground text-background">
-                      <Clock className="size-3.5" aria-hidden />
-                    </span>
-                    <span className="text-sm font-medium text-foreground">
+                    <Clock className="size-4 shrink-0 text-faint" aria-hidden />
+                    <span>
                       {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
                       {formatTime(s.endAt)}
                     </span>
-                  </div>
+                  </p>
                 ))}
               </div>
             </div>
