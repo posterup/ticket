@@ -14,8 +14,9 @@ const typeLabel = (w: Workspace) =>
   w.type === "business" ? "کسب‌وکار" : "شخصی";
 
 /**
- * Profile card: the active workspace's logo + name (tap to view/edit the
- * profile) with a control to switch between workspaces.
+ * Profile card: the active workspace's logo + name (tap to view the public
+ * profile as a visitor sees it) with a control to switch between workspaces.
+ * Editing lives in its own menu entry (see {@link AccountMenu}).
  */
 export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
   const [activeId, setActiveId] = useState(workspaces[0]?.id ?? "");
@@ -46,9 +47,10 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
 
   return (
     <div className="rounded-lg border border-border bg-card">
-      {/* Tap the identity to open the editable profile. */}
+      {/* Tap the identity to view the public profile as a visitor sees it —
+          same tab, not a new one. Editing has its own menu entry. */}
       <Link
-        href="/dashboard/profile/edit"
+        href={`/w/${active.slug}`}
         className="flex items-center gap-4 rounded-t-lg p-5 outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
       >
         <span className="grid size-14 shrink-0 place-items-center rounded-full bg-foreground text-lg font-bold text-background">
@@ -59,7 +61,7 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
             {active.name}
           </p>
           <p className="mt-0.5 text-sm text-muted">
-            {typeLabel(active)} · مشاهده و ویرایش پروفایل
+            {typeLabel(active)} · مشاهده پروفایل
           </p>
         </div>
         <ChevronLeft className="size-5 shrink-0 text-faint" aria-hidden />
