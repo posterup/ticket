@@ -115,7 +115,7 @@ export default async function EventDetailPage({ params }: Params) {
         بازگشت به رویدادها
       </Link>
 
-      <div>
+      <div className="hidden lg:block">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           {event.title}
         </h1>

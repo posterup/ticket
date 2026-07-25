@@ -35,8 +35,8 @@ export function CreateWorkspaceForm() {
       setError("نام فضای کاری الزامی است.");
       return;
     }
-    // Mock create: routes back to the dashboard.
-    router.push("/dashboard");
+    // Mock create: routes back to the events dashboard.
+    router.push("/dashboard/events");
   }
 
   return (
@@ -104,7 +104,7 @@ export function CreateWorkspaceForm() {
         <Button
           type="button"
           variant="ghost"
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push("/dashboard/events")}
         >
           انصراف
         </Button>

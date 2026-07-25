@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Select } from "@/components/ui/select";
 import { DateField } from "@/components/ui/date-field";
 import { formatNumber, formatToman, formatJalaliDate } from "@/lib/format";
@@ -180,16 +181,26 @@ export function EventDiscounts({ eventId, sessions, discounts }: Props) {
             required
             error={errors.value}
           >
-            <Input
-              id="d-value"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={kind === "percent" ? "۱۰" : "۵۰۰۰۰۰"}
-              aria-invalid={Boolean(errors.value)}
-            />
+            {kind === "percent" ? (
+              <Input
+                id="d-value"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="۱۰"
+                aria-invalid={Boolean(errors.value)}
+              />
+            ) : (
+              <MoneyInput
+                id="d-value"
+                value={value}
+                onChange={setValue}
+                placeholder="۵۰۰۰۰۰"
+                aria-invalid={Boolean(errors.value)}
+              />
+            )}
           </Field>
 
           <Field

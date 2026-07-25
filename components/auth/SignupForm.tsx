@@ -30,7 +30,7 @@ export function SignupForm() {
     setErrors(next);
     if (Object.keys(next).length > 0) return;
     setLoggedIn();
-    router.push("/dashboard");
+    router.push("/dashboard/events");
     router.refresh();
   }
 
