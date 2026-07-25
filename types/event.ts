@@ -3,8 +3,13 @@ import type { IsoDateTime } from "./api";
 /** Lifecycle state of an event. */
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 
-/** Who may find and register: `public` = discoverable; `link` = only via link. */
-export type EventVisibility = "public" | "link";
+/**
+ * Who may find and register:
+ * - `public`: discoverable by everyone.
+ * - `link`: only people who have the link.
+ * - `audience`: only CRM contacts carrying one of the event's `audienceTags`.
+ */
+export type EventVisibility = "public" | "link" | "audience";
 
 /**
  * Scheduling mode chosen in step 2 of the ticket-creation wizard.
@@ -102,8 +107,13 @@ export interface Event {
   tags: string[];
   /** Discovery categories for the explore page (e.g. «هنر»، «آشپزی»). */
   categories?: string[];
-  /** Who can find/register: `public` (default) or `link`-only. */
+  /** Who can find/register: `public` (default), `link`-only, or `audience`. */
   visibility?: EventVisibility;
+  /**
+   * Allowed CRM attendee-tag labels for an `audience`-visibility event. Only
+   * contacts carrying one of these tags may see and register.
+   */
+  audienceTags?: string[];
   /** When true (link events), registrations need organiser approval. */
   requiresApproval?: boolean;
   /** When true, a sold-out event offers a waitlist instead of closing sales. */

@@ -1,29 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { Globe, Link2, ShieldCheck } from "lucide-react";
+import { Globe, Link2, Tags, ShieldCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Toggle } from "@/components/create/ui";
+import { formatNumber } from "@/lib/format";
 
-type Visibility = "public" | "link";
+type Visibility = "public" | "link" | "audience";
+
+interface TagOption {
+  label: string;
+  count: number;
+}
 
 /**
- * Event access & registration settings (tickets tab). Persists the event's
- * visibility (`public` / `link`-only) and, for link events, whether
- * registration needs organiser approval ("accept-only").
+ * Event access & registration settings. Persists the event's visibility
+ * (`public` / `link`-only / tag-based `audience`), the allowed CRM tag labels
+ * for audience events, and whether registration needs organiser approval.
  */
 export function EventAccessSettings({
   eventId,
   visibility: initialVisibility = "public",
   requiresApproval: initialApproval = false,
+  audienceTags: initialAudienceTags = [],
+  availableTags = [],
 }: {
   eventId: string;
   visibility?: Visibility;
   requiresApproval?: boolean;
+  audienceTags?: string[];
+  availableTags?: TagOption[];
 }) {
   const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
   const [approval, setApproval] = useState(initialApproval);
+  const [tags, setTags] = useState<string[]>(initialAudienceTags);
 
   function patch(body: Record<string, unknown>) {
     void fetch(`/api/events/${eventId}`, {
@@ -43,8 +54,16 @@ export function EventAccessSettings({
     patch({ requiresApproval: next });
   }
 
+  function toggleTag(label: string) {
+    const next = tags.includes(label)
+      ? tags.filter((t) => t !== label)
+      : [...tags, label];
+    setTags(next);
+    patch({ audienceTags: next });
+  }
+
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
+    <section className="flex flex-col gap-4">
       <div>
         <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <ShieldCheck className="size-4 text-faint" aria-hidden />
@@ -55,7 +74,7 @@ export function EventAccessSettings({
         </p>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-3">
         <AccessOption
           icon={Globe}
           label="عمومی"
@@ -70,7 +89,59 @@ export function EventAccessSettings({
           active={visibility === "link"}
           onClick={() => changeVisibility("link")}
         />
+        <AccessOption
+          icon={Tags}
+          label="بر اساس تگ مخاطب"
+          hint="فقط مخاطبانی که تگ‌های انتخاب‌شده را دارند می‌بینند."
+          active={visibility === "audience"}
+          onClick={() => changeVisibility("audience")}
+        />
       </div>
+
+      {visibility === "audience" ? (
+        <div className="rounded-lg border border-border bg-subtle p-3">
+          <p className="text-xs text-muted">
+            تگ‌های مجاز را انتخاب کنید. این رویداد فقط برای مخاطبانی که دست‌کم یکی
+            از این تگ‌ها را دارند منتشر می‌شود.
+          </p>
+          {availableTags.length === 0 ? (
+            <p className="mt-3 text-xs text-faint">
+              هنوز هیچ تگی برای مخاطبان تعریف نشده است. ابتدا در بخش مخاطبان تگ
+              بسازید.
+            </p>
+          ) : (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {availableTags.map((t) => {
+                const active = tags.includes(t.label);
+                return (
+                  <button
+                    key={t.label}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggleTag(t.label)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+                      active
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-muted hover:border-border-strong hover:text-foreground",
+                    )}
+                  >
+                    {t.label}
+                    <span
+                      className={cn(
+                        "text-[10px]",
+                        active ? "text-background/70" : "text-faint",
+                      )}
+                    >
+                      {formatNumber(t.count)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       <div className="border-t border-border pt-4">
         <Toggle

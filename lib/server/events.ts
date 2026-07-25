@@ -62,7 +62,13 @@ export function createEvent(input: CreateEventInput): Event {
 export type EventUpdate = Partial<
   Pick<
     Event,
-    "title" | "description" | "status" | "visibility" | "requiresApproval" | "slug"
+    | "title"
+    | "description"
+    | "status"
+    | "visibility"
+    | "audienceTags"
+    | "requiresApproval"
+    | "slug"
   >
 >;
 
@@ -74,6 +80,7 @@ export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
   if (patch.description !== undefined) event.description = patch.description;
   if (patch.status !== undefined) event.status = patch.status;
   if (patch.visibility !== undefined) event.visibility = patch.visibility;
+  if (patch.audienceTags !== undefined) event.audienceTags = patch.audienceTags;
   if (patch.requiresApproval !== undefined) {
     event.requiresApproval = patch.requiresApproval;
   }

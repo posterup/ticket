@@ -12,6 +12,7 @@ import {
   getWorkspaceByEvent,
   listGuests,
   listCollaborators,
+  listAttendeeTags,
 } from "@/lib/server";
 import { buildHolders } from "@/lib/checkin/data";
 import { formatJalaliDate, formatTime, formatNumber } from "@/lib/format";
@@ -81,6 +82,7 @@ export default async function EventDetailPage({ params }: Params) {
     status: g.status,
   }));
   const collaborators = listCollaborators(event.id);
+  const audienceTags = listAttendeeTags();
 
   const first = event.sessions[0];
   const ticketSample: TicketSample = {
@@ -136,7 +138,23 @@ export default async function EventDetailPage({ params }: Params) {
                   title={event.title}
                   description={event.description}
                 />
-                <EventLinkForm eventId={event.id} slug={event.slug ?? event.id} />
+                <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
+                  <div className="p-5">
+                    <EventLinkForm
+                      eventId={event.id}
+                      slug={event.slug ?? event.id}
+                    />
+                  </div>
+                  <div className="p-5">
+                    <EventAccessSettings
+                      eventId={event.id}
+                      visibility={event.visibility}
+                      requiresApproval={event.requiresApproval}
+                      audienceTags={event.audienceTags}
+                      availableTags={audienceTags}
+                    />
+                  </div>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <EditVenueForm eventId={event.id} venue={event.venue} />
 
@@ -182,11 +200,6 @@ export default async function EventDetailPage({ params }: Params) {
                   eventId={event.id}
                   tickets={tickets}
                   sessions={sessionOptions}
-                />
-                <EventAccessSettings
-                  eventId={event.id}
-                  visibility={event.visibility}
-                  requiresApproval={event.requiresApproval}
                 />
                 <section className="flex flex-col gap-4 border-t border-border pt-6">
                   <div>
