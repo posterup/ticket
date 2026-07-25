@@ -53,10 +53,9 @@ Usage notes:
 - **Typeface: Vazirmatn**, self-hosted via `@fontsource-variable/vazirmatn` and
   wired into `--font-sans` with `ui-sans-serif, system-ui, sans-serif` as
   fallbacks. It is the sole UI face (no external font fetch at build time).
-- **Direction: RTL.** The document is `<html lang="fa" dir="rtl">`. All layout,
-  alignment, and iconography assume right-to-left as the default.
-- **Persian only in the UI.** Product-facing copy and numerals are Persian.
-  English appears only in code and documentation, never in the interface.
+- **Direction: RTL, Persian only.** All layout, alignment, and iconography
+  assume right-to-left; product-facing copy and numerals are Persian. See the
+  RTL & Persian-first rule in `CLAUDE.md`.
 - **Font smoothing** is enabled (`-webkit-font-smoothing: antialiased`,
   `text-rendering: optimizeLegibility`) for crisp Persian glyphs.
 
