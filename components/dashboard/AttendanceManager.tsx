@@ -109,6 +109,41 @@ export function AttendanceManager({
     { id: eventId, title: eventTitle, sessions, holders },
   ];
 
+  // مهمان‌ها — sits under the sales-insight card and stays available in the
+  // empty state so the first guest can still be invited.
+  const guestsSection = allowGuests ? (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Users className="size-4 text-faint" aria-hidden />
+          مهمان‌ها
+        </h2>
+        {sessionGuests.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-muted">
+              همه {formatNumber(sessionGuests.length)}
+            </span>
+            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-success">
+              می‌آیند {formatNumber(going)}
+            </span>
+            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-muted">
+              در انتظار {formatNumber(pending)}
+            </span>
+            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-danger">
+              نمی‌آیند {formatNumber(declined)}
+            </span>
+          </div>
+        ) : null}
+      </div>
+      <GuestInvite
+        guests={sessionGuests}
+        onInvite={invite}
+        onSetStatus={setStatus}
+        onRemove={remove}
+      />
+    </section>
+  ) : null;
+
   return (
     <div className="flex flex-col gap-6">
       {/* Session-first: choose the سانس before any data is shown. */}
@@ -131,17 +166,20 @@ export function AttendanceManager({
       </Field>
 
       {isEmpty ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-subtle/40 p-10 text-center">
-          <CalendarClock className="size-8 text-faint" aria-hidden />
-          <p className="text-sm font-medium text-foreground">
-            هنوز داده‌ای برای این سانس نیست
-          </p>
-          <p className="max-w-sm text-xs text-muted">
-            {allowGuests
-              ? "برای این سانس هنوز بلیتی فروخته نشده و مهمانی ثبت نشده است. می‌توانید از بخش «دعوت مهمان» مهمان اضافه کنید."
-              : "برای این سانس هنوز بلیتی فروخته نشده است."}
-          </p>
-        </div>
+        <>
+          <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-subtle/40 p-10 text-center">
+            <CalendarClock className="size-8 text-faint" aria-hidden />
+            <p className="text-sm font-medium text-foreground">
+              هنوز داده‌ای برای این سانس نیست
+            </p>
+            <p className="max-w-sm text-xs text-muted">
+              {allowGuests
+                ? "برای این سانس هنوز بلیتی فروخته نشده و مهمانی ثبت نشده است. می‌توانید از بخش «دعوت مهمان» مهمان اضافه کنید."
+                : "برای این سانس هنوز بلیتی فروخته نشده است."}
+            </p>
+          </div>
+          {guestsSection}
+        </>
       ) : (
         <>
           {/* Sales insight — sold tickets + progress at a glance. */}
@@ -190,6 +228,9 @@ export function AttendanceManager({
             ) : null}
           </section>
 
+          {/* مهمان‌ها — directly under the sales-insight card. */}
+          {guestsSection}
+
           {/* Check-in tool, scoped to the selected سانس. */}
           <CheckinPanel
             events={checkinEvents}
@@ -200,40 +241,6 @@ export function AttendanceManager({
           />
         </>
       )}
-
-      {/* مهمان‌ها — always available so the first guest can be invited. */}
-      {allowGuests ? (
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Users className="size-4 text-faint" aria-hidden />
-              مهمان‌ها
-            </h2>
-            {sessionGuests.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-muted">
-                  همه {formatNumber(sessionGuests.length)}
-                </span>
-                <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-success">
-                  می‌آیند {formatNumber(going)}
-                </span>
-                <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-muted">
-                  در انتظار {formatNumber(pending)}
-                </span>
-                <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-danger">
-                  نمی‌آیند {formatNumber(declined)}
-                </span>
-              </div>
-            ) : null}
-          </div>
-          <GuestInvite
-            guests={sessionGuests}
-            onInvite={invite}
-            onSetStatus={setStatus}
-            onRemove={remove}
-          />
-        </section>
-      ) : null}
     </div>
   );
 }
