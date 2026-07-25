@@ -18,6 +18,40 @@ import type {
 /** Seed events: real Tehran venues and Persian titles. */
 export const events: Event[] = [
   {
+    id: "3f1a6c2e-0015-4a10-9b21-1a2b3c4d5e15",
+    title: "نشست هفتگی کتاب‌خوانی",
+    description:
+      "هر سه‌شنبه غروب دور هم جمع می‌شویم، یک کتاب را با هم می‌خوانیم و درباره‌اش گفت‌وگو می‌کنیم؛ رویدادی تکرارشونده برای دوستداران کتاب.",
+    status: "published",
+    mode: "recurring",
+    venue: {
+      id: "b1000000-0000-4000-8000-000000000015",
+      name: "کافه‌کتاب نشر ثالث",
+      city: "تهران",
+      address: "تهران، خیابان کریم‌خان زند، خیابان سنایی، کافه‌کتاب ثالث",
+      capacity: 30,
+    },
+    sessions: [
+      {
+        id: "c1000000-0000-4000-8000-000000000015",
+        eventId: "3f1a6c2e-0015-4a10-9b21-1a2b3c4d5e15",
+        startAt: "2026-07-28T15:30:00.000Z",
+        endAt: "2026-07-28T17:30:00.000Z",
+        availability: "available",
+      },
+    ],
+    recurrence: {
+      frequency: "weekly",
+      interval: 1,
+      byDay: ["TU"],
+      count: 12,
+    },
+    tags: ["کتاب", "ادبیات", "گفت‌وگو"],
+    categories: ["فرهنگی", "آموزش"],
+    createdAt: "2026-07-25T09:00:00.000Z",
+    updatedAt: "2026-07-25T09:00:00.000Z",
+  },
+  {
     id: "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
     title: "کنسرت همایون شجریان",
     description:
