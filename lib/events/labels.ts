@@ -13,7 +13,7 @@ export const STATUS_LABELS: Record<EventStatus, string> = {
  * calendar-style label; one-time and multi-session events show none.
  */
 export function modeLabel(mode: EventMode): string | null {
-  return mode === "recurring" ? "تکرارشونده" : null;
+  return mode === "recurring" ? "تقویمی" : null;
 }
 
 /** Persian labels for a سانس (session) capacity/sales state. */

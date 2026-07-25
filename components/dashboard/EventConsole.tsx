@@ -23,7 +23,7 @@ export function EventConsole({ tabs }: { tabs: ConsoleTab[] }) {
       <div
         role="tablist"
         aria-label="مدیریت رویداد"
-        className="flex gap-1 overflow-x-auto border-b border-border"
+        className="flex overflow-x-auto border-b border-border [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {tabs.map((t) => (
           <button
@@ -33,10 +33,10 @@ export function EventConsole({ tabs }: { tabs: ConsoleTab[] }) {
             aria-selected={active === t.id}
             onClick={() => setActive(t.id)}
             className={cn(
-              "-mb-px shrink-0 border-b-2 px-4 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/30",
+              "-mb-px flex-1 shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-center text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30 sm:flex-none",
               active === t.id
-                ? "border-accent text-foreground"
-                : "border-transparent text-muted hover:text-foreground",
+                ? "border-accent font-semibold text-foreground"
+                : "border-transparent font-medium text-muted hover:text-foreground",
             )}
           >
             {t.label}

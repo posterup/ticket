@@ -147,7 +147,7 @@ export function SessionsEditor(props: Props) {
     <div className="flex flex-col gap-5">
       <Toggle
         label="زمان‌بندی تقویمی"
-        hint="برای رویدادهای تکرارشونده روی روزهای مشخص هفته فعال کنید."
+        hint="برای رویدادهای تقویمی روی روزهای مشخص هفته فعال کنید."
         checked={schedule.calendar}
         onChange={(v) => onScheduleChange({ calendar: v })}
       />
