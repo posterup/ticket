@@ -130,7 +130,7 @@ export function updateVenue(
 
 /** Fields an organizer may edit on a single سانس (session). */
 export type SessionUpdate = Partial<
-  Pick<EventSession, "startAt" | "endAt" | "cancelled">
+  Pick<EventSession, "startAt" | "endAt" | "cancelled" | "availability">
 >;
 
 /**
@@ -148,6 +148,7 @@ export function updateSession(
   if (patch.startAt !== undefined) session.startAt = patch.startAt;
   if (patch.endAt !== undefined) session.endAt = patch.endAt;
   if (patch.cancelled !== undefined) session.cancelled = patch.cancelled;
+  if (patch.availability !== undefined) session.availability = patch.availability;
   event.updatedAt = new Date().toISOString();
   return session;
 }

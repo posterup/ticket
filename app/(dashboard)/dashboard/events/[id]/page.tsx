@@ -15,7 +15,7 @@ import {
 } from "@/lib/server";
 import { buildHolders } from "@/lib/checkin/data";
 import { formatJalaliDate, formatTime, formatNumber } from "@/lib/format";
-import { MODE_LABELS } from "@/lib/events/labels";
+import { modeLabel } from "@/lib/events/labels";
 import { FREQUENCY_LABELS, WEEKDAY_LABELS } from "@/lib/wizard/labels";
 import { EditEventForm } from "@/components/dashboard/EditEventForm";
 import { EditVenueForm } from "@/components/dashboard/EditVenueForm";
@@ -117,7 +117,6 @@ export default async function EventDetailPage({ params }: Params) {
         eventId={event.id}
         title={event.title}
         description={event.description}
-        status={event.status}
       />
 
       <EventConsole
@@ -134,7 +133,7 @@ export default async function EventDetailPage({ params }: Params) {
                   <SessionsManager
                     eventId={event.id}
                     sessions={event.sessions}
-                    modeLabel={MODE_LABELS[event.mode]}
+                    modeLabel={modeLabel(event.mode)}
                     recurrence={recurrence}
                   />
                 </div>

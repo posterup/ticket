@@ -7,10 +7,15 @@ import { Clock, Repeat, Pencil, Ban, RotateCcw, Check, X, Plus } from "lucide-re
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
 import { DateField } from "@/components/ui/date-field";
 import { TimeField } from "@/components/ui/time-field";
 import { formatJalaliDate, formatTime } from "@/lib/format";
-import type { EventSession } from "@/types";
+import {
+  SESSION_AVAILABILITY_LABELS,
+  SESSION_AVAILABILITY_ORDER,
+} from "@/lib/events/labels";
+import type { EventSession, SessionAvailability } from "@/types";
 
 /** Recombine a date + `HH:mm` into the stored ISO form used across the app. */
 function toIso(date: string, time: string): string {
@@ -20,7 +25,7 @@ function toIso(date: string, time: string): string {
 interface Props {
   eventId: string;
   sessions: EventSession[];
-  modeLabel: string;
+  modeLabel: string | null;
   recurrence: string | null;
 }
 
@@ -82,7 +87,7 @@ export function SessionsManager({
     <section className="rounded-lg border border-border p-5">
       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
         <Clock className="size-4 text-faint" aria-hidden />
-        زمان‌بندی · {modeLabel}
+        زمان‌بندی{modeLabel ? ` · ${modeLabel}` : ""}
       </h2>
 
       {error ? <p className="mb-3 text-xs text-danger">{error}</p> : null}
@@ -122,6 +127,27 @@ export function SessionsManager({
                       لغوشده
                     </span>
                   ) : null}
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="shrink-0 text-xs text-muted">وضعیت</span>
+                    <Select
+                      id={`availability-${s.id}`}
+                      aria-label={`وضعیت سانس ${formatJalaliDate(s.startAt)}`}
+                      value={s.availability ?? "available"}
+                      disabled={busyId === s.id || s.cancelled}
+                      onChange={(e) =>
+                        patch(s.id, {
+                          availability: e.target.value as SessionAvailability,
+                        })
+                      }
+                      className="h-9 w-40"
+                    >
+                      {SESSION_AVAILABILITY_ORDER.map((a) => (
+                        <option key={a} value={a}>
+                          {SESSION_AVAILABILITY_LABELS[a]}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   {s.cancelled ? (

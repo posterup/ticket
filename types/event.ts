@@ -20,6 +20,19 @@ export type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "weekday";
 /** Day-of-week codes used by {@link RecurrenceRule.byDay} (iCalendar style). */
 export type WeekDay = "SA" | "SU" | "MO" | "TU" | "WE" | "TH" | "FR";
 
+/**
+ * Capacity/sales state an organizer sets per سانس (session), shown to buyers.
+ * - `full`: sold out (تکمیل ظرفیت).
+ * - `almost-full`: selling fast, few seats left (رو به اتمام).
+ * - `soon`: sales not open yet (به زودی).
+ * - `available`: seats open (خالی).
+ */
+export type SessionAvailability =
+  | "full"
+  | "almost-full"
+  | "soon"
+  | "available";
+
 /** A physical or virtual location where an event takes place. */
 export interface Venue {
   id: string;
@@ -66,6 +79,8 @@ export interface EventSession {
   venueId?: string;
   /** When true, this سانس was cancelled by the organizer. */
   cancelled?: boolean;
+  /** Organizer-set capacity/sales state for this سانس. Defaults to `available`. */
+  availability?: SessionAvailability;
 }
 
 /**

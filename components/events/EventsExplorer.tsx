@@ -12,7 +12,7 @@ import { EventCover } from "@/components/events/EventCover";
 export interface DiscoverEvent {
   id: string;
   title: string;
-  modeLabel: string;
+  modeLabel: string | null;
   city: string;
   venueName: string;
   dateLabel: string;

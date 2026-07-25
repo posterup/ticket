@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { updateSession, type SessionUpdate } from "@/lib/server";
-import type { ApiResponse, EventSession } from "@/types";
+import type { ApiResponse, EventSession, SessionAvailability } from "@/types";
+
+const AVAILABILITY: SessionAvailability[] = [
+  "full",
+  "almost-full",
+  "soon",
+  "available",
+];
 
 /**
  * PATCH /api/events/:id/sessions/:sessionId — reschedule a سانس (startAt/endAt)
@@ -61,6 +68,10 @@ function parseSessionUpdate(body: unknown): SessionUpdate | null {
   if ("cancelled" in c) {
     if (typeof c.cancelled !== "boolean") return null;
     patch.cancelled = c.cancelled;
+  }
+  if ("availability" in c) {
+    if (!AVAILABILITY.includes(c.availability as SessionAvailability)) return null;
+    patch.availability = c.availability as SessionAvailability;
   }
 
   // Reject an end that precedes the start when both are provided.

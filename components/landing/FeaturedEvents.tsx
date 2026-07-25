@@ -8,7 +8,7 @@ import {
   getEventEngagement,
 } from "@/lib/server";
 import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
-import { MODE_LABELS } from "@/lib/events/labels";
+import { modeLabel } from "@/lib/events/labels";
 import { EventCover } from "@/components/events/EventCover";
 
 function fromPrice(eventId: string): string | null {
@@ -80,7 +80,9 @@ export function FeaturedEvents() {
                   </span>
                 </span>
               ) : null}
-              <span className="text-xs text-faint">{MODE_LABELS[event.mode]}</span>
+              {modeLabel(event.mode) ? (
+                <span className="text-xs text-faint">{modeLabel(event.mode)}</span>
+              ) : null}
               <h3 className="mt-1 text-base font-semibold text-foreground">
                 {event.title}
               </h3>

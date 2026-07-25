@@ -7,31 +7,27 @@ import { Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { EventStatusBadge } from "@/components/dashboard/EventStatusBadge";
-import { STATUS_LABELS } from "@/lib/events/labels";
-import type { EventStatus } from "@/types";
-
-const STATUSES: EventStatus[] = ["draft", "published", "cancelled", "completed"];
 
 interface Props {
   eventId: string;
   title: string;
   description: string;
-  status: EventStatus;
 }
 
-/** Event header with an inline edit mode for title, description and status. */
-export function EditEventForm({ eventId, title, description, status }: Props) {
+/**
+ * Event header with an inline edit mode for title and description. Event
+ * lifecycle status is not editable here — hosts manage state per سانس instead.
+ */
+export function EditEventForm({ eventId, title, description }: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ title, description, status });
+  const [form, setForm] = useState({ title, description });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   function reset() {
-    setForm({ title, description, status });
+    setForm({ title, description });
     setError("");
     setEditing(false);
   }
@@ -50,7 +46,6 @@ export function EditEventForm({ eventId, title, description, status }: Props) {
         body: JSON.stringify({
           title: form.title.trim(),
           description: form.description.trim(),
-          status: form.status,
         }),
       });
       if (!res.ok) throw new Error("خطا در ذخیرهٔ تغییرات.");
@@ -70,7 +65,6 @@ export function EditEventForm({ eventId, title, description, status }: Props) {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {title}
           </h1>
-          <EventStatusBadge status={status} />
           <Button
             type="button"
             variant="secondary"
@@ -110,21 +104,6 @@ export function EditEventForm({ eventId, title, description, status }: Props) {
               setForm((f) => ({ ...f, description: e.target.value }))
             }
           />
-        </Field>
-        <Field id="edit-status" label="وضعیت">
-          <Select
-            id="edit-status"
-            value={form.status}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, status: e.target.value as EventStatus }))
-            }
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABELS[s]}
-              </option>
-            ))}
-          </Select>
         </Field>
         {error ? <p className="text-xs text-danger">{error}</p> : null}
         <div className="flex items-center gap-2">

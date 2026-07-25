@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { listWorkspaces, listEventsByWorkspace, listTickets } from "@/lib/server";
 import { formatJalaliDate, formatToman } from "@/lib/format";
-import { MODE_LABELS } from "@/lib/events/labels";
+import { modeLabel } from "@/lib/events/labels";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import {
@@ -32,7 +32,7 @@ export default function FeedPage() {
       event: {
         id: e.id,
         title: e.title,
-        modeLabel: MODE_LABELS[e.mode],
+        modeLabel: modeLabel(e.mode),
         venue: `${e.venue.name}، ${e.venue.city}`,
         dateLabel: e.sessions[0] ? formatJalaliDate(e.sessions[0].startAt) : "",
         price: fromPrice(e.id),
