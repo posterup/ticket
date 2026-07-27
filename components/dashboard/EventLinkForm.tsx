@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link2, Copy, Check, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /** A fresh, system-generated url-safe link id. */
 function newLinkId(): string {
@@ -13,19 +14,23 @@ function newLinkId(): string {
 /**
  * Shareable link to the event's public ticket page. Organisers don't craft a
  * custom slug — the system auto-generates a new link id on demand (regenerating
- * invalidates the previous link). Persists via `/api/events/:id`.
+ * invalidates the previous link). Changing it is confirmed in a dialog first.
+ * Persists via `/api/events/:id`.
  */
 export function EventLinkForm({
   eventId,
+  eventTitle,
   slug: initialSlug,
 }: {
   eventId: string;
+  eventTitle: string;
   slug: string;
 }) {
   const [origin, setOrigin] = useState("https://poster.ir");
   const [slug, setSlug] = useState(initialSlug);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -57,6 +62,7 @@ export function EventLinkForm({
       if (!res.ok) throw new Error("خطا در ساخت لینک جدید.");
       setSlug(next);
       setCopied(false);
+      setConfirmOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "خطای ناشناخته رخ داد.");
     } finally {
@@ -103,17 +109,45 @@ export function EventLinkForm({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={regenerate}
-          disabled={saving}
+          onClick={() => {
+            setError("");
+            setConfirmOpen(true);
+          }}
         >
           <RefreshCw aria-hidden />
-          {saving ? "در حال ساخت…" : "تغییر لینک"}
+          تغییر لینک
         </Button>
         <p className="text-xs text-muted">
           با ساخت لینک جدید، لینک قبلی از کار می‌افتد.
         </p>
       </div>
-      {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
+      {error && !confirmOpen ? (
+        <p className="mt-2 text-xs text-danger">{error}</p>
+      ) : null}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="تغییر لینک رویداد"
+        confirmLabel={saving ? "در حال ساخت…" : "تغییر لینک"}
+        cancelLabel="انصراف"
+        confirmLoading={saving}
+        onConfirm={regenerate}
+        onCancel={() => setConfirmOpen(false)}
+      >
+        <p className="text-sm text-muted">
+          لینک فعلیِ این رویداد جایگزین می‌شود و لینک قبلی از کار می‌افتد.
+        </p>
+        <p className="mt-1 text-base font-semibold text-foreground">
+          {eventTitle}
+        </p>
+        <span
+          className="mt-1 max-w-full truncate rounded-md border border-border bg-subtle px-3 py-1.5 text-xs text-muted"
+          dir="ltr"
+        >
+          {url}
+        </span>
+        {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
+      </ConfirmDialog>
     </div>
   );
 }
