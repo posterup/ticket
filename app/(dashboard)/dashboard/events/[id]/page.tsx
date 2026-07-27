@@ -221,6 +221,7 @@ export default async function EventDetailPage({ params }: Params) {
                   <div className="p-5">
                     <EventLinkForm
                       eventId={event.id}
+                      eventTitle={event.title}
                       slug={event.slug ?? event.id}
                     />
                   </div>

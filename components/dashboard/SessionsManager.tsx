@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, Pencil, Ban, RotateCcw, Check, X, Plus } from "lucide-react";
+import { Clock, Ban, RotateCcw, Check, X, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { EditButton } from "@/components/dashboard/EditButton";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { DateField } from "@/components/ui/date-field";
@@ -149,19 +150,13 @@ export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
                     </Button>
                   ) : (
                     <>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
+                      <EditButton
                         disabled={busyId === s.id}
                         onClick={() => {
                           setError("");
                           setEditingId(s.id);
                         }}
-                      >
-                        <Pencil aria-hidden />
-                        ویرایش
-                      </Button>
+                      />
                       <Button
                         type="button"
                         variant="ghost"

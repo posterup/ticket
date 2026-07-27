@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Pencil, Check, X } from "lucide-react";
+import { MapPin, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EditButton } from "@/components/dashboard/EditButton";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -87,15 +88,7 @@ export function EditVenueForm({
             <MapPin className="size-4 text-faint" aria-hidden />
             محل برگزاری
           </h2>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => setEditing(true)}
-          >
-            <Pencil aria-hidden />
-            ویرایش
-          </Button>
+          <EditButton onClick={() => setEditing(true)} />
         </div>
         {venue.name ? (
           <p className="text-sm text-foreground">{venue.name}</p>
