@@ -1,26 +1,27 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AtSign, Check, ClipboardCheck, Phone, RotateCcw, X } from "lucide-react";
+import { Check, ClipboardCheck, RotateCcw, Search, Ticket, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
-import { Button } from "@/components/ui/button";
 import type { RegistrationStatus } from "@/types";
 
 export interface RegistrationItem {
   id: string;
   name: string;
-  contact: string;
-  channel: "phone" | "email";
-  note?: string;
+  phone: string;
+  tickets: number;
   status: RegistrationStatus;
 }
 
+const digits = (v: string) => v.replace(/\D/g, "");
+
 /**
- * Accept list for approval-gated («ثبت‌نام با تأیید») events. Sits at the very
- * top of the پذیرش و مهمانان tab: pending requests come first with پذیرش/رد
- * actions, decided requests collapse into a compact reviewable list below.
+ * Accept list for invite-only («ثبت‌نام با تأیید») events — the whole content of
+ * the «درخواست‌های ثبت‌نام» tab. A minimal, searchable list: pending requests
+ * come first with پذیرش/رد actions; decided requests follow, revertible to
+ * pending. Each request carries only the applicant's full name and phone.
  */
 export function ApprovalList({
   eventId,
@@ -30,6 +31,7 @@ export function ApprovalList({
   registrations: RegistrationItem[];
 }) {
   const [items, setItems] = useState<RegistrationItem[]>(initial);
+  const [query, setQuery] = useState("");
 
   const pending = useMemo(
     () => items.filter((r) => r.status === "pending"),
@@ -41,6 +43,14 @@ export function ApprovalList({
   );
   const accepted = decided.filter((r) => r.status === "accepted").length;
 
+  const q = query.trim().toLowerCase();
+  const match = (r: RegistrationItem) =>
+    !q ||
+    r.name.toLowerCase().includes(q) ||
+    (digits(q) !== "" && digits(r.phone).includes(digits(q)));
+  const pendingShown = pending.filter(match);
+  const decidedShown = decided.filter(match);
+
   function setStatus(id: string, status: RegistrationStatus) {
     setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     void fetch(`/api/events/${eventId}/registrations/${id}`, {
@@ -51,89 +61,109 @@ export function ApprovalList({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
+    <div className="flex flex-col gap-5">
+      {/* Header + counts */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <ClipboardCheck className="size-4 text-faint" aria-hidden />
           درخواست‌های ثبت‌نام
         </h2>
-        <div className="flex items-center gap-1.5 text-xs">
-          <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-accent">
-            {formatNumber(pending.length)} در انتظار بررسی
+        <div className="flex items-center gap-3 text-xs text-muted">
+          <span className="text-accent">
+            {formatNumber(pending.length)} در انتظار
           </span>
           {accepted > 0 ? (
-            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-success">
+            <span className="text-success">
               {formatNumber(accepted)} پذیرفته‌شده
             </span>
           ) : null}
         </div>
       </div>
 
-      {pending.length > 0 ? (
-        <ul className="flex flex-col gap-2">
-          {pending.map((r) => (
+      {/* Search by name or phone */}
+      {items.length > 0 ? (
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute inset-y-0 start-3 my-auto size-4 text-faint"
+            aria-hidden
+          />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="جست‌وجوی نام یا شماره تماس"
+            aria-label="جست‌وجوی درخواست‌ها"
+            className="h-11 w-full rounded-md border border-border bg-card ps-9 pe-3 text-sm text-foreground outline-none transition-colors placeholder:text-faint hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15"
+          />
+        </div>
+      ) : null}
+
+      {/* Pending */}
+      {pending.length === 0 ? (
+        <p className="py-6 text-center text-xs text-muted">
+          درخواست ثبت‌نام در انتظار بررسی نیست.
+        </p>
+      ) : pendingShown.length === 0 ? (
+        <p className="py-6 text-center text-xs text-muted">
+          موردی مطابق جست‌وجو یافت نشد.
+        </p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {pendingShown.map((r) => (
             <li
               key={r.id}
-              className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center"
+              className="flex items-center gap-3 py-3 first:pt-0"
             >
               <Applicant item={r} />
-              <div className="flex shrink-0 items-center gap-2 sm:ms-auto">
-                <Button
-                  type="button"
-                  size="sm"
+              <Tickets count={r.tickets} />
+              <div className="flex shrink-0 items-center gap-1">
+                <Action
+                  label="پذیرش"
+                  tone="success"
                   onClick={() => setStatus(r.id, "accepted")}
                 >
-                  <Check aria-hidden />
+                  <Check className="size-4" aria-hidden />
                   پذیرش
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
+                </Action>
+                <Action
+                  label="رد"
+                  tone="danger"
                   onClick={() => setStatus(r.id, "rejected")}
                 >
-                  <X aria-hidden />
+                  <X className="size-4" aria-hidden />
                   رد
-                </Button>
+                </Action>
               </div>
             </li>
           ))}
         </ul>
-      ) : (
-        <p className="rounded-lg border border-dashed border-border bg-subtle/40 p-6 text-center text-xs text-muted">
-          درخواست ثبت‌نام در انتظار بررسی نیست.
-        </p>
       )}
 
-      {decided.length > 0 ? (
+      {/* Decided */}
+      {decidedShown.length > 0 ? (
         <div className="flex flex-col gap-2 border-t border-border pt-4">
           <p className="text-xs font-medium text-muted">
             بررسی‌شده ({formatNumber(decided.length)})
           </p>
-          <ul className="flex flex-col gap-2">
-            {decided.map((r) => (
-              <li
-                key={r.id}
-                className="flex items-center gap-3 rounded-lg border border-border/70 bg-subtle/30 p-3"
-              >
+          <ul className="flex flex-col divide-y divide-border">
+            {decidedShown.map((r) => (
+              <li key={r.id} className="flex items-center gap-3 py-3 first:pt-0">
                 <Applicant item={r} muted />
-                <div className="flex shrink-0 items-center gap-2 sm:ms-auto">
-                  <StatusPill status={r.status} />
-                  <button
-                    type="button"
-                    onClick={() => setStatus(r.id, "pending")}
-                    aria-label="بازگرداندن به در انتظار بررسی"
-                    className="grid size-8 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
-                  >
-                    <RotateCcw className="size-4" aria-hidden />
-                  </button>
-                </div>
+                <Tickets count={r.tickets} />
+                <StatusText status={r.status} />
+                <button
+                  type="button"
+                  onClick={() => setStatus(r.id, "pending")}
+                  aria-label="بازگرداندن به در انتظار بررسی"
+                  className="grid size-8 shrink-0 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+                >
+                  <RotateCcw className="size-4" aria-hidden />
+                </button>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
 
@@ -144,51 +174,66 @@ function Applicant({
   item: RegistrationItem;
   muted?: boolean;
 }) {
-  const ChannelIcon = item.channel === "email" ? AtSign : Phone;
   return (
-    <div className="flex min-w-0 flex-1 items-start gap-3">
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-xs font-bold text-background">
-        {item.name.trim().charAt(0) || "؟"}
+    <div className="flex min-w-0 flex-1 flex-col">
+      <span
+        className={cn(
+          "truncate text-sm font-medium",
+          muted ? "text-muted" : "text-foreground",
+        )}
+      >
+        {item.name}
       </span>
-      <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "truncate text-sm font-semibold",
-            muted ? "text-muted" : "text-foreground",
-          )}
-        >
-          {item.name}
-        </p>
-        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted">
-          <ChannelIcon className="size-3.5 shrink-0 text-faint" aria-hidden />
-          <span className="truncate" dir="ltr">
-            {item.contact}
-          </span>
-        </p>
-        {item.note ? (
-          <p className="mt-1 text-xs leading-relaxed text-muted">{item.note}</p>
-        ) : null}
-      </div>
+      <span className="truncate text-xs text-muted" dir="ltr">
+        {item.phone}
+      </span>
     </div>
   );
 }
 
-function StatusPill({ status }: { status: RegistrationStatus }) {
-  const map = {
-    pending: { label: "در انتظار", cls: "text-muted", Icon: ClipboardCheck },
-    accepted: { label: "پذیرفته‌شد", cls: "text-success", Icon: Check },
-    rejected: { label: "رد شد", cls: "text-danger", Icon: X },
-  }[status];
-  const { Icon } = map;
+function Tickets({ count }: { count: number }) {
   return (
-    <span
+    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted">
+      <Ticket className="size-3.5 text-faint" aria-hidden />
+      {formatNumber(count)} بلیت
+    </span>
+  );
+}
+
+function Action({
+  label,
+  tone,
+  onClick,
+  children,
+}: {
+  label: string;
+  tone: "success" | "danger";
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-border bg-subtle px-2 py-0.5 text-xs",
-        map.cls,
+        "inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+        tone === "success" && "hover:bg-success/10 hover:text-success",
+        tone === "danger" && "hover:bg-danger/10 hover:text-danger",
       )}
     >
-      <Icon className="size-3" aria-hidden />
-      {map.label}
-    </span>
+      {children}
+    </button>
+  );
+}
+
+function StatusText({ status }: { status: RegistrationStatus }) {
+  if (status === "pending") return null;
+  const map = {
+    accepted: { label: "پذیرفته‌شد", cls: "text-success" },
+    rejected: { label: "رد شد", cls: "text-danger" },
+  }[status];
+  return (
+    <span className={cn("shrink-0 text-xs", map.cls)}>{map.label}</span>
   );
 }
