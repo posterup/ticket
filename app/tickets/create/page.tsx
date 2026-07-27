@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { listAttendeeTags } from "@/lib/server";
 import { Logo } from "@/components/Logo";
 import { EventComposer } from "@/components/create/EventComposer";
 
@@ -44,7 +45,7 @@ export default function CreateTicketPage() {
           </p>
         </div>
 
-        <EventComposer />
+        <EventComposer availableTags={listAttendeeTags()} />
       </main>
     </div>
   );

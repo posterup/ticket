@@ -5,6 +5,7 @@ import {
   MapPin,
   Globe,
   Link2,
+  Tags,
   Ticket as TicketIcon,
   EyeOff,
 } from "lucide-react";
@@ -13,7 +14,7 @@ import { formatJalaliDate, formatTime, formatToman, formatNumber } from "@/lib/f
 import { LOCATION_LABELS, VISIBILITY_LABELS } from "@/lib/create/labels";
 import type { CreateDraft, SessionDraft, TicketTypeDraft } from "@/lib/create/types";
 
-const VIS_ICON = { public: Globe, unlisted: Link2 } as const;
+const VIS_ICON = { public: Globe, link: Link2, audience: Tags } as const;
 
 function priceLabel(t: TicketTypeDraft): string {
   switch (t.kind) {

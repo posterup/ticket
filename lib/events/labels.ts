@@ -23,7 +23,7 @@ export const SESSION_AVAILABILITY_LABELS: Record<SessionAvailability, string> = 
   full: "تکمیل ظرفیت",
   "almost-full": "رو به اتمام",
   soon: "به زودی",
-  available: "خالی",
+  available: "درحال فروش",
 };
 
 /** Display order for the availability options an organizer chooses between. */

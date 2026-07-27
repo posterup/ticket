@@ -8,13 +8,14 @@ import {
   AlertCircle,
   Globe,
   Link2,
+  Tags,
   ArrowRight,
   ArrowLeft,
   ChevronDown,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatJalaliDate } from "@/lib/format";
+import { formatJalaliDate, formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -51,7 +52,12 @@ import type { WeekDay } from "@/types";
 const LOCATION_MODES: LocationMode[] = ["in-person", "online", "hybrid"];
 // Only in-person is offered for now; flip to true to re-enable online/hybrid.
 const SHOW_LOCATION_MODES = false;
-const VIS_ICON = { public: Globe, unlisted: Link2 } as const;
+const VIS_ICON = { public: Globe, link: Link2, audience: Tags } as const;
+
+interface TagOption {
+  label: string;
+  count: number;
+}
 
 const STEP_TITLES = ["رویداد", "زمان‌بندی", "بلیت‌ها"];
 
@@ -74,7 +80,11 @@ function ticketPrice(t: TicketTypeDraft): number {
   return Math.max(0, Math.floor(Number(t.price) || 0));
 }
 
-export function EventComposer() {
+export function EventComposer({
+  availableTags = [],
+}: {
+  availableTags?: TagOption[];
+}) {
   const [draft, setDraft] = useState<CreateDraft>(initialDraft);
   const [errors, setErrors] = useState<DraftErrors>({});
   const [status, setStatus] = useState<Status>("idle");
@@ -110,6 +120,13 @@ export function EventComposer() {
   const patch = (p: Partial<CreateDraft>) => setDraft((d) => ({ ...d, ...p }));
   const patchLocation = (p: Partial<CreateDraft["location"]>) =>
     setDraft((d) => ({ ...d, location: { ...d.location, ...p } }));
+  const toggleAudienceTag = (label: string) =>
+    setDraft((d) => ({
+      ...d,
+      audienceTags: d.audienceTags.includes(label)
+        ? d.audienceTags.filter((t) => t !== label)
+        : [...d.audienceTags, label],
+    }));
 
   const expanded = useMemo(() => expandSessions(draft), [draft]);
   // Tickets can attach to specific سانس (time-slots) when there's more than one.
@@ -227,6 +244,21 @@ export function EventComposer() {
         d.ticketTypes.length > 1 ? d.ticketTypes.filter((t) => t.id !== id) : d.ticketTypes,
     }));
 
+  // «بلیت رایگان» switch: when on, the event has a single free, nameless ticket
+  // and no «افزودن نوع بلیت»; when off, it returns to a normal paid ticket list.
+  const isFree =
+    draft.ticketTypes.length === 1 && draft.ticketTypes[0]?.kind === "free";
+  const setFree = (free: boolean) => {
+    const id = draft.ticketTypes[0]?.id ?? "ticket-1";
+    patch({
+      ticketTypes: [
+        free
+          ? { ...emptyTicket(id, "free"), name: "بلیت رایگان" }
+          : { ...emptyTicket(id), name: "بلیت عمومی" },
+      ],
+    });
+  };
+
   // --- submit ---
   async function submit() {
     const errs = validateDraft(draft);
@@ -279,7 +311,11 @@ export function EventComposer() {
             }
           : {}),
         tags: draft.category ? [draft.category] : [],
-        status: draft.visibility === "public" ? "published" : "draft",
+        visibility: draft.visibility,
+        requiresApproval: draft.requiresApproval,
+        audienceTags:
+          draft.visibility === "audience" ? draft.audienceTags : [],
+        status: "published",
       };
 
       const res = await fetch("/api/events", {
@@ -391,10 +427,13 @@ export function EventComposer() {
           </div>
         </SectionCard>
 
-        <SectionCard title="حریم خصوصی">
+        <SectionCard
+          title="ثبت‌نام و دسترسی"
+          description="تعیین کنید چه کسانی می‌توانند در این رویداد ثبت‌نام کنند."
+        >
           <div className="flex flex-col gap-4">
-            <div className="grid max-w-md gap-2 sm:grid-cols-2">
-              {(["public", "unlisted"] as Visibility[]).map((v) => {
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(["public", "link", "audience"] as Visibility[]).map((v) => {
                 const Icon = VIS_ICON[v];
                 return (
                   <button
@@ -403,21 +442,77 @@ export function EventComposer() {
                     aria-pressed={draft.visibility === v}
                     onClick={() => patch({ visibility: v })}
                     className={cn(
-                      "flex flex-col items-start gap-1.5 rounded-md border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                      "flex flex-col items-start gap-1 rounded-lg border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
                       draft.visibility === v
                         ? "border-foreground bg-subtle"
                         : "border-border hover:border-border-strong",
                     )}
                   >
-                    <Icon className="size-4 text-foreground" aria-hidden />
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                      <Icon className="size-4" aria-hidden />
                       {VISIBILITY_LABELS[v]}
+                    </span>
+                    <span className="text-xs text-muted">
+                      {VISIBILITY_HINTS[v]}
                     </span>
                   </button>
                 );
               })}
             </div>
-            <p className="text-xs text-muted">{VISIBILITY_HINTS[draft.visibility]}</p>
+
+            {draft.visibility === "audience" ? (
+              <div className="rounded-lg border border-border bg-subtle p-3">
+                <p className="text-xs text-muted">
+                  تگ‌های مجاز را انتخاب کنید. این رویداد فقط برای مخاطبانی که
+                  دست‌کم یکی از این تگ‌ها را دارند منتشر می‌شود.
+                </p>
+                {availableTags.length === 0 ? (
+                  <p className="mt-3 text-xs text-faint">
+                    هنوز هیچ تگی برای مخاطبان تعریف نشده است. ابتدا در بخش مخاطبان
+                    تگ بسازید.
+                  </p>
+                ) : (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {availableTags.map((t) => {
+                      const active = draft.audienceTags.includes(t.label);
+                      return (
+                        <button
+                          key={t.label}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => toggleAudienceTag(t.label)}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+                            active
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border text-muted hover:border-border-strong hover:text-foreground",
+                          )}
+                        >
+                          {t.label}
+                          <span
+                            className={cn(
+                              "text-[10px]",
+                              active ? "text-background/70" : "text-faint",
+                            )}
+                          >
+                            {formatNumber(t.count)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            <div className="border-t border-border pt-4">
+              <Toggle
+                label="پذیرش با تأیید مدیر (فقط مهمانان تأییدشده)"
+                hint="در هر دو حالت عمومی و خصوصی؛ ثبت‌نام هر فرد باید پیش از پرداخت توسط شما تأیید شود."
+                checked={draft.requiresApproval}
+                onChange={(v) => patch({ requiresApproval: v })}
+              />
+            </div>
           </div>
         </SectionCard>
 
@@ -578,28 +673,45 @@ export function EventComposer() {
         <>
         <SectionCard title="بلیت‌ها" description="هر نوع بلیت با قوانین خودش.">
           <div className="flex flex-col gap-4">
-            {errors.tickets ? (
-              <p className="text-sm text-danger">{errors.tickets}</p>
-            ) : null}
-            {draft.ticketTypes.map((t) => (
-              <TicketEditor
-                key={t.id}
-                ticket={t}
-                sessions={sessionOptions}
-                error={errors[`ticket-${t.id}`]}
-                canRemove={draft.ticketTypes.length > 1}
-                onChange={(p) => updateTicket(t.id, p)}
-                onRemove={() => removeTicket(t.id)}
-              />
-            ))}
-            <button
-              type="button"
-              onClick={addTicket}
-              className="inline-flex w-fit items-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm font-medium text-muted hover:border-border-strong hover:text-foreground"
-            >
-              <Plus className="size-4" aria-hidden />
-              افزودن نوع بلیت
-            </button>
+            {/* Free switch — a single nameless free ticket when on. */}
+            <Toggle
+              label="بلیت رایگان"
+              hint="با فعال‌کردن، رویداد یک بلیت رایگان و بدون نام خواهد داشت و نوع بلیت دیگری اضافه نمی‌شود."
+              checked={isFree}
+              onChange={setFree}
+            />
+
+            {isFree ? (
+              <p className="rounded-md bg-subtle px-3 py-2 text-sm text-muted">
+                این رویداد رایگان است؛ گزینهٔ دیگری لازم نیست. برای ادامه دکمهٔ
+                «مرحلهٔ بعد» را بزنید.
+              </p>
+            ) : (
+              <>
+                {errors.tickets ? (
+                  <p className="text-sm text-danger">{errors.tickets}</p>
+                ) : null}
+                {draft.ticketTypes.map((t) => (
+                  <TicketEditor
+                    key={t.id}
+                    ticket={t}
+                    sessions={sessionOptions}
+                    error={errors[`ticket-${t.id}`]}
+                    canRemove={draft.ticketTypes.length > 1}
+                    onChange={(p) => updateTicket(t.id, p)}
+                    onRemove={() => removeTicket(t.id)}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={addTicket}
+                  className="inline-flex w-fit items-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm font-medium text-muted hover:border-border-strong hover:text-foreground"
+                >
+                  <Plus className="size-4" aria-hidden />
+                  افزودن نوع بلیت
+                </button>
+              </>
+            )}
           </div>
         </SectionCard>
         </>

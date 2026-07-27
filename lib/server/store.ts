@@ -19,6 +19,68 @@ import type {
 /** Seed events: real Tehran venues and Persian titles. */
 export const events: Event[] = [
   {
+    id: "3f1a6c2e-0020-4a10-9b21-1a2b3c4d5e20",
+    title: "کارگاه رایگان معرفی هوش مصنوعی",
+    description:
+      "یک نشست مقدماتی و رایگان برای آشنایی با کاربردهای هوش مصنوعی؛ ثبت‌نام رایگان با ظرفیت محدود.",
+    status: "published",
+    mode: "one-time",
+    venue: {
+      id: "b1000000-0000-4000-8000-000000000020",
+      name: "مرکز نوآوری دانشگاه تهران",
+      city: "تهران",
+      address: "تهران، خیابان انقلاب، خیابان دانشگاه، مرکز نوآوری",
+      capacity: 60,
+    },
+    sessions: [
+      {
+        id: "c1000000-0000-4000-8000-000000000020",
+        eventId: "3f1a6c2e-0020-4a10-9b21-1a2b3c4d5e20",
+        startAt: "2026-08-05T14:00:00.000Z",
+        endAt: "2026-08-05T16:00:00.000Z",
+        availability: "available",
+      },
+    ],
+    tags: ["فناوری", "آموزش", "رایگان"],
+    categories: ["آموزش", "فناوری"],
+    visibility: "public",
+    audienceTags: [],
+    requiresApproval: false,
+    createdAt: "2026-07-26T09:00:00.000Z",
+    updatedAt: "2026-07-26T09:00:00.000Z",
+  },
+  {
+    id: "3f1a6c2e-0021-4a10-9b21-1a2b3c4d5e21",
+    title: "دورهمی رایگان اعضای انجمن",
+    description:
+      "گردهمایی دوستانهٔ اعضا؛ ثبت‌نام رایگان و با تأیید مدیر انجام می‌شود.",
+    status: "published",
+    mode: "one-time",
+    venue: {
+      id: "b1000000-0000-4000-8000-000000000021",
+      name: "خانهٔ نوآوری اصفهان",
+      city: "اصفهان",
+      address: "اصفهان، خیابان چهارباغ بالا، خانهٔ نوآوری",
+      capacity: 40,
+    },
+    sessions: [
+      {
+        id: "c1000000-0000-4000-8000-000000000021",
+        eventId: "3f1a6c2e-0021-4a10-9b21-1a2b3c4d5e21",
+        startAt: "2026-08-12T15:30:00.000Z",
+        endAt: "2026-08-12T18:00:00.000Z",
+        availability: "available",
+      },
+    ],
+    tags: ["اجتماعی", "رایگان"],
+    categories: ["اجتماعی"],
+    visibility: "public",
+    audienceTags: [],
+    requiresApproval: true,
+    createdAt: "2026-07-26T10:00:00.000Z",
+    updatedAt: "2026-07-26T10:00:00.000Z",
+  },
+  {
     id: "3f1a6c2e-0015-4a10-9b21-1a2b3c4d5e15",
     title: "نشست هفتگی کتاب‌خوانی",
     description:
@@ -462,6 +524,28 @@ export const events: Event[] = [
 
 /** Seed ticket types spread across the seed events. */
 export const ticketTypes: TicketType[] = [
+  {
+    id: "d1000000-0000-4000-8000-000000000020",
+    eventId: "3f1a6c2e-0020-4a10-9b21-1a2b3c4d5e20",
+    name: "بلیت رایگان",
+    price: 0,
+    capacity: 60,
+    salesStartAt: "2026-07-26T00:00:00.000Z",
+    salesEndAt: "2026-08-05T14:00:00.000Z",
+    category: "general",
+    description: "ثبت‌نام رایگان کارگاه؛ ظرفیت محدود.",
+  },
+  {
+    id: "d1000000-0000-4000-8000-000000000021",
+    eventId: "3f1a6c2e-0021-4a10-9b21-1a2b3c4d5e21",
+    name: "بلیت رایگان",
+    price: 0,
+    capacity: 40,
+    salesStartAt: "2026-07-26T00:00:00.000Z",
+    salesEndAt: "2026-08-12T15:30:00.000Z",
+    category: "general",
+    description: "ثبت‌نام رایگان دورهمی؛ نیازمند تأیید مدیر.",
+  },
   {
     id: "d1000000-0000-4000-8000-000000000001",
     eventId: "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
