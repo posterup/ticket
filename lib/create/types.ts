@@ -19,7 +19,7 @@ export interface MediaItem {
   url: string;
   name: string;
 }
-export type Visibility = "public" | "unlisted";
+export type Visibility = "public" | "link" | "audience";
 
 /** The kind of a ticket type — drives which fields/rules apply. */
 export type TicketKind = "paid" | "free" | "donation" | "group" | "addon";
@@ -137,6 +137,10 @@ export interface CreateDraft {
     hideAddress: boolean;
   };
   visibility: Visibility;
+  /** Allowed CRM attendee-tag labels when `visibility` is `audience`. */
+  audienceTags: string[];
+  /** Registration needs organiser approval (invite-only). */
+  requiresApproval: boolean;
   /** Optional custom ticket appearance; `null` uses the default design. */
   ticketDesign: TicketTemplate | null;
   schedule: ScheduleDraft;
@@ -227,6 +231,8 @@ export const initialDraft: CreateDraft = {
     hideAddress: false,
   },
   visibility: "public",
+  audienceTags: [],
+  requiresApproval: false,
   ticketDesign: null,
   schedule: {
     range: false,

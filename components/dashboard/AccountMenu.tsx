@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   UserPen,
-  ChartColumn,
   Wallet,
   Settings,
   LogOut,
@@ -23,12 +22,11 @@ interface Row {
 
 const ROWS: Row[] = [
   { href: "/dashboard/profile/edit", label: "ویرایش پروفایل", icon: UserPen },
-  { href: "/dashboard/analytics", label: "گزارش‌ها", icon: ChartColumn },
   { href: "/dashboard/finance", label: "مالی", icon: Wallet },
   { href: "/dashboard/settings", label: "تنظیمات", icon: Settings },
 ];
 
-/** Account actions: reports, finance, settings, and exit (logout). */
+/** Account actions: finance, settings, and exit (logout). */
 export function AccountMenu() {
   const router = useRouter();
 

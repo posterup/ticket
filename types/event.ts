@@ -164,4 +164,10 @@ export interface CreateEventInput {
   recurrence?: RecurrenceRule;
   tags?: string[];
   status?: EventStatus;
+  /** Who can see/register — mirrors the dashboard access settings. */
+  visibility?: EventVisibility;
+  /** Allowed CRM attendee-tag labels for an `audience`-visibility event. */
+  audienceTags?: string[];
+  /** Registration needs organiser approval (invite-only). */
+  requiresApproval?: boolean;
 }

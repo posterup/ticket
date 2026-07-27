@@ -8,13 +8,14 @@ export const LOCATION_LABELS: Record<LocationMode, string> = {
 
 export const VISIBILITY_LABELS: Record<Visibility, string> = {
   public: "عمومی",
-  unlisted: "خصوصی",
+  link: "فقط با لینک",
+  audience: "بر اساس تگ مخاطب",
 };
 
 export const VISIBILITY_HINTS: Record<Visibility, string> = {
-  public: "در صفحهٔ پروفایل شما نمایش داده می‌شود و در موتورهای جست‌وجو ایندکس می‌شود.",
-  unlisted:
-    "فقط با لینک مستقیم پیدا می‌شود؛ جایی ایندکس نمی‌شود و تنها خودتان آن را در پروفایل و داشبورد خود می‌بینید.",
+  public: "برای همه قابل مشاهده و خرید است.",
+  link: "فقط افرادی که لینک را دارند می‌توانند ثبت‌نام کنند.",
+  audience: "فقط مخاطبانی که تگ‌های انتخاب‌شده را دارند می‌بینند.",
 };
 
 export const TICKET_KIND_LABELS: Record<TicketKind, string> = {

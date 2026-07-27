@@ -262,35 +262,38 @@ export default async function EventDetailPage({ params }: Params) {
                 },
               ]
             : []),
-          // Free events skip ticket pricing + discounts entirely.
+          {
+            id: "tickets",
+            label: "بلیت‌ها",
+            content: (
+              <div className="flex flex-col gap-8">
+                <EventTickets
+                  eventId={event.id}
+                  tickets={tickets}
+                  sessions={sessionOptions}
+                />
+                {/* Free events don't get a ticket template. */}
+                {!isFree ? (
+                  <section className="flex flex-col gap-4 border-t border-border pt-6">
+                    <div>
+                      <h2 className="text-sm font-semibold text-foreground">
+                        قالب بلیت
+                      </h2>
+                      <p className="mt-1 text-xs text-muted">
+                        ظاهر بلیت صادرشدهٔ این رویداد را سفارشی کنید و پیش‌نمایش
+                        را ببینید.
+                      </p>
+                    </div>
+                    <TicketDesigner sample={ticketSample} />
+                  </section>
+                ) : null}
+              </div>
+            ),
+          },
+          // Free events have nothing to discount.
           ...(isFree
             ? []
             : [
-                {
-                  id: "tickets",
-                  label: "بلیت‌ها",
-                  content: (
-                    <div className="flex flex-col gap-8">
-                      <EventTickets
-                        eventId={event.id}
-                        tickets={tickets}
-                        sessions={sessionOptions}
-                      />
-                      <section className="flex flex-col gap-4 border-t border-border pt-6">
-                        <div>
-                          <h2 className="text-sm font-semibold text-foreground">
-                            قالب بلیت
-                          </h2>
-                          <p className="mt-1 text-xs text-muted">
-                            ظاهر بلیت صادرشدهٔ این رویداد را سفارشی کنید و
-                            پیش‌نمایش را ببینید.
-                          </p>
-                        </div>
-                        <TicketDesigner sample={ticketSample} />
-                      </section>
-                    </div>
-                  ),
-                },
                 {
                   id: "discounts",
                   label: "تخفیف‌ها",

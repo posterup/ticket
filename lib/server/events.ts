@@ -65,6 +65,9 @@ export function createEvent(input: CreateEventInput): Event {
     sessions,
     recurrence: input.recurrence,
     tags: input.tags ?? [],
+    visibility: input.visibility ?? "public",
+    audienceTags: input.audienceTags ?? [],
+    requiresApproval: input.requiresApproval ?? false,
     createdAt: now,
     updatedAt: now,
   };
