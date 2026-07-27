@@ -17,6 +17,7 @@ import {
 import { buildHolders } from "@/lib/checkin/data";
 import { formatJalaliDate, formatTime } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
+import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 import { EditEventForm } from "@/components/dashboard/EditEventForm";
 import { EditVenueForm } from "@/components/dashboard/EditVenueForm";
 import { EventLinkForm } from "@/components/dashboard/EventLinkForm";
@@ -170,7 +171,7 @@ export default async function EventDetailPage({ params }: Params) {
                   title={event.title}
                   description={event.description}
                 />
-                {event.mode === "recurring" ? (
+                {CALENDAR_MODE_ENABLED && event.mode === "recurring" ? (
                   <>
                     <EditVenueForm eventId={event.id} venue={event.venue} />
                     <RecurrenceEditor

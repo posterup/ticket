@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { DateField } from "@/components/ui/date-field";
 import { TimeField } from "@/components/ui/time-field";
 import { Toggle } from "@/components/create/ui";
+import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "@/lib/wizard/labels";
 import type { ScheduleDraft, TimeSlot } from "@/lib/create/types";
 import type { WeekDay } from "@/types";
@@ -162,7 +163,7 @@ export function SessionsEditor(props: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      {!hideToggle ? (
+      {!hideToggle && CALENDAR_MODE_ENABLED ? (
         <Toggle
           label="زمان‌بندی تقویمی"
           hint="برای رویدادهای تقویمی روی روزهای مشخص هفته فعال کنید."

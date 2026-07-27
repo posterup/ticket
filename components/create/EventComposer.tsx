@@ -26,6 +26,7 @@ import { IRAN_PROVINCES, citiesOfProvince } from "@/lib/create/iran-locations";
 import { MediaSection } from "@/components/create/MediaSection";
 import { TicketDesignSection } from "@/components/create/TicketDesignSection";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
+import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
 import { EventPreview } from "@/components/create/EventPreview";
 import type { TicketSample } from "@/components/tickets/TicketPreview";
@@ -562,7 +563,11 @@ export function EventComposer() {
         {step === 1 ? (
         <SectionCard
           title="زمان‌بندی"
-          description="بازهٔ تاریخ و سانس‌ها را تعیین کنید؛ برای اجرای تقویمی «زمان‌بندی تقویمی» را فعال کنید."
+          description={
+            CALENDAR_MODE_ENABLED
+              ? "بازهٔ تاریخ و سانس‌ها را تعیین کنید؛ برای اجرای تقویمی «زمان‌بندی تقویمی» را فعال کنید."
+              : "بازهٔ تاریخ و سانس‌ها را تعیین کنید."
+          }
         >
           <SessionsEditor
             schedule={draft.schedule}
