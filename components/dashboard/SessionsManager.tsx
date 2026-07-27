@@ -32,6 +32,7 @@ interface Props {
 /** Schedule list with per-سانس reschedule and cancel/restore controls. */
 export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
   const router = useRouter();
+  const [editing, setEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -82,12 +83,76 @@ export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
     }
   }
 
+  // Read-only summary until the organiser taps «ویرایش» (top-left, like every
+  // other overview card). Editing reveals the per-سانس controls.
+  if (!editing) {
+    return (
+      <section className="rounded-lg border border-border p-5">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Clock className="size-4 text-faint" aria-hidden />
+            زمان‌بندی{modeLabel ? ` · ${modeLabel}` : ""}
+          </h2>
+          <EditButton
+            onClick={() => {
+              setError("");
+              setEditing(true);
+            }}
+          />
+        </div>
+        <ul className="flex flex-col divide-y divide-border">
+          {sessions.map((s) => (
+            <li key={s.id} className="py-3 first:pt-0 last:pb-0">
+              <p
+                className={cn(
+                  "text-sm",
+                  s.cancelled ? "text-faint line-through" : "text-foreground",
+                )}
+              >
+                {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
+                {formatTime(s.endAt)}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {s.cancelled ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-danger/30 bg-danger/5 px-2 py-0.5 text-xs text-danger">
+                    <Ban className="size-3" aria-hidden />
+                    لغوشده
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted">
+                    {SESSION_AVAILABILITY_LABELS[s.availability ?? "available"]}
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
   return (
-    <section className="rounded-lg border border-border p-5">
-      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Clock className="size-4 text-faint" aria-hidden />
-        زمان‌بندی{modeLabel ? ` · ${modeLabel}` : ""}
-      </h2>
+    <section className="rounded-lg border border-border bg-card p-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Clock className="size-4 text-faint" aria-hidden />
+          زمان‌بندی{modeLabel ? ` · ${modeLabel}` : ""}
+        </h2>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            setEditing(false);
+            setEditingId(null);
+            setAdding(false);
+            setError("");
+          }}
+        >
+          <Check aria-hidden />
+          پایان
+        </Button>
+      </div>
 
       {error ? <p className="mb-3 text-xs text-danger">{error}</p> : null}
 
