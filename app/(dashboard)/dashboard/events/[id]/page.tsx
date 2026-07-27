@@ -11,6 +11,7 @@ import {
   listWorkspaces,
   getWorkspaceByEvent,
   listGuests,
+  listRegistrations,
   listCollaborators,
   listAttendeeTags,
 } from "@/lib/server";
@@ -123,6 +124,16 @@ export default async function EventDetailPage({ params }: Params) {
   }));
   const collaborators = listCollaborators(event.id);
   const audienceTags = listAttendeeTags();
+  const registrations = event.requiresApproval
+    ? listRegistrations(event.id).map((r) => ({
+        id: r.id,
+        name: r.name,
+        contact: r.contact,
+        channel: r.channel,
+        note: r.note,
+        status: r.status,
+      }))
+    : [];
 
   const first = event.sessions[0];
   const ticketSample: TicketSample = {
@@ -230,6 +241,8 @@ export default async function EventDetailPage({ params }: Params) {
                 guests={guests}
                 initialChecked={listCheckedHolderIds()}
                 allowGuests={event.mode !== "recurring"}
+                requiresApproval={Boolean(event.requiresApproval)}
+                registrations={registrations}
               />
             ),
           },
