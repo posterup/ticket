@@ -198,58 +198,6 @@ export function TicketEditor({
               ) : null}
             </div>
 
-            {/* دربستی — charter/whole booking: base price + per-person fee, min–max people */}
-            <div className="flex flex-col gap-3">
-              <Toggle
-                label="فروش دربستی"
-                hint="رزرو یک‌جای رویداد با قیمت پایه ثابت و هزینهٔ اضافه به‌ازای هر نفر."
-                checked={t.buyout}
-                onChange={(v) => onChange({ buyout: v })}
-              />
-              {t.buyout ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field id={`buyout-base-${t.id}`} label="قیمت پایهٔ دربست (تومان)">
-                    <MoneyInput
-                      id={`buyout-base-${t.id}`}
-                      value={t.buyoutBasePrice}
-                      onChange={(v) => onChange({ buyoutBasePrice: v })}
-                      placeholder="مثلاً ۱۰٬۰۰۰٬۰۰۰"
-                    />
-                  </Field>
-                  <Field id={`buyout-pp-${t.id}`} label="هزینه به‌ازای هر نفر (تومان)">
-                    <MoneyInput
-                      id={`buyout-pp-${t.id}`}
-                      value={t.buyoutPerPerson}
-                      onChange={(v) => onChange({ buyoutPerPerson: v })}
-                      placeholder="مثلاً ۲۰۰٬۰۰۰"
-                    />
-                  </Field>
-                  <Field id={`buyout-min-${t.id}`} label="حداقل نفرات">
-                    <Input
-                      id={`buyout-min-${t.id}`}
-                      type="number"
-                      min={1}
-                      inputMode="numeric"
-                      value={t.buyoutMin}
-                      onChange={(e) => onChange({ buyoutMin: e.target.value })}
-                      placeholder="مثلاً ۲۰"
-                    />
-                  </Field>
-                  <Field id={`buyout-max-${t.id}`} label="حداکثر نفرات">
-                    <Input
-                      id={`buyout-max-${t.id}`}
-                      type="number"
-                      min={1}
-                      inputMode="numeric"
-                      value={t.buyoutMax}
-                      onChange={(e) => onChange({ buyoutMax: e.target.value })}
-                      placeholder="مثلاً ۱۰۰"
-                    />
-                  </Field>
-                </div>
-              ) : null}
-            </div>
-
             {/* Per-session attachment */}
             {sessions.length > 1 ? (
               <div className="flex flex-col gap-3">

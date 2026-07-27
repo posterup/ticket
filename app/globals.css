@@ -316,14 +316,48 @@ body::before {
   flex: 1 1 0 !important;
   width: auto !important;
 }
+.poster-cal-full .rmdp-day {
+  height: 2.5rem;
+}
+/* A centered circular day highlight (not a stretched, oval pill). */
 .poster-cal-full .rmdp-day span {
   position: static !important;
+  inset: auto !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 100% !important;
-  height: 2.5rem !important;
-  border-radius: var(--radius-sm) !important;
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  margin: 0 auto !important;
+  border-radius: 999px !important;
+}
+/* Multi-day range: a soft brand-accent band that connects across the cells. */
+.poster-cal-full .rmdp-day.rmdp-range {
+  background-color: var(--accent-soft) !important;
+}
+.poster-cal-full .rmdp-day.rmdp-range.start {
+  border-start-start-radius: 999px !important;
+  border-end-start-radius: 999px !important;
+}
+.poster-cal-full .rmdp-day.rmdp-range.end {
+  border-start-end-radius: 999px !important;
+  border-end-end-radius: 999px !important;
+}
+.poster-cal-full .rmdp-day.rmdp-range span {
+  background-color: transparent !important;
+  color: var(--accent) !important;
+  box-shadow: none !important;
+}
+.poster-cal-full .rmdp-day.rmdp-range-hover {
+  background-color: var(--subtle) !important;
+}
+/* Range endpoints + a single selected day: a solid brand-accent circle. */
+.poster-cal-full .rmdp-day.rmdp-range.start span,
+.poster-cal-full .rmdp-day.rmdp-range.end span,
+.poster-cal-full .rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  box-shadow: var(--glow) !important;
 }
 
 /* Light, softly desaturated map tiles (Leaflet) to match the clean theme. */

@@ -9,7 +9,6 @@ import gregorian_en from "react-date-object/locales/gregorian_en";
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
-import { TimeField } from "@/components/ui/time-field";
 
 export interface DateRange {
   /** Gregorian `YYYY-MM-DD`. */
@@ -102,28 +101,35 @@ export function DateRangeFields({
           : "روز شروع و روز پایان را روی تقویم انتخاب کنید."}
       </p>
 
-      {/* One hour range, shared by every day — a single clean row. */}
+      {/* One hour range, shared by every day — native time pickers, از/تا. */}
       <div className="flex flex-col gap-2">
         <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
           <Clock className="size-4 text-faint" aria-hidden />
           ساعت برگزاری
         </span>
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <TimeField
+        <div className="grid grid-cols-2 gap-3">
+          <label htmlFor="range-start-time" className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted">از ساعت</span>
+            <input
               id="range-start-time"
+              type="time"
+              dir="ltr"
               value={value.startTime}
-              onChange={(startTime) => onChange({ ...value, startTime })}
+              onChange={(e) => onChange({ ...value, startTime: e.target.value })}
+              className="h-12 w-full rounded-md border border-border bg-card px-3.5 text-center text-sm tabular-nums text-foreground outline-none transition-colors hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15"
             />
-          </div>
-          <span className="shrink-0 text-sm text-muted">تا</span>
-          <div className="flex-1">
-            <TimeField
+          </label>
+          <label htmlFor="range-end-time" className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted">تا ساعت</span>
+            <input
               id="range-end-time"
+              type="time"
+              dir="ltr"
               value={value.endTime}
-              onChange={(endTime) => onChange({ ...value, endTime })}
+              onChange={(e) => onChange({ ...value, endTime: e.target.value })}
+              className="h-12 w-full rounded-md border border-border bg-card px-3.5 text-center text-sm tabular-nums text-foreground outline-none transition-colors hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15"
             />
-          </div>
+          </label>
         </div>
       </div>
     </div>
