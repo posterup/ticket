@@ -12,15 +12,6 @@ import {
   X,
 } from "lucide-react";
 
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@heroui/react";
-
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import type { RegistrationStatus } from "@/types";
@@ -125,26 +116,21 @@ export function ApprovalList({
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <Table className="w-full min-w-[30rem] text-sm">
-            <Table.Content aria-label="درخواست‌های ثبت‌نام">
-            <TableHeader>
-              <TableColumn isRowHeader>
-                <ColLabel icon={User} label="نام" />
-              </TableColumn>
-              <TableColumn>
-                <ColLabel icon={Phone} label="تلفن" />
-              </TableColumn>
-              <TableColumn>
-                <ColLabel icon={Ticket} label="تعداد بلیت" />
-              </TableColumn>
-              <TableColumn aria-label="عملیات">{""}</TableColumn>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full min-w-[30rem] text-sm">
+            <thead>
+              <tr className="border-b border-border bg-subtle/40 text-muted">
+                <Th icon={User} label="نام" />
+                <Th icon={Phone} label="تلفن" />
+                <Th icon={Ticket} label="تعداد بلیت" />
+                <th className="w-px px-3 pb-2 pt-3" aria-label="عملیات" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
               {rows.map((r) => {
                 const done = r.status !== "pending";
                 return (
-                  <TableRow key={r.id} id={r.id} className={cn(done && "bg-subtle/20")}>
-                    <TableCell>
+                  <tr key={r.id} className={cn(done && "bg-subtle/20")}>
+                    <td className="px-3 py-3">
                       <span
                         className={cn(
                           "font-medium",
@@ -153,18 +139,14 @@ export function ApprovalList({
                       >
                         {r.name}
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="block text-end text-muted" dir="ltr">
-                        {r.phone}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-foreground">
-                        {formatNumber(r.tickets)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-3 py-3 text-muted" dir="ltr">
+                      <span className="block text-end">{r.phone}</span>
+                    </td>
+                    <td className="px-3 py-3 text-foreground">
+                      {formatNumber(r.tickets)}
+                    </td>
+                    <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {r.status === "pending" ? (
                           <>
@@ -199,21 +181,20 @@ export function ApprovalList({
                           </>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 );
               })}
-            </TableBody>
-            </Table.Content>
-          </Table>
+            </tbody>
+          </table>
         </div>
       )}
     </div>
   );
 }
 
-/** Column header content: icon stacked on top of the label. */
-function ColLabel({
+/** Column header: icon stacked on top of the label. */
+function Th({
   icon: Icon,
   label,
 }: {
@@ -221,10 +202,12 @@ function ColLabel({
   label: string;
 }) {
   return (
-    <span className="flex flex-col items-start gap-1 text-xs font-medium">
-      <Icon className="size-4 text-faint" aria-hidden />
-      {label}
-    </span>
+    <th className="px-3 pb-2 pt-3 text-start align-bottom font-medium">
+      <span className="flex flex-col items-start gap-1 text-xs">
+        <Icon className="size-4 text-faint" aria-hidden />
+        {label}
+      </span>
+    </th>
   );
 }
 

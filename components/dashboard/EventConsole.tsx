@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs } from "@heroui/react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,39 +11,47 @@ export interface ConsoleTab {
 }
 
 /**
- * Tabbed container for the event management console — HeroUI <Tabs> (React
- * Aria). Every panel is force-mounted (`shouldForceMount`) so per-tab client
- * state (forms, check-in progress) survives switching between tabs; only the
- * active panel is visible.
+ * Tabbed container for the event management console. Each tab's content is
+ * server-rendered and passed in; switching only toggles visibility so per-tab
+ * client state (forms, check-in progress) survives navigation between tabs.
+ *
+ * Kept as a bespoke ARIA tablist (not HeroUI Tabs): it must keep every panel
+ * mounted and simply hidden, which is exactly this markup.
  */
 export function EventConsole({ tabs }: { tabs: ConsoleTab[] }) {
+  const [active, setActive] = useState(tabs[0]?.id);
+
   return (
-    <Tabs
-      aria-label="مدیریت رویداد"
-      defaultSelectedKey={tabs[0]?.id}
-      className="flex flex-col gap-6"
-    >
-      <Tabs.List className="flex overflow-x-auto border-b border-border [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-col gap-6">
+      <div
+        role="tablist"
+        aria-label="مدیریت رویداد"
+        className="flex overflow-x-auto border-b border-border [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {tabs.map((t) => (
-          <Tabs.Tab
+          <button
             key={t.id}
-            id={t.id}
+            type="button"
+            role="tab"
+            aria-selected={active === t.id}
+            onClick={() => setActive(t.id)}
             className={cn(
-              "-mb-px flex-1 shrink-0 cursor-pointer whitespace-nowrap border-b-2 border-transparent px-4 py-3 text-center text-sm font-medium text-muted outline-none transition-colors hover:text-foreground sm:flex-none",
-              "data-[selected]:border-accent data-[selected]:font-semibold data-[selected]:text-foreground",
-              "data-[focus-visible]:ring-2 data-[focus-visible]:ring-inset data-[focus-visible]:ring-ring/30",
+              "-mb-px flex-1 shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-center text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30 sm:flex-none",
+              active === t.id
+                ? "border-accent font-semibold text-foreground"
+                : "border-transparent font-medium text-muted hover:text-foreground",
             )}
           >
             {t.label}
-          </Tabs.Tab>
+          </button>
         ))}
-      </Tabs.List>
+      </div>
 
       {tabs.map((t) => (
-        <Tabs.Panel key={t.id} id={t.id} shouldForceMount>
+        <div key={t.id} role="tabpanel" hidden={active !== t.id}>
           {t.content}
-        </Tabs.Panel>
+        </div>
       ))}
-    </Tabs>
+    </div>
   );
 }
