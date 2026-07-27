@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, ClipboardCheck, RotateCcw, Search, Ticket, X } from "lucide-react";
+import {
+  Check,
+  ClipboardCheck,
+  Phone,
+  RotateCcw,
+  Search,
+  Ticket,
+  User,
+  X,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
@@ -19,9 +28,9 @@ const digits = (v: string) => v.replace(/\D/g, "");
 
 /**
  * Accept list for invite-only («ثبت‌نام با تأیید») events — the whole content of
- * the «درخواست‌های ثبت‌نام» tab. A minimal, searchable list: pending requests
- * come first with پذیرش/رد actions; decided requests follow, revertible to
- * pending. Each request carries only the applicant's full name and phone.
+ * the «درخواست‌های ثبت‌نام» tab. A searchable table (نام · تلفن · بلیت · actions),
+ * pending requests first with پذیرش/رد, decided requests below and revertible.
+ * Each request carries only the applicant's full name, phone, and ticket count.
  */
 export function ApprovalList({
   eventId,
@@ -48,8 +57,8 @@ export function ApprovalList({
     !q ||
     r.name.toLowerCase().includes(q) ||
     (digits(q) !== "" && digits(r.phone).includes(digits(q)));
-  const pendingShown = pending.filter(match);
-  const decidedShown = decided.filter(match);
+  // Pending first, then decided — both filtered by the search query.
+  const rows = [...pending.filter(match), ...decided.filter(match)];
 
   function setStatus(id: string, status: RegistrationStatus) {
     setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
@@ -97,106 +106,108 @@ export function ApprovalList({
         </div>
       ) : null}
 
-      {/* Pending */}
-      {pending.length === 0 ? (
+      {items.length === 0 ? (
         <p className="py-6 text-center text-xs text-muted">
-          درخواست ثبت‌نام در انتظار بررسی نیست.
+          درخواست ثبت‌نامی وجود ندارد.
         </p>
-      ) : pendingShown.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p className="py-6 text-center text-xs text-muted">
           موردی مطابق جست‌وجو یافت نشد.
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-border">
-          {pendingShown.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center gap-3 py-3 first:pt-0"
-            >
-              <Applicant item={r} />
-              <Tickets count={r.tickets} />
-              <div className="flex shrink-0 items-center gap-1">
-                <Action
-                  label="پذیرش"
-                  tone="success"
-                  onClick={() => setStatus(r.id, "accepted")}
-                >
-                  <Check className="size-4" aria-hidden />
-                  پذیرش
-                </Action>
-                <Action
-                  label="رد"
-                  tone="danger"
-                  onClick={() => setStatus(r.id, "rejected")}
-                >
-                  <X className="size-4" aria-hidden />
-                  رد
-                </Action>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Decided */}
-      {decidedShown.length > 0 ? (
-        <div className="flex flex-col gap-2 border-t border-border pt-4">
-          <p className="text-xs font-medium text-muted">
-            بررسی‌شده ({formatNumber(decided.length)})
-          </p>
-          <ul className="flex flex-col divide-y divide-border">
-            {decidedShown.map((r) => (
-              <li key={r.id} className="flex items-center gap-3 py-3 first:pt-0">
-                <Applicant item={r} muted />
-                <Tickets count={r.tickets} />
-                <StatusText status={r.status} />
-                <button
-                  type="button"
-                  onClick={() => setStatus(r.id, "pending")}
-                  aria-label="بازگرداندن به در انتظار بررسی"
-                  className="grid size-8 shrink-0 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
-                >
-                  <RotateCcw className="size-4" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full min-w-[30rem] text-sm">
+            <thead>
+              <tr className="border-b border-border bg-subtle/40 text-muted">
+                <Th icon={User} label="نام" />
+                <Th icon={Phone} label="تلفن" />
+                <Th icon={Ticket} label="تعداد بلیت" />
+                <th className="w-px px-3 pb-2 pt-3" aria-label="عملیات" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((r) => {
+                const done = r.status !== "pending";
+                return (
+                  <tr key={r.id} className={cn(done && "bg-subtle/20")}>
+                    <td className="px-3 py-3">
+                      <span
+                        className={cn(
+                          "font-medium",
+                          done ? "text-muted" : "text-foreground",
+                        )}
+                      >
+                        {r.name}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-muted" dir="ltr">
+                      <span className="block text-end">{r.phone}</span>
+                    </td>
+                    <td className="px-3 py-3 text-foreground">
+                      {formatNumber(r.tickets)}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        {r.status === "pending" ? (
+                          <>
+                            <Action
+                              label="پذیرش"
+                              tone="success"
+                              onClick={() => setStatus(r.id, "accepted")}
+                            >
+                              <Check className="size-4" aria-hidden />
+                              پذیرش
+                            </Action>
+                            <Action
+                              label="رد"
+                              tone="danger"
+                              onClick={() => setStatus(r.id, "rejected")}
+                            >
+                              <X className="size-4" aria-hidden />
+                              رد
+                            </Action>
+                          </>
+                        ) : (
+                          <>
+                            <StatusText status={r.status} />
+                            <button
+                              type="button"
+                              onClick={() => setStatus(r.id, "pending")}
+                              aria-label="بازگرداندن به در انتظار بررسی"
+                              className="grid size-8 shrink-0 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+                            >
+                              <RotateCcw className="size-4" aria-hidden />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
 
-function Applicant({
-  item,
-  muted = false,
+/** Column header: icon stacked on top of the label. */
+function Th({
+  icon: Icon,
+  label,
 }: {
-  item: RegistrationItem;
-  muted?: boolean;
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  label: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
-      <span
-        className={cn(
-          "truncate text-sm font-medium",
-          muted ? "text-muted" : "text-foreground",
-        )}
-      >
-        {item.name}
+    <th className="px-3 pb-2 pt-3 text-start align-bottom font-medium">
+      <span className="flex flex-col items-start gap-1 text-xs">
+        <Icon className="size-4 text-faint" aria-hidden />
+        {label}
       </span>
-      <span className="truncate text-xs text-muted" dir="ltr">
-        {item.phone}
-      </span>
-    </div>
-  );
-}
-
-function Tickets({ count }: { count: number }) {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted">
-      <Ticket className="size-3.5 text-faint" aria-hidden />
-      {formatNumber(count)} بلیت
-    </span>
+    </th>
   );
 }
 
@@ -233,7 +244,5 @@ function StatusText({ status }: { status: RegistrationStatus }) {
     accepted: { label: "پذیرفته‌شد", cls: "text-success" },
     rejected: { label: "رد شد", cls: "text-danger" },
   }[status];
-  return (
-    <span className={cn("shrink-0 text-xs", map.cls)}>{map.label}</span>
-  );
+  return <span className={cn("shrink-0 text-xs", map.cls)}>{map.label}</span>;
 }
