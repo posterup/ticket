@@ -28,6 +28,7 @@ import { EventTickets } from "@/components/dashboard/EventTickets";
 import { EventAccessSettings } from "@/components/dashboard/EventAccessSettings";
 import { RecurrenceEditor } from "@/components/dashboard/RecurrenceEditor";
 import { AttendanceManager } from "@/components/dashboard/AttendanceManager";
+import { ApprovalList } from "@/components/dashboard/ApprovalList";
 import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
 import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
@@ -128,9 +129,8 @@ export default async function EventDetailPage({ params }: Params) {
     ? listRegistrations(event.id).map((r) => ({
         id: r.id,
         name: r.name,
-        contact: r.contact,
-        channel: r.channel,
-        note: r.note,
+        phone: r.phone,
+        tickets: r.tickets,
         status: r.status,
       }))
     : [];
@@ -241,11 +241,24 @@ export default async function EventDetailPage({ params }: Params) {
                 guests={guests}
                 initialChecked={listCheckedHolderIds()}
                 allowGuests={event.mode !== "recurring"}
-                requiresApproval={Boolean(event.requiresApproval)}
-                registrations={registrations}
               />
             ),
           },
+          // Invite-only events review registration requests in their own tab.
+          ...(event.requiresApproval
+            ? [
+                {
+                  id: "registrations",
+                  label: "درخواست‌های ثبت‌نام",
+                  content: (
+                    <ApprovalList
+                      eventId={event.id}
+                      registrations={registrations}
+                    />
+                  ),
+                },
+              ]
+            : []),
           {
             id: "tickets",
             label: "بلیت‌ها",
