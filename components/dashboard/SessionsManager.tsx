@@ -27,10 +27,20 @@ interface Props {
   eventId: string;
   sessions: EventSession[];
   modeLabel: string | null;
+  /**
+   * Hide the per-سانس «وضعیت» (sales/capacity state). Free events have no sales,
+   * so the status chips and editor field are dropped.
+   */
+  hideStatus?: boolean;
 }
 
 /** Schedule list with per-سانس reschedule and cancel/restore controls. */
-export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
+export function SessionsManager({
+  eventId,
+  sessions,
+  modeLabel,
+  hideStatus = false,
+}: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -112,18 +122,20 @@ export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
                 {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
                 {formatTime(s.endAt)}
               </p>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                {s.cancelled ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-danger/30 bg-danger/5 px-2 py-0.5 text-xs text-danger">
-                    <Ban className="size-3" aria-hidden />
-                    لغوشده
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted">
-                    {SESSION_AVAILABILITY_LABELS[s.availability ?? "available"]}
-                  </span>
-                )}
-              </div>
+              {s.cancelled || !hideStatus ? (
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {s.cancelled ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-danger/30 bg-danger/5 px-2 py-0.5 text-xs text-danger">
+                      <Ban className="size-3" aria-hidden />
+                      لغوشده
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted">
+                      {SESSION_AVAILABILITY_LABELS[s.availability ?? "available"]}
+                    </span>
+                  )}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -169,6 +181,7 @@ export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
                   availability: s.availability ?? "available",
                 }}
                 busy={busyId === s.id}
+                hideStatus={hideStatus}
                 onSave={(startAt, endAt, availability) =>
                   patch(s.id, { startAt, endAt, availability })
                 }
@@ -188,18 +201,20 @@ export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
                     {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
                     {formatTime(s.endAt)}
                   </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    {s.cancelled ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-danger/30 bg-danger/5 px-2 py-0.5 text-xs text-danger">
-                        <Ban className="size-3" aria-hidden />
-                        لغوشده
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted">
-                        {SESSION_AVAILABILITY_LABELS[s.availability ?? "available"]}
-                      </span>
-                    )}
-                  </div>
+                  {s.cancelled || !hideStatus ? (
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {s.cancelled ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-danger/30 bg-danger/5 px-2 py-0.5 text-xs text-danger">
+                          <Ban className="size-3" aria-hidden />
+                          لغوشده
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted">
+                          {SESSION_AVAILABILITY_LABELS[s.availability ?? "available"]}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   {s.cancelled ? (
@@ -253,6 +268,7 @@ export function SessionsManager({ eventId, sessions, modeLabel }: Props) {
               availability: "available",
             }}
             busy={busyId === "new"}
+            hideStatus={hideStatus}
             onSave={addNew}
             onCancel={() => setAdding(false)}
           />
@@ -279,6 +295,7 @@ function SessionEditor({
   idKey,
   initial,
   busy,
+  hideStatus = false,
   onSave,
   onCancel,
 }: {
@@ -290,6 +307,7 @@ function SessionEditor({
     availability: SessionAvailability;
   };
   busy: boolean;
+  hideStatus?: boolean;
   onSave: (
     startAt: string,
     endAt: string,
@@ -333,21 +351,23 @@ function SessionEditor({
         <Field id={`end-${idKey}`} label="پایان">
           <TimeField id={`end-${idKey}`} value={endTime} onChange={setEndTime} />
         </Field>
-        <Field id={`availability-${idKey}`} label="وضعیت">
-          <Select
-            id={`availability-${idKey}`}
-            value={availability}
-            onChange={(e) =>
-              setAvailability(e.target.value as SessionAvailability)
-            }
-          >
-            {SESSION_AVAILABILITY_ORDER.map((a) => (
-              <option key={a} value={a}>
-                {SESSION_AVAILABILITY_LABELS[a]}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        {hideStatus ? null : (
+          <Field id={`availability-${idKey}`} label="وضعیت">
+            <Select
+              id={`availability-${idKey}`}
+              value={availability}
+              onChange={(e) =>
+                setAvailability(e.target.value as SessionAvailability)
+              }
+            >
+              {SESSION_AVAILABILITY_ORDER.map((a) => (
+                <option key={a} value={a}>
+                  {SESSION_AVAILABILITY_LABELS[a]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
       </div>
       {localError ? <p className="text-xs text-danger">{localError}</p> : null}
       <div className="flex items-center gap-2">
