@@ -24,12 +24,10 @@ import { SectionCard, Toggle, Stepper } from "@/components/create/ui";
 import { LocationPicker } from "@/components/create/LocationPicker";
 import { IRAN_PROVINCES, citiesOfProvince } from "@/lib/create/iran-locations";
 import { MediaSection } from "@/components/create/MediaSection";
-import { TicketDesignSection } from "@/components/create/TicketDesignSection";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
 import { EventPreview } from "@/components/create/EventPreview";
-import type { TicketSample } from "@/components/tickets/TicketPreview";
 import {
   LOCATION_LABELS,
   VISIBILITY_LABELS,
@@ -128,17 +126,6 @@ export function EventComposer() {
             return { id: s.id, label };
           })
       : [];
-
-  const ticketSample: TicketSample = {
-    eventTitle: draft.title.trim() || "عنوان رویداد",
-    holder: "سارا محمدی",
-    category: draft.ticketTypes[0]?.name.trim() || "عمومی",
-    date: expanded[0]?.date
-      ? formatJalaliDate(`${expanded[0].date}T00:00:00.000Z`)
-      : "تاریخ رویداد",
-    venue:
-      draft.location.venueName.trim() || draft.location.city.trim() || "مکان رویداد",
-  };
 
   // --- schedule handlers ---
   const scheduleChange = (p: Partial<ScheduleDraft>) =>
@@ -613,12 +600,6 @@ export function EventComposer() {
               <Plus className="size-4" aria-hidden />
               افزودن نوع بلیت
             </button>
-
-            <TicketDesignSection
-              design={draft.ticketDesign}
-              sample={ticketSample}
-              onChange={(d) => patch({ ticketDesign: d })}
-            />
           </div>
         </SectionCard>
         </>
