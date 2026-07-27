@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Pencil, Check, X } from "lucide-react";
+import { FileText, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EditButton } from "@/components/dashboard/EditButton";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,15 +67,7 @@ export function EditEventForm({ eventId, title, description }: Props) {
             <FileText className="size-4 text-faint" aria-hidden />
             عنوان و توضیحات
           </h2>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => setEditing(true)}
-          >
-            <Pencil aria-hidden />
-            ویرایش
-          </Button>
+          <EditButton onClick={() => setEditing(true)} />
         </div>
         <p className="text-sm font-medium text-foreground">{title}</p>
         {description ? (

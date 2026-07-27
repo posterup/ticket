@@ -19,11 +19,9 @@ function newLinkId(): string {
  */
 export function EventLinkForm({
   eventId,
-  eventTitle,
   slug: initialSlug,
 }: {
   eventId: string;
-  eventTitle: string;
   slug: string;
 }) {
   const [origin, setOrigin] = useState("https://poster.ir");
@@ -135,17 +133,8 @@ export function EventLinkForm({
         onCancel={() => setConfirmOpen(false)}
       >
         <p className="text-sm text-muted">
-          لینک فعلیِ این رویداد جایگزین می‌شود و لینک قبلی از کار می‌افتد.
+          با ساخت لینک جدید، لینک فعلی از کار می‌افتد. مطمئن هستید؟
         </p>
-        <p className="mt-1 text-base font-semibold text-foreground">
-          {eventTitle}
-        </p>
-        <span
-          className="mt-1 max-w-full truncate rounded-md border border-border bg-subtle px-3 py-1.5 text-xs text-muted"
-          dir="ltr"
-        >
-          {url}
-        </span>
         {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
       </ConfirmDialog>
     </div>
