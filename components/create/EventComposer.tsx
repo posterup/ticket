@@ -727,7 +727,7 @@ export function EventComposer({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between gap-3 border-t border-border pt-6">
+        <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 border-t border-border bg-background/90 pt-4 pb-4 backdrop-blur-sm">
           {step > 0 ? (
             <Button type="button" variant="ghost" onClick={goBack} disabled={status === "submitting"}>
               <ArrowRight aria-hidden />
