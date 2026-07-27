@@ -24,7 +24,7 @@ import {
 } from "@/lib/format";
 import { cityCoords } from "@/lib/geo/iran";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { EventCover } from "@/components/events/EventCover";

@@ -5,7 +5,7 @@ import { QrCode, Megaphone } from "lucide-react";
 import { listAttendees, listEventsByAttendee, listTickets } from "@/lib/server";
 import { formatJalaliDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { ContactsTable, type Contact } from "@/components/dashboard/ContactsTable";
 
 export const metadata: Metadata = { title: "مخاطبین | پوستر" };

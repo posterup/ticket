@@ -6,7 +6,7 @@ import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 /**
  * Sticky, transparent header that gains a blurred, bordered surface once the

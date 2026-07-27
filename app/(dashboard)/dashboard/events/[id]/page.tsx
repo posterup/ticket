@@ -106,6 +106,9 @@ export default async function EventDetailPage({ params }: Params) {
 
   const tickets = listTickets(id);
   const discounts = listDiscounts(id);
+  // A free event (all ticket types priced at 0) has nothing to price or
+  // discount, so its «بلیت‌ها» and «تخفیف‌ها» tabs are hidden.
+  const isFree = tickets.length > 0 && tickets.every((t) => t.price === 0);
   const sessionOptions = event.sessions.map((s) => ({
     id: s.id,
     label: `${formatJalaliDate(s.startAt)} · ${formatTime(s.startAt)}`,
@@ -259,42 +262,47 @@ export default async function EventDetailPage({ params }: Params) {
                 },
               ]
             : []),
-          {
-            id: "tickets",
-            label: "بلیت‌ها",
-            content: (
-              <div className="flex flex-col gap-8">
-                <EventTickets
-                  eventId={event.id}
-                  tickets={tickets}
-                  sessions={sessionOptions}
-                />
-                <section className="flex flex-col gap-4 border-t border-border pt-6">
-                  <div>
-                    <h2 className="text-sm font-semibold text-foreground">
-                      قالب بلیت
-                    </h2>
-                    <p className="mt-1 text-xs text-muted">
-                      ظاهر بلیت صادرشدهٔ این رویداد را سفارشی کنید و پیش‌نمایش را
-                      ببینید.
-                    </p>
-                  </div>
-                  <TicketDesigner sample={ticketSample} />
-                </section>
-              </div>
-            ),
-          },
-          {
-            id: "discounts",
-            label: "تخفیف‌ها",
-            content: (
-              <EventDiscounts
-                eventId={event.id}
-                sessions={sessionOptions}
-                discounts={discounts}
-              />
-            ),
-          },
+          // Free events skip ticket pricing + discounts entirely.
+          ...(isFree
+            ? []
+            : [
+                {
+                  id: "tickets",
+                  label: "بلیت‌ها",
+                  content: (
+                    <div className="flex flex-col gap-8">
+                      <EventTickets
+                        eventId={event.id}
+                        tickets={tickets}
+                        sessions={sessionOptions}
+                      />
+                      <section className="flex flex-col gap-4 border-t border-border pt-6">
+                        <div>
+                          <h2 className="text-sm font-semibold text-foreground">
+                            قالب بلیت
+                          </h2>
+                          <p className="mt-1 text-xs text-muted">
+                            ظاهر بلیت صادرشدهٔ این رویداد را سفارشی کنید و
+                            پیش‌نمایش را ببینید.
+                          </p>
+                        </div>
+                        <TicketDesigner sample={ticketSample} />
+                      </section>
+                    </div>
+                  ),
+                },
+                {
+                  id: "discounts",
+                  label: "تخفیف‌ها",
+                  content: (
+                    <EventDiscounts
+                      eventId={event.id}
+                      sessions={sessionOptions}
+                      discounts={discounts}
+                    />
+                  ),
+                },
+              ]),
         ]}
       />
     </div>

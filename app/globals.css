@@ -1,4 +1,14 @@
 @import "tailwindcss";
+/*
+  HeroUI v3 component styles (React Aria + Tailwind v4). HeroUI reads the same
+  raw CSS variables we already declare below (--background, --foreground,
+  --accent, --border, --muted, --success, --warning, --danger, …); because our
+  `:root` is unlayered it wins over HeroUI's `@layer base` defaults, so every
+  HeroUI component inherits the neon brand for free. HeroUI-only tokens
+  (--surface, --overlay, --radius, --field-*, --default, --focus) are mapped to
+  the brand in the block below.
+*/
+@import "@heroui/styles";
 
 /*
   Clean white-neon theme for Poster. A bright, airy base with a hot-pink
@@ -27,6 +37,37 @@
 
   /* Reusable neon glow shadow — soft on the light base. */
   --glow: 0 0 24px -6px var(--accent);
+
+  /*
+    HeroUI-only tokens, mapped onto the neon brand. HeroUI derives most of its
+    look from these; setting them here keeps HeroUI components on-brand without
+    touching HeroUI's own theme files. (Names it also shares with us —
+    --background/--foreground/--accent/--border/--muted/--success/--warning/
+    --danger — are already defined above and inherited as-is.)
+  */
+  --radius: 0.6rem; /* base radius HeroUI scales its rounded-* from */
+  --surface: rgba(255, 255, 255, 0.82); /* glass cards, matches --card */
+  --surface-foreground: var(--foreground);
+  --overlay: #ffffff; /* opaque for popovers/menus/modals (readability) */
+  --overlay-foreground: var(--foreground);
+  --default: var(--subtle); /* neutral/secondary surface (e.g. ghost/secondary) */
+  --default-foreground: var(--foreground);
+  --segment: #ffffff;
+  --segment-foreground: var(--foreground);
+  --focus: var(--accent); /* pink focus ring */
+  --separator: var(--border);
+  --accent-soft-foreground: var(--accent);
+  --success-foreground: #ffffff;
+  --warning-foreground: #ffffff;
+  --danger-foreground: #ffffff;
+
+  /* Form fields → white surface, brand border, large radius. */
+  --field-background: #ffffff;
+  --field-foreground: var(--foreground);
+  --field-placeholder: var(--faint);
+  --field-border: var(--border);
+  --field-border-width: 1px;
+  --field-radius: var(--radius-md);
 }
 
 @theme inline {
@@ -245,6 +286,44 @@ body::before {
 .rmdp-time-picker div .e-title,
 .rmdp-time-picker div .dw {
   color: var(--muted) !important;
+}
+
+/*
+  Full-width inline calendar (`poster-cal-full`) — used by the multi-day range
+  picker in the ticket-creation flow. The library sizes days with fixed pixel
+  widths; here we stretch the calendar to fill its container and let each day
+  flex so the grid spans the full width with no surrounding box.
+*/
+.poster-cal-full,
+.poster-cal-full .rmdp-calendar,
+.poster-cal-full .rmdp-day-picker,
+.poster-cal-full .rmdp-day-picker > div,
+.poster-cal-full .rmdp-header,
+.poster-cal-full .rmdp-week {
+  width: 100% !important;
+}
+.poster-cal-full .rmdp-calendar {
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.poster-cal-full .rmdp-week {
+  display: flex !important;
+  justify-content: space-between;
+}
+.poster-cal-full .rmdp-day,
+.poster-cal-full .rmdp-week-day {
+  flex: 1 1 0 !important;
+  width: auto !important;
+}
+.poster-cal-full .rmdp-day span {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  height: 2.5rem !important;
+  border-radius: var(--radius-sm) !important;
 }
 
 /* Light, softly desaturated map tiles (Leaflet) to match the clean theme. */

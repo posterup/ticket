@@ -1,48 +1,66 @@
+"use client";
+
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { Button as HeroButton } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
+import {
+  buttonVariants,
+  type ButtonVariantProps,
+} from "@/components/ui/button-variants";
 
 /*
-  Button primitive in the shadcn/ui spirit, tuned to the Poster design language:
-  soft radius, tactile press, calm accent. Intentionally not the default shadcn skin.
+  Button primitive — backed by HeroUI's accessible <Button> (React Aria),
+  themed to the Poster neon brand via the shared tokens in globals.css. The
+  public API is unchanged (native `onClick`/`disabled`/`type` + our variant/size
+  names) so every existing call site keeps working; internally we translate to
+  HeroUI's props.
 */
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[transform,background-color,box-shadow,color] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        primary:
-          "bg-accent text-accent-foreground shadow-[0_0_24px_-4px_var(--accent)] hover:brightness-110 hover:shadow-[0_0_32px_-2px_var(--accent)] active:translate-y-px",
-        secondary:
-          "bg-card text-foreground border border-border shadow-sm hover:border-accent hover:shadow-[0_0_18px_-6px_var(--accent)] active:translate-y-px",
-        ghost: "text-foreground hover:bg-subtle active:translate-y-px",
-      },
-      size: {
-        sm: "h-9 px-4 [&_svg]:size-4",
-        md: "h-11 px-5 [&_svg]:size-[1.15rem]",
-        lg: "h-13 px-7 text-base [&_svg]:size-5",
-      },
-    },
-    defaultVariants: {
-      variant: "primary",
-      size: "md",
-    },
-  },
-);
+
+/** Our variant names → HeroUI's. `secondary` maps to HeroUI's bordered look. */
+const HERO_VARIANT = {
+  primary: "primary",
+  secondary: "outline",
+  ghost: "ghost",
+} as const;
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "color">,
+    ButtonVariantProps {}
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  (
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      type = "button",
+      disabled,
+      onClick,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     return (
-      <button
-        ref={ref}
-        className={cn(buttonVariants({ variant, size }), className)}
-        {...props}
-      />
+      <HeroButton
+        ref={ref as React.Ref<HTMLButtonElement>}
+        type={type}
+        variant={HERO_VARIANT[variant ?? "primary"]}
+        size={size ?? "md"}
+        isDisabled={disabled}
+        // Call sites use native onClick; HeroUI's React-Aria button fires
+        // onPress. Most handlers ignore the event, so forwarding is safe.
+        onPress={
+          onClick ? (e) => (onClick as (e: unknown) => void)(e) : undefined
+        }
+        className={cn(className)}
+        // External API is native button attrs; the only mismatch with HeroUI's
+        // React-Aria props is the event-handler element generic — safe to cast.
+        {...(props as unknown as Record<string, never>)}
+      >
+        {children}
+      </HeroButton>
     );
   },
 );
