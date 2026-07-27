@@ -12,6 +12,7 @@ import type {
   Event,
   EventCollaborator,
   EventGuest,
+  EventRegistration,
   TicketType,
 } from "@/types";
 
@@ -685,6 +686,51 @@ export const eventGuests: EventGuest[] = [
     channel: "phone",
     status: "going",
     createdAt: "2026-07-01T10:00:00.000Z",
+  },
+];
+
+/**
+ * Registration requests awaiting a decision on approval-gated events (those with
+ * `requiresApproval`). Seeded for «کارگاه خصوصی مدیریت برند» (event #10).
+ */
+export const eventRegistrations: EventRegistration[] = [
+  {
+    id: "r1000000-0000-4000-8000-000000000001",
+    eventId: "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10",
+    name: "نگار حسینی",
+    contact: "+989121234567",
+    channel: "phone",
+    note: "مدیر بازاریابی یک استارتاپ فین‌تک؛ علاقه‌مند به مباحث برندسازی.",
+    status: "pending",
+    createdAt: "2026-07-22T09:15:00.000Z",
+  },
+  {
+    id: "r1000000-0000-4000-8000-000000000002",
+    eventId: "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10",
+    name: "امیر رضایی",
+    contact: "amir.rezaei@example.com",
+    channel: "email",
+    status: "pending",
+    createdAt: "2026-07-22T11:40:00.000Z",
+  },
+  {
+    id: "r1000000-0000-4000-8000-000000000003",
+    eventId: "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10",
+    name: "سمیرا کاظمی",
+    contact: "+989357654321",
+    channel: "phone",
+    note: "دانشجوی کارشناسی ارشد مدیریت.",
+    status: "pending",
+    createdAt: "2026-07-23T08:05:00.000Z",
+  },
+  {
+    id: "r1000000-0000-4000-8000-000000000004",
+    eventId: "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10",
+    name: "پویا مرادی",
+    contact: "pooya.moradi@example.com",
+    channel: "email",
+    status: "accepted",
+    createdAt: "2026-07-21T14:20:00.000Z",
   },
 ];
 

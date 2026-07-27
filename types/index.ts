@@ -7,4 +7,5 @@ export * from "./ticket";
 export * from "./discount";
 export * from "./attendee";
 export * from "./guest";
+export * from "./registration";
 export * from "./collaborator";

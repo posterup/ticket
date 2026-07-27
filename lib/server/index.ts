@@ -10,6 +10,7 @@ export * from "./discounts";
 export * from "./engagement";
 export * from "./attendees";
 export * from "./guests";
+export * from "./registrations";
 export * from "./collaborators";
 export * from "./workspaces";
 export * from "./campaigns";

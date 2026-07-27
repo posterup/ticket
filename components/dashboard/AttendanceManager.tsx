@@ -8,6 +8,10 @@ import { Select } from "@/components/ui/select";
 import { formatNumber } from "@/lib/format";
 import { CheckinPanel } from "@/components/checkin/CheckinPanel";
 import { GuestInvite, type GuestItem } from "@/components/dashboard/GuestInvite";
+import {
+  ApprovalList,
+  type RegistrationItem,
+} from "@/components/dashboard/ApprovalList";
 import type { Holder, SessionRef } from "@/lib/checkin/data";
 
 /**
@@ -25,6 +29,8 @@ export function AttendanceManager({
   guests: initialGuests,
   initialChecked = [],
   allowGuests = true,
+  requiresApproval = false,
+  registrations = [],
 }: {
   eventId: string;
   eventTitle: string;
@@ -37,6 +43,10 @@ export function AttendanceManager({
   initialChecked?: string[];
   /** Recurring events don't take guest invites (kept from the tab's rules). */
   allowGuests?: boolean;
+  /** Approval-gated events show the accept list at the top of the tab. */
+  requiresApproval?: boolean;
+  /** Registration requests to review (only used when `requiresApproval`). */
+  registrations?: RegistrationItem[];
 }) {
   const [sessionId, setSessionId] = useState(sessions[0]?.id ?? "");
   const [guests, setGuests] = useState<GuestItem[]>(initialGuests);
@@ -146,6 +156,12 @@ export function AttendanceManager({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Accept list — approval-gated events review registration requests
+          first, above everything else and independent of the chosen سانس. */}
+      {requiresApproval ? (
+        <ApprovalList eventId={eventId} registrations={registrations} />
+      ) : null}
+
       {/* Session-first: choose the سانس before any data is shown. */}
       <Field
         id="attendance-session"
