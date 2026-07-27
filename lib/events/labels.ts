@@ -1,4 +1,5 @@
 import type { EventMode, EventStatus, SessionAvailability } from "@/types";
+import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 
 /** Persian labels for event lifecycle status. */
 export const STATUS_LABELS: Record<EventStatus, string> = {
@@ -10,10 +11,11 @@ export const STATUS_LABELS: Record<EventStatus, string> = {
 
 /**
  * Persian label for scheduling mode. Only recurring events carry a
- * calendar-style label; one-time and multi-session events show none.
+ * calendar-style label; one-time and multi-session events show none. The label
+ * is suppressed entirely while calendar mode is disabled (see {@link CALENDAR_MODE_ENABLED}).
  */
 export function modeLabel(mode: EventMode): string | null {
-  return mode === "recurring" ? "تقویمی" : null;
+  return mode === "recurring" && CALENDAR_MODE_ENABLED ? "تقویمی" : null;
 }
 
 /** Persian labels for a سانس (session) capacity/sales state. */

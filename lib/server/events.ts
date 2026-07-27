@@ -12,12 +12,19 @@ import type {
   Venue,
 } from "@/types";
 import { expandSchedule, type ScheduleDraft } from "@/lib/create/types";
+import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 
 import { events } from "./store";
 
-/** Return every event, newest first. */
+/**
+ * Return every event, newest first. While calendar mode is disabled, recurring
+ * (تقویمی) events are hidden from every listing so the mode leaves no trace;
+ * direct lookups ({@link getEventById}) still resolve them. See {@link CALENDAR_MODE_ENABLED}.
+ */
 export function listEvents(): Event[] {
-  return [...events].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return [...events]
+    .filter((event) => CALENDAR_MODE_ENABLED || event.mode !== "recurring")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 /** Return a single event by id, or `undefined` when not found. */
