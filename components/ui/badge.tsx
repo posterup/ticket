@@ -1,36 +1,30 @@
+"use client";
+
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { Chip } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
 
-const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full font-medium leading-none",
-  {
-    variants: {
-      variant: {
-        accent: "bg-accent-soft text-accent",
-        neutral: "bg-subtle text-muted border border-border",
-      },
-      size: {
-        sm: "px-2 py-0.5 text-[0.6875rem]",
-        md: "px-2.5 py-1 text-xs",
-      },
-    },
-    defaultVariants: {
-      variant: "accent",
-      size: "md",
-    },
-  },
-);
+export interface BadgeProps {
+  /** `accent` → soft pink pill; `neutral` → quiet default pill. */
+  variant?: "accent" | "neutral";
+  size?: "sm" | "md";
+  className?: string;
+  children?: React.ReactNode;
+}
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof badgeVariants> {}
-
-function Badge({ className, variant, size, ...props }: BadgeProps) {
+/** Small status pill — HeroUI <Chip>, themed by the brand tokens. */
+function Badge({ className, variant = "accent", size = "md", children }: BadgeProps) {
   return (
-    <span className={cn(badgeVariants({ variant, size }), className)} {...props} />
+    <Chip
+      color={variant === "accent" ? "accent" : "default"}
+      variant="soft"
+      size={size}
+      className={cn("rounded-full", className)}
+    >
+      {children}
+    </Chip>
   );
 }
 
-export { Badge, badgeVariants };
+export { Badge };

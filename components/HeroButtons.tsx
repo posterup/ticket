@@ -6,7 +6,7 @@ import { ArrowLeft, Calendar } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { fadeUpItem } from "@/lib/motion";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 /**
  * Hero call-to-action pair: create a ticket (primary) or browse public

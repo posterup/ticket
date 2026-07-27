@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 import {
   SIDEBAR_ITEMS,

@@ -18,8 +18,12 @@ dashboard and API. Product rationale: `docs/product-vision.md`.
 
 - **Next.js 15** (App Router) + **React 19**
 - **TypeScript**, strict
+- **HeroUI v3** (`@heroui/react`) — **the component library for all UI**. Built
+  on React Aria + Tailwind v4. See the HeroUI rules below.
 - **Tailwind CSS v4** — tokens declared in `app/globals.css` and surfaced to
-  Tailwind via `@theme inline` (no `tailwind.config` color values)
+  Tailwind via `@theme inline` (no `tailwind.config` color values). HeroUI reads
+  these same raw CSS variables, so the neon brand carries into every HeroUI
+  component (see `app/globals.css`).
 - **Framer Motion** — entrance and micro-interactions
 - **Lucide React** — icons
 - **Vazirmatn** — self-hosted via `@fontsource-variable/vazirmatn`, imported in
@@ -107,12 +111,30 @@ Full endpoint table and request/response samples: `docs/backend-architecture.md`
   `end-*`) over physical `left`/`right`. This is the single most cross-cutting
   rule in the codebase.
 - **Design tokens over ad-hoc values.** Colors, radii, and fonts come from the
-  CSS variables in `app/globals.css` (surfaced to Tailwind via `@theme inline`).
-  Never hardcode hex. The brand is monochrome; color is reserved for meaning
-  (blue = semantic *Info* + the logo mark only). Brand spec: `DESIGN.md`; token
-  mapping and primitive specs: `docs/design-system.md`.
+  CSS variables in `app/globals.css` (surfaced to Tailwind via `@theme inline`,
+  and read directly by HeroUI). Never hardcode hex. The brand is a light
+  white-neon theme with a hot-pink accent (`--accent`); reserve the accent for
+  emphasis and keep surfaces calm. HeroUI-only tokens (`--surface`, `--overlay`,
+  `--field-*`, `--radius`, `--focus`) are mapped to the brand in `globals.css`.
+  Token mapping and primitive specs: `docs/design-system.md`.
+- **HeroUI for everything — do not build bespoke UI components.** Reach for a
+  HeroUI component (`import { … } from "@heroui/react"`) for every UI need:
+  buttons, inputs, selects, modals, tabs, tables, cards, chips, tooltips, menus,
+  etc. **Do not** hand-roll a new styled `<div>`/`<button>` component when HeroUI
+  already covers it, and do not add new files under `components/ui` — that folder
+  now holds only thin HeroUI wrappers that exist for backward-compatible APIs.
+  When a screen needs a control, compose HeroUI primitives; if HeroUI genuinely
+  lacks it, ask before creating a bespoke component.
+  - HeroUI imports `client-only`, so any module importing `@heroui/react` must be
+    a Client Component (`"use client"`). Keep pure helpers (e.g. `cva` recipes
+    used by Server Components) in a **separate non-client module** — see
+    `components/ui/button-variants.ts`.
+  - HeroUI form/interactive components use **React Aria** handlers
+    (`onPress`, value-based `onChange`, `onSelectionChange`, `isDisabled`), not
+    native DOM events. The `components/ui` wrappers translate these so existing
+    call sites keep their native-style API.
 - **Components** are small, reusable, and stateless where possible. Shared
-  primitives live in `components/ui` (owned, shadcn-style). Merge classes with
+  primitives live in `components/ui` (thin HeroUI wrappers). Merge classes with
   `cn()` from `lib/utils.ts`.
 - **Motion** is restrained: shared Framer Motion variants in `lib/motion.ts`;
   honor `prefers-reduced-motion`; no bounce or attention-seeking movement.

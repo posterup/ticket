@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Plus, Trash2, X } from "lucide-react";
+import { Check, Plus, Trash2, X, CalendarRange, ListChecks } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatNumber, formatJalaliDate } from "@/lib/format";
@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { DateField } from "@/components/ui/date-field";
 import { TimeField } from "@/components/ui/time-field";
 import { Toggle } from "@/components/create/ui";
+import { DateRangeFields } from "@/components/create/DateRangeFields";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "@/lib/wizard/labels";
 import type { ScheduleDraft, TimeSlot } from "@/lib/create/types";
@@ -118,6 +119,19 @@ export function SessionsEditor(props: Props) {
   } = props;
 
   const [exceptionDate, setExceptionDate] = useState("");
+  const isRange = Boolean(schedule.range);
+  const rangeSlot = schedule.slots[0];
+
+  /** Switch the non-calendar scenario between specific سانس‌ها and multi-day. */
+  const selectScenario = (range: boolean) => {
+    if (range === isRange) return;
+    // Collapse to a single shared slot when entering the range scenario.
+    onScheduleChange(
+      range
+        ? { range: true, slots: [{ ...schedule.slots[0], date: "" }] }
+        : { range: false },
+    );
+  };
   // Per-day سانس‌ها that are open for editing. A row stays open (start + end
   // fields) until confirmed, so setting the start time doesn't collapse it into
   // a chip before the user can finish entering the end time.
@@ -161,6 +175,72 @@ export function SessionsEditor(props: Props) {
     </div>
   );
 
+  // Scenario picker (non-calendar): specific dated سانس‌ها vs a multi-day range.
+  const scenarioPicker = (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {(
+        [
+          {
+            range: false,
+            Icon: ListChecks,
+            title: "سانس‌های مشخص",
+            hint: "یک یا چند سانس با تاریخ و ساعت جداگانه",
+          },
+          {
+            range: true,
+            Icon: CalendarRange,
+            title: "رویداد چند روزه",
+            hint: "یک بازهٔ تاریخ با ساعت ثابت هر روز",
+          },
+        ] as const
+      ).map(({ range, Icon, title, hint }) => (
+        <button
+          key={String(range)}
+          type="button"
+          aria-pressed={isRange === range}
+          onClick={() => selectScenario(range)}
+          className={cn(
+            "flex items-start gap-2.5 rounded-md border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+            isRange === range
+              ? "border-foreground bg-subtle"
+              : "border-border hover:border-border-strong",
+          )}
+        >
+          <Icon className="mt-0.5 size-4 shrink-0 text-foreground" aria-hidden />
+          <span className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-foreground">{title}</span>
+            <span className="text-xs text-muted">{hint}</span>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
+  // Multi-day range: an inline calendar (range) + shared hour range.
+  const rangeSection = (
+    <div className="flex flex-col gap-3">
+      <span className="text-sm font-medium text-foreground">بازهٔ برگزاری</span>
+      <DateRangeFields
+        value={{
+          startDate: schedule.startDate,
+          endDate: schedule.endDate,
+          startTime: rangeSlot?.startTime ?? "",
+          endTime: rangeSlot?.endTime ?? "",
+        }}
+        invalid={Boolean(error)}
+        onChange={({ startDate, endDate, startTime, endTime }) =>
+          onScheduleChange({
+            startDate,
+            endDate,
+            slots: [
+              { id: rangeSlot?.id ?? "slot-1", date: "", startTime, endTime },
+            ],
+          })
+        }
+      />
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-5">
       {!hideToggle && CALENDAR_MODE_ENABLED ? (
@@ -173,8 +253,11 @@ export function SessionsEditor(props: Props) {
       ) : null}
 
       {!schedule.calendar ? (
-        // Non-calendar: each سانس carries its own date.
-        slotsSection
+        // Non-calendar: pick specific dated سانس‌ها or a multi-day range.
+        <>
+          {scenarioPicker}
+          {isRange ? rangeSection : slotsSection}
+        </>
       ) : (
         <>
           {/* Date range (calendar only) */}

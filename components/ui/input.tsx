@@ -1,24 +1,20 @@
+"use client";
+
 import * as React from "react";
+import { Input as HeroInput } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
-/** Text input primitive: 48px tall, 12px radius, hairline border (DESIGN.md). */
+/**
+ * Text input — HeroUI's <Input> (React Aria), themed by the brand tokens. It
+ * wraps a real <input>, so the native `value`/`onChange(event)`/`type` API is
+ * unchanged and every existing call site keeps working.
+ */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = "text", ...props }, ref) => (
-    <input
-      ref={ref}
-      type={type}
-      className={cn(
-        "h-12 w-full rounded-md border border-border bg-card px-3.5 text-sm text-foreground",
-        "outline-none transition-colors placeholder:text-faint",
-        "hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
-      {...props}
-    />
+    <HeroInput ref={ref} type={type} className={cn(className)} {...props} />
   ),
 );
 Input.displayName = "Input";

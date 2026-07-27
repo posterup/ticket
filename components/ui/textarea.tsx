@@ -1,25 +1,20 @@
+"use client";
+
 import * as React from "react";
+import { TextArea as HeroTextArea } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
 
-export type TextareaProps =
-  React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-/** Multi-line text input primitive, matching the Input styling. */
+/**
+ * Multi-line text input — HeroUI's <TextArea> (React Aria), themed by the brand
+ * tokens. Wraps a real <textarea>, so the native `value`/`onChange(event)`/`rows`
+ * API is unchanged.
+ */
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, rows = 4, ...props }, ref) => (
-    <textarea
-      ref={ref}
-      rows={rows}
-      className={cn(
-        "w-full rounded-md border border-border bg-card px-3.5 py-3 text-sm text-foreground",
-        "outline-none transition-colors placeholder:text-faint",
-        "hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
-      {...props}
-    />
+    <HeroTextArea ref={ref} rows={rows} className={cn(className)} {...props} />
   ),
 );
 Textarea.displayName = "Textarea";

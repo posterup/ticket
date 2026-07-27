@@ -45,12 +45,16 @@ export interface TimeSlot {
 }
 
 /**
- * The event schedule, driven by one toggle (`calendar`):
- * - `calendar` off: a plain date range `[startDate, endDate]`.
+ * The event schedule, driven by two flags:
+ * - `range` on: a multi-day event — a single date range `[startDate, endDate]`
+ *   with one shared time-slot, producing one سانس per day. Picked in one
+ *   calendar + hour range (see {@link DateRangeSheet}).
  * - `calendar` on: performance weekdays (`byDay`) within `[startDate, endDate]`.
- * Both models define one or more سانس time-slots (`slots`).
+ * - both off: each سانس carries its own `date` (specific dated سانس‌ها).
  */
 export interface ScheduleDraft {
+  /** Multi-day scenario: one date range + one hour range → a سانس per day. */
+  range?: boolean;
   calendar: boolean;
   startDate: string;
   endDate: string;
@@ -225,6 +229,7 @@ export const initialDraft: CreateDraft = {
   visibility: "public",
   ticketDesign: null,
   schedule: {
+    range: false,
     calendar: false,
     startDate: "",
     endDate: "",
@@ -256,8 +261,38 @@ export function expandSessions(draft: CreateDraft): SessionDraft[] {
  * composer and the dashboard recurrence editor so both generate identically.
  */
 export function expandSchedule(schedule: ScheduleDraft): SessionDraft[] {
-  const { calendar, startDate, endDate, byDay, slots, daySlots, exceptions } =
+  const { range, calendar, startDate, endDate, byDay, slots, daySlots, exceptions } =
     schedule;
+
+  // Multi-day range: one سانس per day across [startDate, endDate], all sharing
+  // the single defined hour range.
+  if (range) {
+    if (!startDate) return [];
+    const slot = slots.find((s) => s.startTime);
+    if (!slot) return [];
+    const start = new Date(`${startDate}T00:00:00Z`);
+    const end = endDate ? new Date(`${endDate}T00:00:00Z`) : start;
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      end < start
+    ) {
+      return [];
+    }
+    const out: SessionDraft[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end && out.length < MAX_SESSIONS) {
+      const date = cursor.toISOString().slice(0, 10);
+      out.push({
+        id: `${date}-${slot.id}`,
+        date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+      });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    return out;
+  }
 
   // Non-calendar: each سانس is its own dated showtime.
   if (!calendar) {

@@ -21,8 +21,19 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
     e.onlineUrl = "نشانی آنلاین الزامی است.";
   }
 
-  const { calendar, startDate, endDate, byDay, slots } = draft.schedule;
-  if (!calendar) {
+  const { range, calendar, startDate, endDate, byDay, slots } = draft.schedule;
+  if (range) {
+    const slot = slots[0];
+    if (!startDate) {
+      e.schedule = "بازهٔ تاریخ را انتخاب کنید.";
+    } else if (endDate && endDate < startDate) {
+      e.schedule = "تاریخ پایان نباید پیش از تاریخ شروع باشد.";
+    } else if (!slot?.startTime) {
+      e.schedule = "ساعت شروع را تعیین کنید.";
+    } else if (!slot.endTime) {
+      e.schedule = "ساعت پایان را تعیین کنید.";
+    }
+  } else if (!calendar) {
     if (!slots.some((s) => s.date && s.startTime)) {
       e.schedule = "حداقل یک سانس با تاریخ و ساعت شروع تعریف کنید.";
     } else if (slots.some((s) => s.date && s.startTime && !s.endTime)) {
