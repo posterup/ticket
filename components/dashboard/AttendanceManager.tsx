@@ -25,6 +25,7 @@ export function AttendanceManager({
   guests: initialGuests,
   initialChecked = [],
   allowGuests = true,
+  onlyGuests = false,
 }: {
   eventId: string;
   eventTitle: string;
@@ -37,6 +38,11 @@ export function AttendanceManager({
   initialChecked?: string[];
   /** Recurring events don't take guest invites (kept from the tab's rules). */
   allowGuests?: boolean;
+  /**
+   * Free events have no ticket sales or check-in, so the tab collapses to just
+   * the مهمان‌ها box (still scoped by the سانس picker).
+   */
+  onlyGuests?: boolean;
 }) {
   const [sessionId, setSessionId] = useState(sessions[0]?.id ?? "");
   const [guests, setGuests] = useState<GuestItem[]>(initialGuests);
@@ -165,7 +171,10 @@ export function AttendanceManager({
         </Select>
       </Field>
 
-      {isEmpty ? (
+      {onlyGuests ? (
+        // Free event: no sales insight or check-in — only مهمان‌ها.
+        guestsSection
+      ) : isEmpty ? (
         <>
           <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-subtle/40 p-10 text-center">
             <CalendarClock className="size-8 text-faint" aria-hidden />
