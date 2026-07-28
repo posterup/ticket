@@ -145,8 +145,9 @@ Full endpoint table and request/response samples: `docs/backend-architecture.md`
 ## Git workflow
 
 Commit and push to a **new branch**, never `main`; open a PR and merge with
-`gh pr merge <n> --merge --delete-branch`. Exclude `.idea/` and `bun.lock` from
-commits. Verify `npx tsc --noEmit` and `npm test` before merging.
+`gh pr merge <n> --merge --delete-branch`. `bun.lock` is tracked — commit it when
+it changes; `.idea/` is gitignored. Verify `npx tsc --noEmit` and `npm test`
+before merging.
 
 ## Docs map (deeper detail)
 
