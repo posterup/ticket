@@ -8,6 +8,8 @@ import { listTickets, getEventById } from "@/lib/server";
 import { computeAnalytics } from "@/lib/analytics/compute";
 
 const PLATFORM_FEE_RATE = 0.03;
+/** Flat fee (Toman) charged on each wallet withdrawal. */
+export const WITHDRAW_FEE = 5_000;
 const BASE_DATE = new Date("2026-07-18T12:00:00.000Z").getTime();
 const DAY = 86_400_000;
 
@@ -42,14 +44,43 @@ export interface Settlement {
   status: "paid" | "pending";
 }
 
+/** A saved IR bank account (شبا/IBAN) a withdrawal can be paid to. */
+export interface BankAccount {
+  id: string;
+  /** Full IR IBAN (`IR` + 24 digits). */
+  iban: string;
+  bankName: string;
+  /** Account holder name as registered with the bank. */
+  holder: string;
+}
+
+export type WithdrawalStatus = "paid" | "processing" | "pending";
+
+/** A wallet withdrawal request paid out to a {@link BankAccount}. */
+export interface Withdrawal {
+  id: string;
+  /** Requested amount (Toman), before the withdrawal fee. */
+  amount: number;
+  /** Flat withdrawal fee applied (Toman). */
+  fee: number;
+  iban: string;
+  bankName: string;
+  status: WithdrawalStatus;
+  date: string;
+}
+
 export interface Finance {
   gross: number;
   fee: number;
   refunds: number;
   net: number;
   pendingSettlement: number;
+  /** Spendable balance held in the پوستر wallet (Toman). */
+  balance: number;
   transactions: Transaction[];
   settlements: Settlement[];
+  bankAccounts: BankAccount[];
+  withdrawals: Withdrawal[];
 }
 
 export function computeFinance(): Finance {
@@ -98,5 +129,55 @@ export function computeFinance(): Finance {
     },
   ];
 
-  return { gross, fee, refunds, net, pendingSettlement, transactions, settlements };
+  const bankAccounts: BankAccount[] = [
+    {
+      id: "ba-1",
+      iban: "IR820540102680020817909002",
+      bankName: "بانک پارسیان",
+      holder: "مدیر رویداد",
+    },
+    {
+      id: "ba-2",
+      iban: "IR062960000000100324200001",
+      bankName: "بانک ملت",
+      holder: "مدیر رویداد",
+    },
+  ];
+
+  // A couple of past payouts, plus the wallet balance left after them.
+  const withdrawals: Withdrawal[] = [
+    {
+      id: "wd-1",
+      amount: Math.round(net * 0.3),
+      fee: WITHDRAW_FEE,
+      iban: bankAccounts[0].iban,
+      bankName: bankAccounts[0].bankName,
+      status: "paid",
+      date: new Date(BASE_DATE - 6 * DAY).toISOString(),
+    },
+    {
+      id: "wd-2",
+      amount: Math.round(net * 0.15),
+      fee: WITHDRAW_FEE,
+      iban: bankAccounts[1].iban,
+      bankName: bankAccounts[1].bankName,
+      status: "processing",
+      date: new Date(BASE_DATE - 1 * DAY).toISOString(),
+    },
+  ];
+  const withdrawn = withdrawals.reduce((s, w) => s + w.amount + w.fee, 0);
+  const balance = Math.max(0, net - withdrawn);
+
+  return {
+    gross,
+    fee,
+    refunds,
+    net,
+    pendingSettlement,
+    balance,
+    transactions,
+    settlements,
+    bankAccounts,
+    withdrawals,
+  };
 }
