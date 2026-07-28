@@ -12,20 +12,6 @@ export default function FinancePage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            مالی
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            موجودی کیف پول، برداشت‌ها و تراکنش‌های رویدادهای شما.
-          </p>
-        </div>
-        <span className="rounded-full border border-border bg-subtle px-2.5 py-1 text-xs text-muted">
-          داده‌های نمونه
-        </span>
-      </div>
-
       <WalletPanel
         balance={f.balance}
         fee={WITHDRAW_FEE}
