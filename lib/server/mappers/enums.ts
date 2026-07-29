@@ -122,16 +122,13 @@ export const COLLABORATOR_CHANNEL_TO_DB: Record<
 };
 export const COLLABORATOR_CHANNEL_FROM_DB = invert(COLLABORATOR_CHANNEL_TO_DB);
 
-/**
- * `revoked` has no counterpart in `types/collaborator.ts` yet — it arrives with
- * the collaborator-roles work. Until then the domain side is widened here only.
- */
 export const COLLABORATOR_STATUS_TO_DB: Record<
   CollaboratorStatus,
   P.CollaboratorStatus
 > = {
   pending: P.CollaboratorStatus.PENDING,
   accepted: P.CollaboratorStatus.ACCEPTED,
+  revoked: P.CollaboratorStatus.REVOKED,
 };
 export const COLLABORATOR_STATUS_FROM_DB = invert(COLLABORATOR_STATUS_TO_DB);
 

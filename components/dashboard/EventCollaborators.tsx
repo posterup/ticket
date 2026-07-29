@@ -14,7 +14,7 @@ export interface WorkspaceLite {
 }
 
 type Channel = "workspace" | "phone" | "username";
-type Status = "pending" | "accepted";
+type Status = "pending" | "accepted" | "revoked";
 
 interface Row {
   id: string;
@@ -244,6 +244,9 @@ function StatusPill({ status }: { status: Status }) {
   const map = {
     pending: { label: "در انتظار پاسخ", cls: "text-muted", Icon: Clock },
     accepted: { label: "همکار", cls: "text-success", Icon: Check },
+    // A withdrawn invite stays visible so it is clear access was removed
+    // rather than never granted.
+    revoked: { label: "لغو شده", cls: "text-faint", Icon: X },
   }[status];
   const { Icon } = map;
   return (

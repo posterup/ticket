@@ -9,7 +9,11 @@ export type CollaboratorChannel = "workspace" | "phone" | "username";
  * - `checkin`: work the door only.
  */
 export type EventCollabRole = "co-host" | "checkin";
-export type CollaboratorStatus = "pending" | "accepted";
+/**
+ * Invite lifecycle. `revoked` is kept distinct from deletion so a withdrawn
+ * co-host cannot be re-granted access by an old row reappearing.
+ */
+export type CollaboratorStatus = "pending" | "accepted" | "revoked";
 
 /**
  * Another host or workspace invited to co-manage an event. A request may target
@@ -27,6 +31,9 @@ export interface EventCollaborator {
   workspaceSlug?: string;
   /** Workspace avatar initials when applicable. */
   avatar?: string;
+  /** What an accepted collaborator may do. */
+  role: EventCollabRole;
   status: CollaboratorStatus;
   createdAt: IsoDateTime;
+  acceptedAt?: IsoDateTime;
 }

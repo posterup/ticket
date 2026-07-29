@@ -30,6 +30,7 @@ import type * as Row from "@/generated/client";
 import {
   COLLABORATOR_CHANNEL_FROM_DB,
   COLLABORATOR_STATUS_FROM_DB,
+  COLLAB_ROLE_FROM_DB,
   DISCOUNT_KIND_FROM_DB,
   EVENT_MODE_FROM_DB,
   EVENT_STATUS_FROM_DB,
@@ -193,14 +194,10 @@ export function toCollaborator(row: Row.EventCollaborator): EventCollaborator {
     sub: row.sub,
     workspaceSlug: opt(row.workspaceSlug),
     avatar: opt(row.avatar),
-    // `revoked` has no domain counterpart yet; treat it as not accepted.
-    status:
-      row.status === "REVOKED"
-        ? "pending"
-        : COLLABORATOR_STATUS_FROM_DB[
-            row.status as keyof typeof COLLABORATOR_STATUS_FROM_DB
-          ],
+    role: COLLAB_ROLE_FROM_DB[row.role],
+    status: COLLABORATOR_STATUS_FROM_DB[row.status],
     createdAt: iso(row.createdAt),
+    acceptedAt: row.acceptedAt ? iso(row.acceptedAt) : undefined,
   };
 }
 

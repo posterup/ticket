@@ -2,12 +2,14 @@
 
 import { z } from "zod";
 
-import type { CollaboratorChannel } from "@/types";
+import type { CollaboratorChannel, EventCollabRole } from "@/types";
 
 import { nonEmpty } from "./common";
 
 /** `POST /api/events/:id/collaborators` */
 export const addCollaboratorSchema = z.object({
+  /** Defaults to co-host; `checkin` grants the door and nothing else. */
+  role: z.enum(["co-host", "checkin"] satisfies readonly EventCollabRole[]).optional(),
   channel: z.enum([
     "workspace",
     "phone",
@@ -18,4 +20,13 @@ export const addCollaboratorSchema = z.object({
   sub: z.string().catch(""),
   workspaceSlug: z.string().optional(),
   avatar: z.string().optional(),
+});
+
+/**
+ * `PATCH /api/events/:id/collaborators/:collabId`
+ *
+ * The action, not the target: who may do what is decided from the session.
+ */
+export const respondInviteSchema = z.object({
+  action: z.enum(["accept", "decline", "revoke"]),
 });
