@@ -4,7 +4,7 @@ import { GET, POST } from "@/app/api/discounts/route";
 import { POST as VALIDATE } from "@/app/api/discounts/validate/route";
 import type { DiscountCode, DiscountValidation } from "@/types";
 
-import { data, errorCode, parse, req , describeApi } from "./helpers";
+import { data, errorCode, parse, req , describeApi , signInAsOwner } from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 const OTHER_EVENT = "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02";
@@ -14,6 +14,8 @@ const CREATED_CODES = ["LOWER1", "DUPE1", "PCT101", "FIXED1", "ZERO1", "TESTCODE
 
 beforeAll(async () => {
   if (!process.env.DATABASE_URL) return;
+  // Discount management is organiser-side.
+  await signInAsOwner();
   const { db } = await import("@/lib/server/db");
   await db.discountCode.deleteMany({ where: { code: { in: CREATED_CODES } } });
 });
@@ -28,19 +30,47 @@ const validDiscount = {
 };
 
 describeApi("GET /api/discounts", () => {
-  it("lists the seeded codes", async () => {
-    const codes = data(await parse<DiscountCode[]>(await GET(req("GET", "/api/discounts"))));
+  it("requires an eventId", async () => {
+    // Unscoped, this handed every discount code in the system to any caller.
+    const parsed = await parse<DiscountCode[]>(
+      await GET(req("GET", "/api/discounts")),
+    );
+    expect(parsed.status).toBe(400);
+    expect(errorCode(parsed)).toBe("INVALID_QUERY");
+  });
+
+  it("lists an event's codes for its manager", async () => {
+    const codes = data(
+      await parse<DiscountCode[]>(
+        await GET(req("GET", `/api/discounts?eventId=${SEED_EVENT}`)),
+      ),
+    );
     expect(codes.map((c) => c.code)).toEqual(
       expect.arrayContaining(["WELCOME10", "EARLY", "VIP20"]),
     );
   });
 
+  it("refuses an anonymous caller", async () => {
+    const { signOut, signInAsOwner: back } = await import("./helpers");
+    await signOut();
+    const parsed = await parse<DiscountCode[]>(
+      await GET(req("GET", `/api/discounts?eventId=${SEED_EVENT}`)),
+    );
+    expect(parsed.status).toBe(401);
+    expect(errorCode(parsed)).toBe("UNAUTHENTICATED");
+    await back();
+  });
+
   it("scoping by event keeps org-wide codes", async () => {
+    // OTHER_EVENT belongs to negar-karimi, so read it as that owner.
+    const { signInAs } = await import("./helpers");
+    await signInAs("09120000002");
     const codes = data(
       await parse<DiscountCode[]>(
         await GET(req("GET", `/api/discounts?eventId=${OTHER_EVENT}`)),
       ),
     );
+    await signInAsOwner();
     // WELCOME10 is org-wide (eventId null); EARLY belongs to the concert.
     expect(codes.map((c) => c.code)).toContain("WELCOME10");
     expect(codes.map((c) => c.code)).not.toContain("EARLY");

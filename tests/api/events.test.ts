@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { it, expect, beforeAll } from "vitest";
 
 import { GET, POST } from "@/app/api/events/route";
 import {
@@ -10,9 +10,14 @@ import { POST as POST_SESSION } from "@/app/api/events/[id]/sessions/route";
 import { PATCH as PATCH_SESSION } from "@/app/api/events/[id]/sessions/[sessionId]/route";
 import type { Event, EventSession, Venue } from "@/types";
 
-import { ctx, data, errorCode, parse, req , describeApi } from "./helpers";
+import { ctx, data, errorCode, parse, req , describeApi , signInAsOwner } from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
+
+// Organiser-side endpoints: run as the seeded owner.
+beforeAll(async () => {
+  if (process.env.DATABASE_URL) await signInAsOwner();
+});
 
 const validEvent = {
   title: "رویداد آزمایشی",

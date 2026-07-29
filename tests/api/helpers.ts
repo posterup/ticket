@@ -70,3 +70,43 @@ export function errorCode<T>(parsed: Parsed<T>): string {
   if (!("error" in parsed.body)) throw new Error("expected an error envelope");
   return parsed.body.error.code;
 }
+
+/** The cookie jar installed by `tests/setup/cookies.ts`. */
+function jar(): Map<string, string> {
+  return (globalThis as unknown as { __cookieJar: Map<string, string> })
+    .__cookieJar;
+}
+
+/** Phones seeded by `prisma/seed.ts`, one owner per workspace. */
+export const SEEDED_OWNER = "09120000001";
+
+/**
+ * Sign in as an existing user by minting a real session, so the guards resolve
+ * exactly as they would for a browser. Returns the user id.
+ */
+export async function signInAs(phone: string): Promise<string> {
+  const { db } = await import("@/lib/server/db");
+  const { createSession } = await import("@/lib/server/auth/session");
+  const { SESSION_COOKIE } = await import("@/lib/session-cookie");
+
+  const user = await db.user.upsert({
+    where: { phone },
+    create: { phone },
+    update: {},
+    select: { id: true },
+  });
+  const { token } = await createSession(user.id);
+  jar().set(SESSION_COOKIE, token);
+  return user.id;
+}
+
+/** Sign in as the seeded owner of `ava-events`, who manages the fixtures. */
+export function signInAsOwner(): Promise<string> {
+  return signInAs(SEEDED_OWNER);
+}
+
+/** Drop the session, so the next call is anonymous. */
+export async function signOut(): Promise<void> {
+  const { SESSION_COOKIE } = await import("@/lib/session-cookie");
+  jar().delete(SESSION_COOKIE);
+}

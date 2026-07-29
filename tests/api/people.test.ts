@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { it, expect, beforeAll } from "vitest";
 
 import {
   GET as LIST_GUESTS,
@@ -24,13 +24,27 @@ import type {
   EventRegistration,
 } from "@/types";
 
-import { ctx, data, errorCode, parse, req , describeApi } from "./helpers";
+import {
+  ctx,
+  data,
+  errorCode,
+  parse,
+  req,
+  describeApi,
+  signInAs,
+  signInAsOwner,
+} from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 const SEED_SESSION = "c1000000-0000-4000-8000-000000000001";
 const SEED_REGISTRATION = "r1000000-0000-4000-8000-000000000001";
 /** The seeded approval-gated event the registration requests belong to. */
 const APPROVAL_EVENT = "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10";
+
+// These endpoints are organiser-side, so the suite runs as the seeded owner.
+beforeAll(async () => {
+  if (process.env.DATABASE_URL) await signInAsOwner();
+});
 
 describeApi("guests", () => {
   it("lists an event's guests", async () => {
@@ -103,21 +117,21 @@ describeApi("guests", () => {
       await parse<EventGuest>(
         await SET_GUEST(
           req("PATCH", "/", { status: "going" }),
-          ctx({ guestId: guest.id }),
+          ctx({ id: SEED_EVENT, guestId: guest.id }),
         ),
       ),
     );
     expect(updated.status).toBe("going");
 
     const removed = await parse<{ id: string }>(
-      await REMOVE_GUEST(req("DELETE", "/"), ctx({ guestId: guest.id })),
+      await REMOVE_GUEST(req("DELETE", "/"), ctx({ id: SEED_EVENT, guestId: guest.id })),
     );
     expect(removed.status).toBe(200);
     expect(data(removed).id).toBe(guest.id);
 
     // Removing twice is a 404, not a silent success.
     const again = await parse<{ id: string }>(
-      await REMOVE_GUEST(req("DELETE", "/"), ctx({ guestId: guest.id })),
+      await REMOVE_GUEST(req("DELETE", "/"), ctx({ id: SEED_EVENT, guestId: guest.id })),
     );
     expect(again.status).toBe(404);
   });
@@ -126,7 +140,7 @@ describeApi("guests", () => {
     const parsed = await parse<EventGuest>(
       await SET_GUEST(
         req("PATCH", "/", { status: "maybe" }),
-        ctx({ guestId: "whatever" }),
+        ctx({ id: SEED_EVENT, guestId: "whatever" }),
       ),
     );
     expect(parsed.status).toBe(400);
@@ -137,7 +151,7 @@ describeApi("guests", () => {
     const parsed = await parse<EventGuest>(
       await SET_GUEST(
         req("PATCH", "/", { status: "going" }),
-        ctx({ guestId: "nope" }),
+        ctx({ id: SEED_EVENT, guestId: "nope" }),
       ),
     );
     expect(parsed.status).toBe(404);
@@ -203,18 +217,25 @@ describeApi("collaborators", () => {
     );
 
     const removed = await parse<{ id: string }>(
-      await REMOVE_COLLAB(req("DELETE", "/"), ctx({ collabId: collab.id })),
+      await REMOVE_COLLAB(req("DELETE", "/"), ctx({ id: SEED_EVENT, collabId: collab.id })),
     );
     expect(removed.status).toBe(200);
 
     const again = await parse<{ id: string }>(
-      await REMOVE_COLLAB(req("DELETE", "/"), ctx({ collabId: collab.id })),
+      await REMOVE_COLLAB(req("DELETE", "/"), ctx({ id: SEED_EVENT, collabId: collab.id })),
     );
     expect(again.status).toBe(404);
   });
 });
 
 describeApi("registrations", () => {
+  // The approval-gated fixture belongs to negar-karimi, not ava-events — so
+  // this block runs as its actual owner. The cross-tenant case is asserted at
+  // the end of the file.
+  beforeAll(async () => {
+    if (process.env.DATABASE_URL) await signInAs("09120000002");
+  });
+
   it("lists an event's requests", async () => {
     const listed = data(
       await parse<EventRegistration[]>(
@@ -284,7 +305,7 @@ describeApi("registrations", () => {
     const parsed = await parse<EventRegistration>(
       await SET_REGISTRATION(
         req("PATCH", "/", { status: "accepted" }),
-        ctx({ registrationId: SEED_REGISTRATION }),
+        ctx({ id: APPROVAL_EVENT, registrationId: SEED_REGISTRATION }),
       ),
     );
     expect(data(parsed).status).toBe("accepted");
@@ -294,7 +315,7 @@ describeApi("registrations", () => {
     const parsed = await parse<EventRegistration>(
       await SET_REGISTRATION(
         req("PATCH", "/", { status: "maybe" }),
-        ctx({ registrationId: SEED_REGISTRATION }),
+        ctx({ id: APPROVAL_EVENT, registrationId: SEED_REGISTRATION }),
       ),
     );
     expect(parsed.status).toBe(400);
@@ -305,10 +326,46 @@ describeApi("registrations", () => {
     const parsed = await parse<EventRegistration>(
       await SET_REGISTRATION(
         req("PATCH", "/", { status: "accepted" }),
-        ctx({ registrationId: "nope" }),
+        ctx({ id: APPROVAL_EVENT, registrationId: "nope" }),
       ),
     );
     expect(parsed.status).toBe(404);
     expect(errorCode(parsed)).toBe("NOT_FOUND");
+  });
+});
+
+describeApi("cross-workspace access", () => {
+  it("refuses an organiser access to another workspace's event", async () => {
+    // ava-events does not own the approval-gated fixture, and holding a
+    // workspace of your own must not grant reach into someone else's.
+    await signInAsOwner();
+
+    const listed = await parse<EventRegistration[]>(
+      await LIST_REGISTRATIONS(req("GET", "/"), ctx({ id: APPROVAL_EVENT })),
+    );
+    expect(listed.status).toBe(403);
+    expect(errorCode(listed)).toBe("FORBIDDEN");
+
+    const decided = await parse<EventRegistration>(
+      await SET_REGISTRATION(
+        req("PATCH", "/", { status: "accepted" }),
+        ctx({ id: APPROVAL_EVENT, registrationId: SEED_REGISTRATION }),
+      ),
+    );
+    expect(decided.status).toBe(403);
+  });
+
+  it("refuses an anonymous caller the guest list", async () => {
+    const { signOut } = await import("./helpers");
+    await signOut();
+
+    const parsed = await parse<EventGuest[]>(
+      await LIST_GUESTS(req("GET", "/"), ctx({ id: SEED_EVENT })),
+    );
+    // Contact details, so anonymous gets 401 rather than an empty list.
+    expect(parsed.status).toBe(401);
+    expect(errorCode(parsed)).toBe("UNAUTHENTICATED");
+
+    await signInAsOwner();
   });
 });
