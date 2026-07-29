@@ -24,7 +24,10 @@ describeApi("PATCH /api/attendees/:id", () => {
         ),
       ),
     );
-    expect(attendee.tags.map((t) => t.label)).toEqual(["وفادار", "وی‌آی‌پی"]);
+    // Order is stable but collation-dependent, so compare as a set.
+    expect(new Set(attendee.tags.map((t) => t.label))).toEqual(
+      new Set(["وفادار", "وی‌آی‌پی"]),
+    );
   });
 
   it("accepts an empty list, clearing the tags", async () => {

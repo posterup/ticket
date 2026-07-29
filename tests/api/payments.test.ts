@@ -7,6 +7,8 @@ import type { Order } from "@/types";
 
 import { ctx, data, describeApi, errorCode, parse, req, signOut } from "./helpers";
 
+const BUYER_PHONE = "09121234567";
+
 /** A throwaway paid event, so tests never contend over seeded inventory. */
 async function paidEvent(capacity = 5) {
   const { db } = await import("@/lib/server/db");
@@ -47,7 +49,7 @@ async function placeOrder(quantity = 1): Promise<Order> {
           eventId,
           items: [{ ticketTypeId, quantity }],
           buyerName: "سارا محمدی",
-          buyerPhone: "09121234567",
+          buyerPhone: BUYER_PHONE,
         }),
       ),
     ),
@@ -70,7 +72,7 @@ describeApi("POST /api/orders/:id/pay", () => {
   it("returns somewhere to send the buyer", async () => {
     const order = await placeOrder();
     const parsed = await parse<{ redirectUrl: string; authority: string }>(
-      await PAY(req("POST", "/"), ctx({ id: order.id })),
+      await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })),
     );
     expect(parsed.status).toBe(200);
 
@@ -85,8 +87,21 @@ describeApi("POST /api/orders/:id/pay", () => {
     expect(payment.amount).toBe(order.total);
   });
 
+  it("refuses a stranger holding only the order id", async () => {
+    // /cancel has always asked for proof; /pay touches money and did not.
+    const order = await placeOrder();
+    const parsed = await parse(await PAY(req("POST", "/"), ctx({ id: order.id })));
+    expect(parsed.status).toBe(403);
+    expect(errorCode(parsed)).toBe("FORBIDDEN");
+
+    const wrongPhone = await parse(
+      await PAY(req("POST", "/?phone=09120000000"), ctx({ id: order.id })),
+    );
+    expect(wrongPhone.status).toBe(403);
+  });
+
   it("404s an unknown order", async () => {
-    const parsed = await parse(await PAY(req("POST", "/"), ctx({ id: "nope" })));
+    const parsed = await parse(await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: "nope" })));
     expect(parsed.status).toBe(404);
   });
 
@@ -95,7 +110,7 @@ describeApi("POST /api/orders/:id/pay", () => {
     const { markOrderPaid } = await import("@/lib/server/orders");
     await markOrderPaid(order.id, { provider: "mock" });
 
-    const parsed = await parse(await PAY(req("POST", "/"), ctx({ id: order.id })));
+    const parsed = await parse(await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })));
     expect(parsed.status).toBe(409);
     expect(errorCode(parsed)).toBe("CONFLICT");
   });
@@ -108,7 +123,7 @@ describeApi("POST /api/orders/:id/pay", () => {
       data: { expiresAt: new Date(Date.now() - 1000) },
     });
 
-    const parsed = await parse(await PAY(req("POST", "/"), ctx({ id: order.id })));
+    const parsed = await parse(await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })));
     expect(parsed.status).toBe(409);
   });
 });
@@ -118,7 +133,7 @@ describeApi("GET /api/payments/callback", () => {
     const order = await placeOrder(2);
     const { redirectUrl } = data(
       await parse<{ redirectUrl: string }>(
-        await PAY(req("POST", "/"), ctx({ id: order.id })),
+        await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })),
       ),
     );
 
@@ -144,7 +159,7 @@ describeApi("GET /api/payments/callback", () => {
     const order = await placeOrder(2);
     const { redirectUrl } = data(
       await parse<{ redirectUrl: string }>(
-        await PAY(req("POST", "/"), ctx({ id: order.id })),
+        await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })),
       ),
     );
 
@@ -160,7 +175,7 @@ describeApi("GET /api/payments/callback", () => {
     const order = await placeOrder(2);
     const { redirectUrl } = data(
       await parse<{ redirectUrl: string }>(
-        await PAY(req("POST", "/"), ctx({ id: order.id })),
+        await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })),
       ),
     );
     // Zarinpal signals an abandoned or rejected payment with Status=NOK.
@@ -189,7 +204,10 @@ describeApi("GET /api/payments/callback", () => {
       await parse<{ redirectUrl: string }>(
         // `?fail=1` makes the mock refuse at verify time, which is the case
         // where the buyer did return but the money did not.
-        await PAY(req("POST", "/?fail=1"), ctx({ id: order.id })),
+        await PAY(
+          req("POST", `/?fail=1&phone=${BUYER_PHONE}`),
+          ctx({ id: order.id }),
+        ),
       ),
     );
 

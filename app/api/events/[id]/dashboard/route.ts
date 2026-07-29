@@ -25,7 +25,10 @@ type Context = { params: Promise<{ id: string }> };
  */
 export const GET = handler(async (_r: Request, { params }: Context) => {
   const { id } = await params;
-  await requireEventAccess(id, "event:read");
+  // NOT `event:read` — that is granted to anyone for a published event, which
+  // would hand this composite's guest phone numbers, registration details and
+  // discount codes to the public. This is the manage-event page.
+  const { grant } = await requireEventAccess(id, "event:edit");
 
   const event = await getEventById(id);
   if (!event) throw notFound("رویداد یافت نشد.");
@@ -40,10 +43,15 @@ export const GET = handler(async (_r: Request, { params }: Context) => {
     await Promise.all([
       listTickets(id),
       listDiscounts(id),
-      listGuests(id),
+      grant.permissions.has("guests:manage")
+        ? listGuests(id)
+        : Promise.resolve([]),
       listCollaborators(id),
-      // Only fetched for approval-gated events; empty otherwise.
-      event.requiresApproval ? listRegistrations(id) : Promise.resolve([]),
+      // Applicant names and phones: only for callers allowed to see them, and
+      // only for approval-gated events.
+      event.requiresApproval && grant.permissions.has("registrations:read")
+        ? listRegistrations(id)
+        : Promise.resolve([]),
       listHolders(id, new Map(sessions.map((s) => [s.id, s.label]))),
       listCheckedTicketIds(id),
       listWorkspaces(),

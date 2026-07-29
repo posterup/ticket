@@ -149,9 +149,13 @@ export function CheckoutForm({
 
       // Hand the buyer to the gateway. The order page is where they land when
       // it sends them back, so nothing is shown here in between.
-      const payRes = await fetch(`/api/orders/${order.id}/pay`, {
-        method: "POST",
-      });
+      // Guest checkout has no session, so the order's own phone is the proof.
+      const payRes = await fetch(
+        `/api/orders/${order.id}/pay?phone=${encodeURIComponent(
+          phone.trim().replace(/\s/g, ""),
+        )}`,
+        { method: "POST" },
+      );
       const payJson = await payRes.json();
       if (!payRes.ok || !("data" in payJson)) {
         setErrors({
