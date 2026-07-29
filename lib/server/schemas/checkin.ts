@@ -4,8 +4,14 @@ import { z } from "zod";
 
 import { nonEmpty } from "./common";
 
-/** `POST /api/checkin` — record or clear a holder's check-in. */
+/**
+ * `POST /api/checkin`
+ *
+ * `eventId` is required so a ticket for another event is refused rather than
+ * admitted at the wrong door.
+ */
 export const checkinSchema = z.object({
-  holderId: nonEmpty,
+  eventId: nonEmpty,
+  qrToken: nonEmpty,
   checked: z.boolean(),
 });
