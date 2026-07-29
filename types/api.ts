@@ -10,12 +10,21 @@ export interface ApiSuccess<T> {
   data: T;
 }
 
+/** One field-level problem inside a `400 INVALID_BODY` response. */
+export interface ApiErrorDetail {
+  /** Dotted path to the offending field, e.g. `venue.capacity`. */
+  path: string;
+  message: string;
+}
+
 /** Error envelope: a machine-readable `code` plus a human-readable `message`. */
 export interface ApiError {
   error: {
     message: string;
     /** Stable, screaming-snake identifier, e.g. `NOT_FOUND`, `INVALID_BODY`. */
     code: string;
+    /** Present on validation failures; absent otherwise. */
+    details?: ApiErrorDetail[];
   };
 }
 
