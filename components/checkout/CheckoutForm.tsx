@@ -54,6 +54,8 @@ export function CheckoutForm({
   const [phone, setPhone] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [requiresPayment, setRequiresPayment] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [orderCode, setOrderCode] = useState<string | null>(null);
 
   const [promo, setPromo] = useState("");
@@ -101,7 +103,7 @@ export function CheckoutForm({
     setPromoError(null);
   }
 
-  function submit() {
+  async function submit() {
     const next: Record<string, string> = {};
     if (!name.trim()) next.name = "نام و نام خانوادگی الزامی است.";
     if (!/^(\+98|0)?9\d{9}$/.test(phone.trim().replace(/\s/g, ""))) {
@@ -112,8 +114,36 @@ export function CheckoutForm({
     }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
-    // Mock order: no payment gateway yet (finance epic).
-    setOrderCode(crypto.randomUUID().slice(0, 8).toUpperCase());
+
+    setSubmitting(true);
+    try {
+      // Totals are recomputed server-side; what is sent here is a request,
+      // not a price.
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId,
+          items: [{ ticketTypeId: ticket.id, quantity: qtyNum }],
+          buyerName: name.trim(),
+          buyerPhone: phone.trim().replace(/\s/g, ""),
+          ...(applied ? { discountCode: applied.code } : {}),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !("data" in json)) {
+        setErrors({
+          form: json?.error?.message ?? "ثبت سفارش ناموفق بود.",
+        });
+        return;
+      }
+      setOrderCode(json.data.order.code as string);
+      setRequiresPayment(Boolean(json.data.requiresPayment));
+    } catch {
+      setErrors({ form: "ارتباط برقرار نشد. دوباره تلاش کنید." });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (orderCode) {
@@ -132,7 +162,9 @@ export function CheckoutForm({
           </p>
         ) : null}
         <p className="mx-auto mt-1 max-w-sm text-xs text-faint">
-          این نسخه نمایشی است؛ درگاه پرداخت آنلاین به‌زودی افزوده می‌شود.
+          {requiresPayment
+            ? "پرداخت آنلاین به‌زودی فعال می‌شود؛ سفارش شما تا آن زمان رزرو است."
+            : "بلیت شما صادر شد و در «بلیت‌های من» در دسترس است."}
         </p>
         <div className="mt-6">
           <Link
@@ -289,7 +321,17 @@ export function CheckoutForm({
           <span className="text-muted">مبلغ کل</span>
           <span className="text-foreground">{formatToman(total)}</span>
         </div>
-        <Button type="button" size="lg" onClick={submit}>
+        {errors.form ? (
+          <p role="alert" className="text-sm text-danger">
+            {errors.form}
+          </p>
+        ) : null}
+        <Button
+          type="button"
+          size="lg"
+          disabled={submitting}
+          onClick={() => void submit()}
+        >
           ثبت سفارش
         </Button>
       </aside>

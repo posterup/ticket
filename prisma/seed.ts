@@ -76,8 +76,27 @@ const DEV_USERS = [
   { phone: "09120000004", fullName: "مدیر دوندگان", owns: "iran-runners" },
 ] as const;
 
-/** Wipe in FK-safe order so `db:reset` is idempotent. */
+/**
+ * Wipe in FK-safe order so `db:reset` is idempotent.
+ *
+ * Commerce first: tickets and order items reference ticket types, so deleting
+ * those types before their children fails on the foreign key — and leaves the
+ * database half-cleared.
+ */
 async function clear(): Promise<void> {
+  await db.checkIn.deleteMany();
+  await db.ticket.deleteMany();
+  await db.payment.deleteMany();
+  await db.discountRedemption.deleteMany();
+  await db.orderItem.deleteMany();
+  await db.order.deleteMany();
+
+  await db.bookmark.deleteMany();
+  await db.notifySubscription.deleteMany();
+  await db.follow.deleteMany();
+  await db.session.deleteMany();
+  await db.otpCode.deleteMany();
+
   await db.attendeeTagLink.deleteMany();
   await db.attendeeTag.deleteMany();
   await db.eventCollaborator.deleteMany();
