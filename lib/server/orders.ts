@@ -326,7 +326,28 @@ export async function markOrderPaid(
         })),
       ),
     }),
-    db.payment.create({
+  ]);
+
+  // `/pay` already recorded this attempt when it redirected the buyer, and
+  // `authority` is unique — so settle that row rather than inserting a second.
+  const attempt = payment.authority
+    ? await db.payment.findUnique({
+        where: { authority: payment.authority },
+        select: { id: true },
+      })
+    : null;
+
+  if (attempt) {
+    await db.payment.update({
+      where: { id: attempt.id },
+      data: {
+        status: "VERIFIED",
+        refId: payment.refId,
+        verifiedAt: new Date(),
+      },
+    });
+  } else {
+    await db.payment.create({
       data: {
         orderId: row.id,
         provider: payment.provider,
@@ -336,8 +357,8 @@ export async function markOrderPaid(
         status: "VERIFIED",
         verifiedAt: new Date(),
       },
-    }),
-  ]);
+    });
+  }
 
   // The buyer becomes a CRM contact of the organising workspace — this is the
   // moment a sale turns into a relationship.
