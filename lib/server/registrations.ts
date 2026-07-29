@@ -17,6 +17,33 @@ export async function listRegistrations(
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
+export interface CreateRegistrationInput {
+  name: string;
+  phone: string;
+  tickets: number;
+}
+
+/**
+ * Record an attendee's request to join an approval-gated event. Always starts
+ * `pending` — only the organiser may move it on from there.
+ */
+export async function createRegistration(
+  eventId: string,
+  input: CreateRegistrationInput,
+): Promise<EventRegistration> {
+  const registration: EventRegistration = {
+    id: crypto.randomUUID(),
+    eventId,
+    name: input.name,
+    phone: input.phone,
+    tickets: input.tickets,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  };
+  eventRegistrations.push(registration);
+  return registration;
+}
+
 /** Accept/reject a request (or reset to pending); returns it, or `undefined`. */
 export async function setRegistrationStatus(
   id: string,
