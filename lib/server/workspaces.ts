@@ -27,6 +27,22 @@ export async function listWorkspaces(): Promise<Workspace[]> {
   return rows.map(toWorkspace);
 }
 
+/**
+ * The workspaces a user belongs to.
+ *
+ * What the switcher offers. `listWorkspaces()` returns every workspace on the
+ * platform, which in a switcher means offering to "switch" to someone else's.
+ */
+export async function listWorkspacesForUser(
+  userId: string,
+): Promise<Workspace[]> {
+  const rows = await db.workspace.findMany({
+    where: { members: { some: { userId } } },
+    orderBy: { createdAt: "asc" },
+  });
+  return rows.map(toWorkspace);
+}
+
 export async function getWorkspaceBySlug(
   slug: string,
 ): Promise<Workspace | undefined> {

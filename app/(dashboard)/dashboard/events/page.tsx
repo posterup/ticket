@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 
-import { listEvents } from "@/lib/server";
+import { listEventsByWorkspaceId } from "@/lib/server";
 import { EventsTimeline } from "@/components/dashboard/EventsTimeline";
 import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "رویدادها | پوستر" };
 
 export default async function EventsPage() {
-  await requireManagerPage();
+  const { workspace } = await requireManagerPage();
 
-  const events = await listEvents();
+  // Only this workspace's events — the dashboard is not a directory.
+  const events = await listEventsByWorkspaceId(workspace.workspaceId);
 
   return (
     <div className="flex flex-col gap-6">

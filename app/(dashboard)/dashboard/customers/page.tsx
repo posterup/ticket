@@ -16,9 +16,9 @@ import { requireManagerPage } from "@/lib/server/auth/guards";
 export const metadata: Metadata = { title: "مخاطبین | پوستر" };
 
 export default async function CustomersPage() {
-  await requireManagerPage();
+  const { workspace } = await requireManagerPage();
 
-  const attendees = await listAttendees();
+  const attendees = await listAttendees(workspace.workspaceId);
   const joinedByAttendee = new Map(
     await Promise.all(
       attendees.map(

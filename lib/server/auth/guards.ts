@@ -9,6 +9,9 @@
 
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+
+import { ACTIVE_WORKSPACE_COOKIE } from "@/lib/active-workspace";
 
 import type { Event, EventCollabRole, WorkspaceRole } from "@/types";
 
@@ -225,6 +228,8 @@ export async function requireEventAccess(
 export async function requireManagerPage(): Promise<{
   user: SessionUser;
   memberships: Membership[];
+  /** The workspace being viewed — always one the caller actually belongs to. */
+  workspace: Membership;
 }> {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/dashboard");
@@ -232,5 +237,12 @@ export async function requireManagerPage(): Promise<{
   const memberships = await listMemberships(user.id);
   if (memberships.length === 0) redirect("/me");
 
-  return { user, memberships };
+  // The cookie is a preference, not a credential: a value naming a workspace
+  // the caller does not belong to falls back rather than granting anything.
+  const store = await cookies();
+  const preferred = store.get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  const workspace =
+    memberships.find((m) => m.workspaceId === preferred) ?? memberships[0];
+
+  return { user, memberships, workspace };
 }

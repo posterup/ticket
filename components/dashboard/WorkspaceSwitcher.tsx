@@ -2,24 +2,35 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, ChevronsUpDown, Plus, ExternalLink } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ACTIVE_WORKSPACE_COOKIE } from "@/lib/active-workspace";
 import type { Workspace } from "@/types";
 
-const STORAGE_KEY = "poster-active-workspace";
-
-/** Switch between the user's workspaces (personal / business pages). */
-export function WorkspaceSwitcher({ workspaces }: { workspaces: Workspace[] }) {
+/**
+ * Switch between the user's workspaces.
+ *
+ * The choice is a cookie, not localStorage: the dashboard renders on the
+ * server, so it has to be readable there. It used to write localStorage, which
+ * nothing server-side could see — picking a workspace changed this label and
+ * nothing else on the page.
+ */
+export function WorkspaceSwitcher({
+  workspaces,
+  activeId: initialActiveId,
+}: {
+  workspaces: Workspace[];
+  /** Resolved on the server against the user's memberships. */
+  activeId?: string;
+}) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState(workspaces[0]?.id ?? "");
+  const [activeId, setActiveId] = useState(
+    initialActiveId ?? workspaces[0]?.id ?? "",
+  );
   const ref = useRef<HTMLDivElement>(null);
-
-  // Restore the last-selected workspace (persists across navigation).
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && workspaces.some((w) => w.id === saved)) setActiveId(saved);
-  }, [workspaces]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -36,8 +47,12 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: Workspace[] }) {
 
   function select(id: string) {
     setActiveId(id);
-    localStorage.setItem(STORAGE_KEY, id);
     setOpen(false);
+    // A year is fine — it is a preference, and the server re-checks it against
+    // the caller's memberships on every render.
+    document.cookie = `${ACTIVE_WORKSPACE_COOKIE}=${id}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    // Re-render the server components so the page actually changes.
+    router.refresh();
   }
 
   const typeLabel = (w: Workspace) =>

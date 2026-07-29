@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { listAttendeeTags } from "@/lib/server";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 import { Logo } from "@/components/Logo";
 import { EventComposer } from "@/components/create/EventComposer";
 
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default async function CreateTicketPage() {
-  const availableTags = await listAttendeeTags();
+  // Creating an event is an organiser action, and the audience tags offered
+  // are the creating workspace's own.
+  const { workspace } = await requireManagerPage();
+  const availableTags = await listAttendeeTags(workspace.workspaceId);
 
   return (
     <div className="min-h-[100dvh]">

@@ -12,9 +12,10 @@ import { toAttendee, toEvent, type AttendeeRow, type EventRow } from "./mappers"
 
 const TAG_INCLUDE = { tags: { include: { tag: true } } } as const;
 
-/** Return all CRM contacts, newest first. */
-export async function listAttendees(): Promise<Attendee[]> {
+/** A workspace's CRM contacts, newest first. */
+export async function listAttendees(workspaceId: string): Promise<Attendee[]> {
   const rows = await db.attendee.findMany({
+    where: { workspaceId },
     include: TAG_INCLUDE,
     orderBy: { createdAt: "desc" },
   });
@@ -32,11 +33,12 @@ export async function getAttendeeById(
   return row ? toAttendee(row as AttendeeRow) : undefined;
 }
 
-/** Distinct CRM tag labels with how many contacts carry each, most-used first. */
-export async function listAttendeeTags(): Promise<
-  { label: string; count: number }[]
-> {
+/** A workspace's tag labels with how many contacts carry each, most-used first. */
+export async function listAttendeeTags(
+  workspaceId: string,
+): Promise<{ label: string; count: number }[]> {
   const tags = await db.attendeeTag.findMany({
+    where: { workspaceId },
     select: { label: true, _count: { select: { links: true } } },
   });
   return tags

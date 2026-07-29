@@ -7,11 +7,11 @@ import { requireManagerPage } from "@/lib/server/auth/guards";
 export const metadata: Metadata = { title: "بازاریابی | پوستر" };
 
 export default async function MarketingPage() {
-  const { memberships } = await requireManagerPage();
+  const { workspace } = await requireManagerPage();
 
   const [campaigns, segments] = await Promise.all([
-    listCampaigns(),
-    listSegments(),
+    listCampaigns(workspace.workspaceId),
+    listSegments(workspace.workspaceId),
   ]);
 
   return (
@@ -27,7 +27,7 @@ export default async function MarketingPage() {
       <MarketingPanel
         seedCampaigns={campaigns}
         segments={segments}
-        workspaceId={memberships[0].workspaceId}
+        workspaceId={workspace.workspaceId}
       />
     </div>
   );

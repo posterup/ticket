@@ -1,9 +1,12 @@
 import Link from "next/link";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+
+import { ACTIVE_WORKSPACE_COOKIE } from "@/lib/active-workspace";
 
 import { getCurrentUser, listMemberships } from "@/lib/server/auth/guards";
-import { listWorkspaces } from "@/lib/server";
+import { listWorkspacesForUser } from "@/lib/server";
 import { Logo } from "@/components/Logo";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { MobileNavDrawer } from "@/components/dashboard/MobileNavDrawer";
@@ -26,7 +29,12 @@ export default async function DashboardLayout({
   const memberships = await listMemberships(user.id);
   if (memberships.length === 0) redirect("/me");
 
-  const workspaces = await listWorkspaces();
+  // Only the user's own — the switcher must not offer someone else's workspace.
+  const workspaces = await listWorkspacesForUser(user.id);
+  const store = await cookies();
+  const preferred = store.get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  const activeId =
+    workspaces.find((w) => w.id === preferred)?.id ?? workspaces[0]?.id;
 
   return (
     <div className="lg:flex">
@@ -44,7 +52,7 @@ export default async function DashboardLayout({
             </Link>
           </div>
           <div className="w-44">
-            <WorkspaceSwitcher workspaces={workspaces} />
+            <WorkspaceSwitcher workspaces={workspaces} activeId={activeId} />
           </div>
         </header>
         <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">

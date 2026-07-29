@@ -101,7 +101,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function EventDetailPage({ params }: Params) {
-  await requireManagerPage();
+  const { workspace } = await requireManagerPage();
 
   const { id } = await params;
   const event = await getEventById(id);
@@ -126,7 +126,7 @@ export default async function EventDetailPage({ params }: Params) {
       listWorkspaces(),
       listGuests(event.id),
       listCollaborators(event.id),
-      listAttendeeTags(),
+      listAttendeeTags(workspace.workspaceId),
     ]);
   const collabWorkspaces = workspaces
     .filter((w) => w.slug !== owner?.slug)

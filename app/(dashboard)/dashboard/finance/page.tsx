@@ -9,10 +9,10 @@ import { requireManagerPage } from "@/lib/server/auth/guards";
 export const metadata: Metadata = { title: "مالی | پوستر" };
 
 export default async function FinancePage() {
-  const { memberships } = await requireManagerPage();
+  const { workspace } = await requireManagerPage();
 
   // Scoped to the workspace being managed; finance is per-tenant.
-  const f = await computeFinance(memberships[0].workspaceId);
+  const f = await computeFinance(workspace.workspaceId);
 
   return (
     <div className="flex flex-col gap-8">

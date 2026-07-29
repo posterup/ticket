@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
-import { listCheckedTicketIds, listEvents, listHolders } from "@/lib/server";
+import {
+  listCheckedTicketIds,
+  listEventsByWorkspaceId,
+  listHolders,
+} from "@/lib/server";
 import { requireManagerPage } from "@/lib/server/auth/guards";
 import { formatJalaliDate, formatTime } from "@/lib/format";
 import {
@@ -11,9 +15,9 @@ import {
 export const metadata: Metadata = { title: "پذیرش | پوستر" };
 
 export default async function CheckinPage() {
-  await requireManagerPage();
+  const { workspace } = await requireManagerPage();
 
-  const allEvents = await listEvents();
+  const allEvents = await listEventsByWorkspaceId(workspace.workspaceId);
 
   const events: CheckinEvent[] = await Promise.all(
     allEvents.map(async (e) => {

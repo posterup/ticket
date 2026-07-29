@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { listWorkspaces } from "@/lib/server";
+import { listWorkspacesForUser } from "@/lib/server";
 import { ProfileCard } from "@/components/dashboard/ProfileCard";
 import { AccountMenu } from "@/components/dashboard/AccountMenu";
 import { requireManagerPage } from "@/lib/server/auth/guards";
@@ -8,9 +8,10 @@ import { requireManagerPage } from "@/lib/server/auth/guards";
 export const metadata: Metadata = { title: "پروفایل | پوستر" };
 
 export default async function ProfilePage() {
-  await requireManagerPage();
+  const { user } = await requireManagerPage();
 
-  const workspaces = await listWorkspaces();
+  // Your own workspaces, not the platform directory.
+  const workspaces = await listWorkspacesForUser(user.id);
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
