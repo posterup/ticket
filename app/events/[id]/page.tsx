@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+import { getCurrentUser } from "@/lib/server/auth/guards";
 import {
   MapPin,
   Clock,
@@ -60,11 +62,13 @@ export default async function PublicEventDetail({ params }: Params) {
   const event = await getEventByIdOrSlug(id);
   if (!event) notFound();
 
-  const [tickets, organizer, collaborators] = await Promise.all([
+  const [tickets, organizer, collaborators, viewer] = await Promise.all([
     listTickets(event.id),
     getWorkspaceByEvent(event.id),
     listAcceptedCollaborators(event.id),
+    getCurrentUser(),
   ]);
+  const loggedIn = viewer !== null;
 
   const sessions = [...event.sessions].sort((a, b) =>
     a.startAt.localeCompare(b.startAt),
@@ -170,7 +174,12 @@ export default async function PublicEventDetail({ params }: Params) {
             </div>
 
             {/* 3. Ticket buy card — mobile */}
-            <BuyCard event={event} tickets={tickets} className="lg:hidden" />
+            <BuyCard
+              event={event}
+              tickets={tickets}
+              loggedIn={loggedIn}
+              className="lg:hidden"
+            />
 
             {/* 4. Description */}
             {event.description ? (
@@ -197,7 +206,7 @@ export default async function PublicEventDetail({ params }: Params) {
 
           {/* Sidebar (desktop) */}
           <aside className="hidden lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-6">
-            <BuyCard event={event} tickets={tickets} />
+            <BuyCard event={event} tickets={tickets} loggedIn={loggedIn} />
             <Hosts organizer={organizer} collaborators={collaborators} />
           </aside>
         </div>
@@ -340,10 +349,13 @@ function resolveBuyState(event: Event, tickets: TicketType[]): BuyState {
 function BuyCard({
   event,
   tickets,
+  loggedIn,
   className,
 }: {
   event: Event;
   tickets: TicketType[];
+  /** Resolved on the server, so "notify me" knows where to send a visitor. */
+  loggedIn: boolean;
   className?: string;
 }) {
   const state = resolveBuyState(event, tickets);
@@ -365,12 +377,15 @@ function BuyCard({
       );
       break;
     case "notify":
-      node = <NotifyMe eventId={event.id} idleLabel={action.label} />;
+      node = (
+        <NotifyMe eventId={event.id} loggedIn={loggedIn} idleLabel={action.label} />
+      );
       break;
     case "waitlist":
       node = (
         <NotifyMe
           eventId={event.id}
+          loggedIn={loggedIn}
           idleLabel={action.label}
           activeLabel="در لیست انتظار"
         />

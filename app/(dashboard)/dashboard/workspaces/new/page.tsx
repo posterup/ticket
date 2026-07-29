@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 
 import { CreateWorkspaceForm } from "@/components/workspace/CreateWorkspaceForm";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "فضای کاری جدید | پوستر" };
 
-export default function NewWorkspacePage() {
+export default async function NewWorkspacePage() {
+  await requireManagerPage();
+
   return (
     <div className="flex flex-col gap-8">
       <div>

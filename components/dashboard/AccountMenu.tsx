@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { clearLoggedIn } from "@/lib/auth";
 
 interface Row {
   href: string;
@@ -30,9 +29,11 @@ const ROWS: Row[] = [
 export function AccountMenu() {
   const router = useRouter();
 
-  function logout() {
-    clearLoggedIn();
-    router.push("/");
+  async function logout() {
+    // Revokes the session server-side, so the token cannot be replayed even if
+    // it was captured.
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/");
     router.refresh();
   }
 
@@ -57,7 +58,7 @@ export function AccountMenu() {
 
       <button
         type="button"
-        onClick={logout}
+        onClick={() => void logout()}
         className={cn(
           "flex w-full items-center gap-3 px-5 py-4 text-start outline-none transition-colors",
           "text-danger hover:bg-subtle focus-visible:bg-subtle",

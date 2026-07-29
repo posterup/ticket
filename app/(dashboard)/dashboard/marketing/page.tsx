@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 
 import { listCampaigns, listSegments } from "@/lib/server";
 import { MarketingPanel } from "@/components/marketing/MarketingPanel";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "بازاریابی | پوستر" };
 
 export default async function MarketingPage() {
+  await requireManagerPage();
+
   const [campaigns, segments] = await Promise.all([
     listCampaigns(),
     listSegments(),

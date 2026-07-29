@@ -1,78 +1,44 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { setLoggedIn } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ id?: string; pw?: string }>({});
-
-  function submit() {
-    const next: { id?: string; pw?: string } = {};
-    if (!identifier.trim()) next.id = "شماره موبایل را وارد کنید.";
-    if (!password) next.pw = "رمز عبور را وارد کنید.";
-    setErrors(next);
-    if (Object.keys(next).length > 0) return;
-    // Mock auth: flip the logged-in flag, then continue to the requested page
-    // (e.g. back to an event after tapping "notify me") or the dashboard.
-    setLoggedIn();
-    const dest = searchParams.get("next");
-    router.push(dest && dest.startsWith("/") ? dest : "/dashboard/events");
-    router.refresh();
-  }
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <h1 className="text-lg font-bold text-foreground">ورود به حساب</h1>
-      <p className="mt-1 text-sm text-muted">به داشبورد پوستر وارد شوید.</p>
+      <p className="mt-1 text-sm text-muted">
+        با شماره موبایل خود وارد شوید؛ رمز عبوری در کار نیست.
+      </p>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
+      <PhoneOtpForm
+        onVerified={({ isManager }) => {
+          // Back to wherever they were headed, else the surface that fits
+          // them: the dashboard for organizers, «من» for everyone else.
+          const requested = searchParams.get("next");
+          const dest =
+            requested && requested.startsWith("/")
+              ? requested
+              : isManager
+                ? "/dashboard/events"
+                : "/me";
+          router.replace(dest);
+          router.refresh();
         }}
-        className="mt-6 flex flex-col gap-4"
-      >
-        <Field id="identifier" label="شماره موبایل" error={errors.id}>
-          <Input
-            id="identifier"
-            dir="ltr"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            aria-invalid={Boolean(errors.id)}
-          />
-        </Field>
-        <Field id="password" label="رمز عبور" error={errors.pw}>
-          <Input
-            id="password"
-            type="password"
-            dir="ltr"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            aria-invalid={Boolean(errors.pw)}
-          />
-        </Field>
-        <Button type="submit" size="lg" className="mt-1">
-          ورود
-        </Button>
-      </form>
+      />
 
       <p className="mt-6 text-center text-sm text-muted">
-        حساب ندارید؟{" "}
+        برگزارکننده‌اید؟{" "}
         <Link
           href="/signup"
           className="font-medium text-foreground underline-offset-4 hover:underline"
         >
-          ثبت‌نام
+          فضای کاری بسازید
         </Link>
       </p>
     </div>

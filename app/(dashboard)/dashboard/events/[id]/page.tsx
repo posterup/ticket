@@ -35,6 +35,7 @@ import { TicketDesigner } from "@/components/tickets/TicketDesigner";
 import type { TicketSample } from "@/components/tickets/TicketPreview";
 import { emptySlot, type ScheduleDraft } from "@/lib/create/types";
 import type { Event } from "@/types";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -100,6 +101,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function EventDetailPage({ params }: Params) {
+  await requireManagerPage();
+
   const { id } = await params;
   const event = await getEventById(id);
   if (!event) notFound();

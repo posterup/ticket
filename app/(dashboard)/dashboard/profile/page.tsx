@@ -3,10 +3,13 @@ import type { Metadata } from "next";
 import { listWorkspaces } from "@/lib/server";
 import { ProfileCard } from "@/components/dashboard/ProfileCard";
 import { AccountMenu } from "@/components/dashboard/AccountMenu";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "پروفایل | پوستر" };
 
 export default async function ProfilePage() {
+  await requireManagerPage();
+
   const workspaces = await listWorkspaces();
 
   return (

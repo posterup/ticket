@@ -8,6 +8,7 @@
  */
 
 import { cache } from "react";
+import { redirect } from "next/navigation";
 
 import type { Event, EventCollabRole, WorkspaceRole } from "@/types";
 
@@ -207,4 +208,29 @@ export async function requireEventAccess(
   }
 
   return { user: await getCurrentUser(), event, grant };
+}
+
+/**
+ * Page-level dashboard gate.
+ *
+ * Layouts and pages render **in parallel** in the App Router, so a redirect in
+ * `(dashboard)/layout.tsx` unwinds the layout while the page underneath has
+ * already rendered and streamed its data. The layout gate is therefore not
+ * enough on its own — each dashboard page calls this before touching data.
+ *
+ * Redirects rather than throwing, because neither case is exceptional: a
+ * signed-out visitor belongs at /login, and a signed-in user with no workspace
+ * belongs on the attendee side.
+ */
+export async function requireManagerPage(): Promise<{
+  user: SessionUser;
+  memberships: Membership[];
+}> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/dashboard");
+
+  const memberships = await listMemberships(user.id);
+  if (memberships.length === 0) redirect("/me");
+
+  return { user, memberships };
 }
