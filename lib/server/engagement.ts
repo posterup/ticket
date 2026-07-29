@@ -1,41 +1,58 @@
 /**
- * Per-event engagement counts (going / interested) — the social-proof baseline
- * shown across discovery. Seeded in a module-level map that stands in for
- * aggregated attendance rows until a datastore is added. The signed-in user's
- * own RSVP is layered on top client-side (optimistic), exactly as follower
- * counts work.
+ * Per-event engagement counts (going / interested) — the social-proof numbers
+ * shown across discovery.
+ *
+ * Each event carries a seeded baseline so the figures do not visibly deflate
+ * now that they are real; live `Bookmark` rows are added on top as attendees
+ * mark events.
  */
+
+import { db } from "./db";
 
 export interface EventEngagement {
   going: number;
   interested: number;
 }
 
-const ENGAGEMENT: Record<string, EventEngagement> = {
-  "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01": { going: 842, interested: 1360 },
-  "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02": { going: 26, interested: 74 },
-  "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03": { going: 118, interested: 240 },
-  "3f1a6c2e-0004-4a10-9b21-1a2b3c4d5e04": { going: 510, interested: 930 },
-  "3f1a6c2e-0005-4a10-9b21-1a2b3c4d5e05": { going: 64, interested: 152 },
-  "3f1a6c2e-0006-4a10-9b21-1a2b3c4d5e06": { going: 388, interested: 605 },
-  "3f1a6c2e-0007-4a10-9b21-1a2b3c4d5e07": { going: 72, interested: 133 },
-};
+const ZERO: EventEngagement = { going: 0, interested: 0 };
 
-/** Baseline engagement for an event (zeros when unseeded/newly created). */
+/** Engagement for an event (zeros when it does not exist). */
 export async function getEventEngagement(
   eventId: string,
 ): Promise<EventEngagement> {
-  return ENGAGEMENT[eventId] ?? { going: 0, interested: 0 };
+  return (await getEventEngagements([eventId])).get(eventId) ?? ZERO;
 }
 
 /**
  * Engagement for many events at once, keyed by event id. Batched so listing
- * pages avoid a lookup per row inside a `.map()`.
+ * pages avoid a query per row inside a `.map()`.
  */
 export async function getEventEngagements(
   eventIds: string[],
 ): Promise<Map<string, EventEngagement>> {
-  return new Map(
-    eventIds.map((id) => [id, ENGAGEMENT[id] ?? { going: 0, interested: 0 }]),
-  );
+  const out = new Map<string, EventEngagement>();
+  if (eventIds.length === 0) return out;
+
+  const [events, bookmarks] = await Promise.all([
+    db.event.findMany({
+      where: { id: { in: eventIds } },
+      select: { id: true, seedGoing: true, seedInterested: true },
+    }),
+    db.bookmark.groupBy({
+      by: ["eventId", "state"],
+      where: { eventId: { in: eventIds } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  for (const e of events) {
+    out.set(e.id, { going: e.seedGoing, interested: e.seedInterested });
+  }
+  for (const b of bookmarks) {
+    const current = out.get(b.eventId);
+    if (!current) continue;
+    if (b.state === "GOING") current.going += b._count._all;
+    else current.interested += b._count._all;
+  }
+  return out;
 }

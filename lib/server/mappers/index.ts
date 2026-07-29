@@ -1,0 +1,234 @@
+/**
+ * Database rows → domain objects.
+ *
+ * The single place `DateTime` becomes an ISO string and Prisma's enum members
+ * become the hyphenated unions in `types/`. Keeping the conversion here is
+ * what lets `types/` — and therefore the wire contract — stay unchanged while
+ * the storage underneath moves.
+ *
+ * Optional domain fields are omitted rather than set to `null`, matching what
+ * the in-memory fixtures produced, so JSON responses keep their existing shape.
+ */
+
+import type {
+  Attendee,
+  Campaign,
+  DiscountCode,
+  Event,
+  EventCollaborator,
+  EventGuest,
+  EventRegistration,
+  EventSession,
+  RecurrenceRule,
+  RecurrenceSchedule,
+  TicketType,
+  Venue,
+  Workspace,
+} from "@/types";
+import type * as Row from "@/generated/client";
+
+import {
+  COLLABORATOR_CHANNEL_FROM_DB,
+  COLLABORATOR_STATUS_FROM_DB,
+  DISCOUNT_KIND_FROM_DB,
+  EVENT_MODE_FROM_DB,
+  EVENT_STATUS_FROM_DB,
+  EVENT_VISIBILITY_FROM_DB,
+  GUEST_RSVP_FROM_DB,
+  REGISTRATION_STATUS_FROM_DB,
+  SESSION_AVAILABILITY_FROM_DB,
+  TICKET_CATEGORY_FROM_DB,
+  WORKSPACE_TYPE_FROM_DB,
+} from "./enums";
+
+/** `null` → absent, so optional fields stay optional in the JSON. */
+function opt<T>(value: T | null | undefined): T | undefined {
+  return value ?? undefined;
+}
+
+const iso = (d: Date): string => d.toISOString();
+
+export function toVenue(row: Row.Venue): Venue {
+  return {
+    id: row.id,
+    name: row.name,
+    province: opt(row.province),
+    city: row.city,
+    address: row.address,
+    capacity: row.capacity,
+    onlineUrl: opt(row.onlineUrl),
+    lat: opt(row.lat),
+    lng: opt(row.lng),
+    ...(row.hideAddress ? { hideAddress: true } : {}),
+  };
+}
+
+export function toSession(row: Row.EventSession): EventSession {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    startAt: iso(row.startAt),
+    endAt: iso(row.endAt),
+    venueId: opt(row.venueId),
+    ...(row.cancelled ? { cancelled: true } : {}),
+    availability: SESSION_AVAILABILITY_FROM_DB[row.availability],
+  };
+}
+
+/** An event row with the relations {@link toEvent} needs. */
+export type EventRow = Row.Event & {
+  venue: Row.Venue;
+  sessions: Row.EventSession[];
+};
+
+export function toEvent(row: EventRow): Event {
+  return {
+    id: row.id,
+    workspaceId: row.workspaceId,
+    title: row.title,
+    description: row.description,
+    status: EVENT_STATUS_FROM_DB[row.status],
+    mode: EVENT_MODE_FROM_DB[row.mode],
+    venue: toVenue(row.venue),
+    sessions: row.sessions.map(toSession),
+    recurrence: opt(row.recurrence as RecurrenceRule | null),
+    recurrenceSchedule: opt(
+      row.recurrenceSchedule as RecurrenceSchedule | null,
+    ),
+    tags: row.tags,
+    categories: row.categories,
+    visibility: EVENT_VISIBILITY_FROM_DB[row.visibility],
+    audienceTags: row.audienceTags,
+    requiresApproval: row.requiresApproval,
+    waitlist: row.waitlist,
+    slug: opt(row.slug),
+    createdAt: iso(row.createdAt),
+    updatedAt: iso(row.updatedAt),
+  };
+}
+
+export function toTicketType(row: Row.TicketType): TicketType {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    name: row.name,
+    price: row.price,
+    capacity: row.capacity,
+    sold: row.sold,
+    salesStartAt: iso(row.salesStartAt),
+    salesEndAt: iso(row.salesEndAt),
+    category: TICKET_CATEGORY_FROM_DB[row.category],
+    description: opt(row.description),
+  };
+}
+
+export function toWorkspace(row: Row.Workspace): Workspace {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    type: WORKSPACE_TYPE_FROM_DB[row.type],
+    bio: opt(row.bio),
+    avatar: row.avatar,
+    banner: opt(row.banner),
+    // Seeded baseline plus, later, the real Follow rows.
+    followers: row.seedFollowers,
+    following: row.seedFollowing,
+    ...(row.verified ? { verified: true } : {}),
+    createdAt: iso(row.createdAt),
+  };
+}
+
+/** An attendee row with its tag links resolved. */
+export type AttendeeRow = Row.Attendee & {
+  tags: (Row.AttendeeTagLink & { tag: Row.AttendeeTag })[];
+};
+
+export function toAttendee(row: AttendeeRow): Attendee {
+  return {
+    id: row.id,
+    fullName: row.fullName,
+    phone: row.phone,
+    tags: row.tags.map((link) => ({
+      id: link.tag.id,
+      label: link.tag.label,
+      color: opt(link.tag.color),
+    })),
+    notes: opt(row.notes),
+    customFields: (row.customFields ?? []) as unknown as Attendee["customFields"],
+    createdAt: iso(row.createdAt),
+  };
+}
+
+export function toGuest(row: Row.EventGuest): EventGuest {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    sessionId: row.sessionId,
+    contact: row.contact,
+    channel: row.channel === "USERNAME" ? "username" : "phone",
+    status: GUEST_RSVP_FROM_DB[row.status],
+    createdAt: iso(row.createdAt),
+  };
+}
+
+export function toRegistration(row: Row.EventRegistration): EventRegistration {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    name: row.name,
+    phone: row.phone,
+    tickets: row.tickets,
+    status: REGISTRATION_STATUS_FROM_DB[row.status],
+    createdAt: iso(row.createdAt),
+  };
+}
+
+export function toCollaborator(row: Row.EventCollaborator): EventCollaborator {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    channel: COLLABORATOR_CHANNEL_FROM_DB[row.channel],
+    label: row.label,
+    sub: row.sub,
+    workspaceSlug: opt(row.workspaceSlug),
+    avatar: opt(row.avatar),
+    // `revoked` has no domain counterpart yet; treat it as not accepted.
+    status:
+      row.status === "REVOKED"
+        ? "pending"
+        : COLLABORATOR_STATUS_FROM_DB[
+            row.status as keyof typeof COLLABORATOR_STATUS_FROM_DB
+          ],
+    createdAt: iso(row.createdAt),
+  };
+}
+
+export function toDiscount(row: Row.DiscountCode): DiscountCode {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    sessionId: opt(row.sessionId),
+    code: row.code,
+    kind: DISCOUNT_KIND_FROM_DB[row.kind],
+    value: row.value,
+    maxRedemptions: row.maxRedemptions,
+    redemptions: row.redemptions,
+    expiresAt: row.expiresAt ? iso(row.expiresAt) : null,
+    active: row.active,
+    createdAt: iso(row.createdAt),
+  };
+}
+
+export function toCampaign(row: Row.Campaign): Campaign {
+  return {
+    id: row.id,
+    name: row.name,
+    channel: "sms",
+    segment: row.segment,
+    status: row.status as Campaign["status"],
+    recipients: row.recipients,
+    message: row.message,
+    sentAt: row.sentAt ? iso(row.sentAt) : undefined,
+  };
+}

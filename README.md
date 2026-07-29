@@ -23,15 +23,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-`npm install` runs `prisma generate`, which needs no database — the app still
-serves its in-memory seed data, so a fresh clone runs with no setup.
+`npm install` runs `prisma generate`, which needs no database. The app itself
+does: set one up first (below).
 
 ## Database
 
-`prisma/schema.prisma` is the datastore. The data layer in `lib/server/` still
-reads the in-memory fixtures, so the app runs without a database — but the
-seed, migrations and `tests/seed.test.ts` need one.
-
+`lib/server/` reads Postgres through Prisma, so the app needs a `DATABASE_URL`.
 Any Postgres works. Locally:
 
 ```bash
@@ -67,8 +64,9 @@ Connection URLs live in `prisma.config.ts` (Prisma 7 keeps them out of the
 schema), read from `DATABASE_URL` in `.env`. The generated client is written to
 `generated/` and is git-ignored.
 
-Without `DATABASE_URL` the suite still passes — `tests/seed.test.ts` skips
-itself rather than failing.
+Without `DATABASE_URL` the suite still passes: the suites that need a database
+skip themselves rather than failing (100 tests run, 91 skip). With one, all 191
+run — seed the database first, since they assert against the fixtures.
 
 ## Messaging (SMS & email)
 

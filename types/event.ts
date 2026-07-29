@@ -118,6 +118,8 @@ export interface EventSession {
  */
 export interface Event {
   id: string;
+  /** The workspace that owns the event; its organiser page. */
+  workspaceId: string;
   title: string;
   description: string;
   status: EventStatus;

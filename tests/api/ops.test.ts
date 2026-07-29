@@ -1,15 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { it, expect } from "vitest";
 
 import { PATCH as SET_TAGS } from "@/app/api/attendees/[id]/route";
 import { POST as CHECKIN } from "@/app/api/checkin/route";
 import { POST as SEND_SMS } from "@/app/api/sms/send/route";
 import type { Attendee } from "@/types";
 
-import { ctx, data, errorCode, parse, req } from "./helpers";
+import { ctx, data, errorCode, parse, req , describeApi } from "./helpers";
 
 const SEED_ATTENDEE = "e1000000-0000-4000-8000-000000000001";
 
-describe("PATCH /api/attendees/:id", () => {
+describeApi("PATCH /api/attendees/:id", () => {
   it("replaces the contact's tags", async () => {
     const attendee = data(
       await parse<Attendee>(
@@ -50,7 +50,7 @@ describe("PATCH /api/attendees/:id", () => {
   });
 });
 
-describe("POST /api/checkin", () => {
+describeApi("POST /api/checkin", () => {
   it("records and clears a check-in", async () => {
     const on = data(
       await parse<{ holderId: string; checked: boolean }>(
@@ -85,7 +85,7 @@ describe("POST /api/checkin", () => {
   });
 });
 
-describe("POST /api/sms/send", () => {
+describeApi("POST /api/sms/send", () => {
   it("reports the gateway as unconfigured when keys are absent", async () => {
     // No SMSIR_API_KEY in the test env, so the provider refuses up front —
     // which is exactly the 502 the dashboard surfaces to the organiser.

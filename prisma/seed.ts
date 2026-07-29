@@ -27,11 +27,12 @@ import {
   eventGuests,
   eventRegistrations,
   eventCollaborators,
-} from "../lib/server/store";
-import { listWorkspaces, getWorkspaceByEvent } from "../lib/server/workspaces";
-import { getEventEngagement } from "../lib/server/engagement";
-import { listDiscounts } from "../lib/server/discounts";
-import { listCampaigns } from "../lib/server/campaigns";
+  workspaces as workspaceFixtures,
+  EVENT_WORKSPACE,
+  discounts as discountFixtures,
+  campaigns as campaignFixtures,
+  ENGAGEMENT,
+} from "./seed-data";
 import {
   COLLABORATOR_CHANNEL_TO_DB,
   COLLABORATOR_STATUS_TO_DB,
@@ -97,8 +98,17 @@ async function clear(): Promise<void> {
 async function main(): Promise<void> {
   await clear();
 
+  // slug -> owning workspace, inverted from the fixture map.
+  const slugByEvent = new Map<string, string>();
+  for (const [slug, ids] of Object.entries(EVENT_WORKSPACE)) {
+    for (const id of ids) slugByEvent.set(id, slug);
+  }
+  /** Unmapped events fall back to the home workspace, as they did before. */
+  const ownerSlugOf = (eventId: string): string =>
+    slugByEvent.get(eventId) ?? HOME_WORKSPACE_SLUG;
+
   // ── workspaces ────────────────────────────────────────────────────────
-  const workspaces = await listWorkspaces();
+  const workspaces = workspaceFixtures;
   for (const w of workspaces) {
     await db.workspace.create({
       data: {
@@ -138,9 +148,9 @@ async function main(): Promise<void> {
 
   // ── venues, then events and their sessions ────────────────────────────
   for (const event of events) {
-    const owner = await getWorkspaceByEvent(event.id);
+    const owner = workspaceBySlug.get(ownerSlugOf(event.id));
     if (!owner) throw new Error(`Event ${event.id} has no owning workspace.`);
-    const engagement = await getEventEngagement(event.id);
+    const engagement = ENGAGEMENT[event.id] ?? { going: 0, interested: 0 };
 
     await db.venue.create({
       data: {
@@ -301,10 +311,10 @@ async function main(): Promise<void> {
   // ── discounts and campaigns ───────────────────────────────────────────
   const eventWorkspaceId = new Map<string, string>();
   for (const event of events) {
-    const owner = await getWorkspaceByEvent(event.id);
+    const owner = workspaceBySlug.get(ownerSlugOf(event.id));
     if (owner) eventWorkspaceId.set(event.id, owner.id);
   }
-  for (const d of await listDiscounts()) {
+  for (const d of discountFixtures) {
     await db.discountCode.create({
       data: {
         id: d.id,
@@ -326,7 +336,7 @@ async function main(): Promise<void> {
       },
     });
   }
-  for (const c of await listCampaigns()) {
+  for (const c of campaignFixtures) {
     await db.campaign.create({
       data: {
         id: c.id,

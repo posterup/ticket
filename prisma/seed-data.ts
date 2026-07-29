@@ -1,23 +1,33 @@
 /**
- * In-memory mock datastore.
+ * Seed fixtures.
  *
- * ⚠️ This module holds seed data in plain module-level arrays and mutates them
- * in place. It exists so the API and UI can be developed end-to-end without a
- * database. Replace it with a real datastore (Postgres/Prisma, Drizzle, …)
- * before production — the exported arrays are the only stateful surface.
+ * The hand-authored dataset the app used to hold in memory, moved here verbatim
+ * when `lib/server` moved onto Postgres. It is the seed's own copy on purpose:
+ * `lib/server` now reads the database, so importing from it would be circular.
+ *
+ * Ids are load-bearing — tests and other fixtures reference them by hand, so
+ * they must not be renumbered.
  */
 
 import type {
   Attendee,
+  Campaign,
+  DiscountCode,
   Event,
   EventCollaborator,
   EventGuest,
   EventRegistration,
   TicketType,
+  Workspace,
 } from "@/types";
 
-/** Seed events: real Tehran venues and Persian titles. */
-export const events: Event[] = [
+export interface EventEngagement {
+  going: number;
+  interested: number;
+}
+
+/** Ownership lives in {@link EVENT_WORKSPACE}, not on the fixture itself. */
+export const events: Omit<Event, "workspaceId">[] = [
   {
     id: "3f1a6c2e-0020-4a10-9b21-1a2b3c4d5e20",
     title: "کارگاه رایگان معرفی هوش مصنوعی",
@@ -522,7 +532,6 @@ export const events: Event[] = [
   },
 ];
 
-/** Seed ticket types spread across the seed events. */
 export const ticketTypes: TicketType[] = [
   {
     id: "d1000000-0000-4000-8000-000000000020",
@@ -724,7 +733,6 @@ export const ticketTypes: TicketType[] = [
   },
 ];
 
-/** Seed CRM contacts with realistic Persian names. */
 export const attendees: Attendee[] = [
   {
     id: "e1000000-0000-4000-8000-000000000001",
@@ -754,13 +762,6 @@ export const attendees: Attendee[] = [
   },
 ];
 
-/**
- * Recorded check-ins, as a set of holder ids (see `lib/checkin/data.ts`).
- * In-memory only — replace with real issued-ticket scan records later.
- */
-export const checkins: Set<string> = new Set();
-
-/** Guests invited to events (RSVP-only, no payment). */
 export const eventGuests: EventGuest[] = [
   {
     id: "g1000000-0000-4000-8000-000000000001",
@@ -773,10 +774,6 @@ export const eventGuests: EventGuest[] = [
   },
 ];
 
-/**
- * Registration requests awaiting a decision on approval-gated events (those with
- * `requiresApproval`). Seeded for «کارگاه خصوصی مدیریت برند» (event #10).
- */
 export const eventRegistrations: EventRegistration[] = [
   {
     id: "r1000000-0000-4000-8000-000000000001",
@@ -816,7 +813,6 @@ export const eventRegistrations: EventRegistration[] = [
   },
 ];
 
-/** Co-host / collaboration requests on events. */
 export const eventCollaborators: EventCollaborator[] = [
   {
     id: "cb100000-0000-4000-8000-000000000001",
@@ -830,3 +826,151 @@ export const eventCollaborators: EventCollaborator[] = [
     createdAt: "2026-07-02T12:00:00.000Z",
   },
 ];
+
+export const workspaces: Workspace[] = [
+  {
+    id: "w1000000-0000-4000-8000-000000000001",
+    slug: "ava-events",
+    name: "استودیو رویداد آوا",
+    type: "business",
+    bio: "برگزارکنندهٔ کنسرت‌ها و همایش‌های فرهنگی و فناوری در تهران.",
+    avatar: "آ",
+    followers: 12480,
+    following: 86,
+    verified: true,
+    createdAt: "2025-11-02T09:00:00.000Z",
+  },
+  {
+    id: "w1000000-0000-4000-8000-000000000002",
+    slug: "negar-karimi",
+    name: "نگار کریمی",
+    type: "personal",
+    bio: "عکاس و مدرس عکاسی خیابانی.",
+    avatar: "ن",
+    followers: 3120,
+    following: 145,
+    createdAt: "2026-01-18T12:30:00.000Z",
+  },
+  {
+    id: "w1000000-0000-4000-8000-000000000003",
+    slug: "chef-collective",
+    name: "کلکسیون سرآشپز",
+    type: "business",
+    bio: "برگزارکنندهٔ فستیوال‌ها و رویدادهای غذا و آشپزی در سراسر ایران.",
+    avatar: "س",
+    followers: 5860,
+    following: 42,
+    verified: true,
+    createdAt: "2025-12-09T08:00:00.000Z",
+  },
+  {
+    id: "w1000000-0000-4000-8000-000000000004",
+    slug: "iran-runners",
+    name: "باشگاه دوندگان ایران",
+    type: "business",
+    bio: "برگزاری دوهای همگانی و ماراتن در شهرهای مختلف کشور.",
+    avatar: "د",
+    followers: 7340,
+    following: 58,
+    verified: true,
+    createdAt: "2025-10-21T07:30:00.000Z",
+  },
+];
+
+export const EVENT_WORKSPACE: Record<string, string[]> = {
+  "ava-events": [
+    "3f1a6c2e-0015-4a10-9b21-1a2b3c4d5e15",
+    "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
+    "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03",
+    "3f1a6c2e-0005-4a10-9b21-1a2b3c4d5e05",
+    "3f1a6c2e-0007-4a10-9b21-1a2b3c4d5e07",
+    "3f1a6c2e-0008-4a10-9b21-1a2b3c4d5e08",
+    "3f1a6c2e-0009-4a10-9b21-1a2b3c4d5e09",
+    "3f1a6c2e-0011-4a10-9b21-1a2b3c4d5e11",
+    "3f1a6c2e-0012-4a10-9b21-1a2b3c4d5e12",
+    "3f1a6c2e-0013-4a10-9b21-1a2b3c4d5e13",
+  ],
+  "negar-karimi": [
+    "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02",
+    "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10",
+  ],
+  "chef-collective": [
+    "3f1a6c2e-0004-4a10-9b21-1a2b3c4d5e04",
+    "3f1a6c2e-0014-4a10-9b21-1a2b3c4d5e14",
+  ],
+  "iran-runners": ["3f1a6c2e-0006-4a10-9b21-1a2b3c4d5e06"],
+};
+
+const CONCERT_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
+
+export const discounts: DiscountCode[] = [
+  {
+    id: "dc100000-0000-4000-8000-000000000001",
+    eventId: null,
+    code: "WELCOME10",
+    kind: "percent",
+    value: 10,
+    maxRedemptions: 100,
+    redemptions: 23,
+    expiresAt: null,
+    active: true,
+    createdAt: "2026-06-15T09:00:00.000Z",
+  },
+  {
+    id: "dc100000-0000-4000-8000-000000000002",
+    eventId: CONCERT_EVENT,
+    code: "EARLY",
+    kind: "fixed",
+    value: 500_000,
+    maxRedemptions: 200,
+    redemptions: 148,
+    expiresAt: "2026-08-01T20:30:00.000Z",
+    active: true,
+    createdAt: "2026-06-16T10:30:00.000Z",
+  },
+  {
+    id: "dc100000-0000-4000-8000-000000000003",
+    eventId: CONCERT_EVENT,
+    code: "VIP20",
+    kind: "percent",
+    value: 20,
+    maxRedemptions: 50,
+    redemptions: 50,
+    expiresAt: null,
+    active: true,
+    createdAt: "2026-06-18T12:00:00.000Z",
+  },
+];
+
+export const campaigns: Campaign[] = [
+  {
+    id: "cmp10000-0000-4000-8000-000000000001",
+    name: "یادآوری کنسرت همایون شجریان",
+    channel: "sms",
+    segment: "همه مخاطبان",
+    status: "sent",
+    recipients: 3,
+    message: "کنسرت همایون شجریان، ۲۳ مرداد در برج میلاد. بلیت‌ها رو به اتمام است.",
+    sentAt: "2026-07-15T10:00:00.000Z",
+  },
+  {
+    id: "cmp10000-0000-4000-8000-000000000002",
+    name: "تخفیف زودهنگام همایش استارتاپی",
+    channel: "sms",
+    segment: "برگزارکننده",
+    status: "sent",
+    recipients: 1,
+    message: "با کد EARLY تا پایان هفته از تخفیف بلیت زودهنگام بهره‌مند شوید.",
+    sentAt: "2026-07-10T08:30:00.000Z",
+  },
+];
+
+export const ENGAGEMENT: Record<string, EventEngagement> = {
+  "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01": { going: 842, interested: 1360 },
+  "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02": { going: 26, interested: 74 },
+  "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03": { going: 118, interested: 240 },
+  "3f1a6c2e-0004-4a10-9b21-1a2b3c4d5e04": { going: 510, interested: 930 },
+  "3f1a6c2e-0005-4a10-9b21-1a2b3c4d5e05": { going: 64, interested: 152 },
+  "3f1a6c2e-0006-4a10-9b21-1a2b3c4d5e06": { going: 388, interested: 605 },
+  "3f1a6c2e-0007-4a10-9b21-1a2b3c4d5e07": { going: 72, interested: 133 },
+};

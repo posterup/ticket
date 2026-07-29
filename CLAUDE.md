@@ -75,15 +75,31 @@ docs/           Product, design, frontend & backend docs
 
 ## Data layer pattern
 
-`lib/server/` is the data-access layer — currently an **in-memory mock**
-(`lib/server/store.ts` seed arrays), designed to be swapped for a real datastore
-(e.g. Postgres via Prisma/Drizzle) **without changing call sites or types**.
+`lib/server/` is the data-access layer, over **Postgres via Prisma 7**.
 
-- Data flows one way: `route handler → lib/server → store`.
+- Data flows one way: `route handler → lib/server → Prisma`.
 - Route handlers only parse/validate input; the data-access functions own the
-  business logic.
+  business logic. Handlers use the shared plumbing in `lib/server/http.ts`
+  (`handler`, `ok`, `readJson`, `readQuery`) with zod schemas from
+  `lib/server/schemas/`.
+- Every `lib/server` export is **async**. Optional/not-found results stay
+  `undefined`, never `null`.
+- **Rows never leave `lib/server`.** `lib/server/mappers/` converts them to the
+  domain types in `types/` — that is the only place `DateTime` becomes an ISO
+  string and Prisma's SCREAMING_CASE enums become the hyphenated unions
+  (`one-time`, `early-bird`). Keeping it there is what lets `types/` and the
+  wire contract stay stable.
 - Every API response is an `ApiResponse<T>`: `{ data: T }` on success,
-  `{ error: { message, code } }` on error.
+  `{ error: { message, code, details? } }` on error.
+- The schema lives in `prisma/schema.prisma`; connection URLs in
+  `prisma.config.ts` (Prisma 7 keeps them out of the schema). The generated
+  client goes to `generated/` and is git-ignored — run `npm run db:generate`
+  after any schema change.
+- Seed fixtures live in `prisma/seed-data.ts`. Their ids are load-bearing:
+  tests reference them by hand, so never renumber them.
+
+Money is an integer Toman `Int` end to end. Dates are `DateTime` in the
+database and ISO 8601 strings on the wire.
 
 Full endpoint table and request/response samples: `docs/backend-architecture.md`.
 
