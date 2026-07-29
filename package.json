@@ -14,8 +14,9 @@
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:reset": "prisma migrate reset --force",
-    "db:studio": "prisma studio"
+    "db:reset": "prisma migrate reset --force && prisma db seed",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@fontsource-variable/vazirmatn": "^5.3.0",
@@ -44,6 +45,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
+    "dotenv": "^17.4.2",
     "prisma": "^7.9.1",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.23.1",
