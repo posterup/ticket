@@ -1,4 +1,5 @@
 import { createRegistration, getEventById, listRegistrations } from "@/lib/server";
+import { requireEventAccess } from "@/lib/server/auth/guards";
 import { handler, notFound, ok, readJson } from "@/lib/server/http";
 import { createRegistrationSchema } from "@/lib/server/schemas/registration";
 
@@ -7,6 +8,8 @@ type Context = { params: Promise<{ id: string }> };
 /** GET /api/events/:id/registrations — the event's join requests, newest first. */
 export const GET = handler(async (_request: Request, { params }: Context) => {
   const { id } = await params;
+  // Names and phone numbers of applicants — organiser-side only.
+  await requireEventAccess(id, "registrations:read");
   return ok(await listRegistrations(id));
 });
 

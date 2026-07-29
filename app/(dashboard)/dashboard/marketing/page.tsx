@@ -7,7 +7,7 @@ import { requireManagerPage } from "@/lib/server/auth/guards";
 export const metadata: Metadata = { title: "بازاریابی | پوستر" };
 
 export default async function MarketingPage() {
-  await requireManagerPage();
+  const { memberships } = await requireManagerPage();
 
   const [campaigns, segments] = await Promise.all([
     listCampaigns(),
@@ -24,7 +24,11 @@ export default async function MarketingPage() {
           کمپین‌های پیامکی را برای مخاطبان خود بسازید و ارسال کنید.
         </p>
       </div>
-      <MarketingPanel seedCampaigns={campaigns} segments={segments} />
+      <MarketingPanel
+        seedCampaigns={campaigns}
+        segments={segments}
+        workspaceId={memberships[0].workspaceId}
+      />
     </div>
   );
 }

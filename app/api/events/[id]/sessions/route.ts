@@ -1,4 +1,5 @@
 import { addSession } from "@/lib/server";
+import { requireEventAccess } from "@/lib/server/auth/guards";
 import { handler, notFound, ok, readJson } from "@/lib/server/http";
 import { createSessionSchema } from "@/lib/server/schemas/event";
 
@@ -8,6 +9,7 @@ type Context = { params: Promise<{ id: string }> };
 export const POST = handler(async (request: Request, { params }: Context) => {
   const { id } = await params;
   const input = await readJson(request, createSessionSchema);
+  await requireEventAccess(id, "event:edit");
 
   const session = await addSession(id, input);
   if (session === undefined) throw notFound(`Event "${id}" was not found.`);

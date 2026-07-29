@@ -45,6 +45,24 @@ export async function listEvents(): Promise<Event[]> {
   return rows.map((row) => toEvent(row as EventRow));
 }
 
+/**
+ * Events any visitor may see: published, and not restricted to a link or an
+ * audience. This is what the public API returns — {@link listEvents} includes
+ * drafts and is for callers that have already proven access.
+ */
+export async function listPublicEvents(): Promise<Event[]> {
+  const rows = await db.event.findMany({
+    where: {
+      status: "PUBLISHED",
+      visibility: "PUBLIC",
+      ...(CALENDAR_MODE_ENABLED ? {} : { mode: { not: "RECURRING" as const } }),
+    },
+    include: INCLUDE,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => toEvent(row as EventRow));
+}
+
 /** Return a single event by id, or `undefined` when not found. */
 export async function getEventById(id: string): Promise<Event | undefined> {
   const row = await db.event.findUnique({ where: { id }, include: INCLUDE });

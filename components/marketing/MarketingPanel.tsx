@@ -15,9 +15,12 @@ import type { Segment } from "@/lib/server/campaigns";
 export function MarketingPanel({
   seedCampaigns,
   segments,
+  workspaceId,
 }: {
   seedCampaigns: Campaign[];
   segments: Segment[];
+  /** Whose SMS balance the campaign spends; checked server-side. */
+  workspaceId: string;
 }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>(seedCampaigns);
   const [name, setName] = useState("");
@@ -45,7 +48,11 @@ export function MarketingPanel({
       const res = await fetch("/api/sms/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ segmentId, message: message.trim() }),
+        body: JSON.stringify({
+          workspaceId,
+          segmentId,
+          message: message.trim(),
+        }),
       });
       const json = await res.json();
       if (!res.ok || !("data" in json)) {

@@ -1,12 +1,17 @@
-import { it, expect } from "vitest";
+import { it, expect, beforeAll } from "vitest";
 
 import { GET, POST } from "@/app/api/tickets/route";
 import { PATCH } from "@/app/api/tickets/[id]/route";
 import type { TicketType } from "@/types";
 
-import { ctx, data, errorCode, parse, req , describeApi } from "./helpers";
+import { ctx, data, errorCode, parse, req , describeApi , signInAsOwner } from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
+
+// Organiser-side endpoints: run as the seeded owner.
+beforeAll(async () => {
+  if (process.env.DATABASE_URL) await signInAsOwner();
+});
 
 const validTicket = {
   eventId: SEED_EVENT,
@@ -27,9 +32,12 @@ async function createTicket(overrides: Record<string, unknown> = {}) {
 }
 
 describeApi("GET /api/tickets", () => {
-  it("lists every ticket type when unfiltered", async () => {
-    const all = data(await parse<TicketType[]>(await GET(req("GET", "/api/tickets"))));
-    expect(all.length).toBeGreaterThan(0);
+  it("requires an eventId", async () => {
+    // Unfiltered, this used to return every ticket type in the system —
+    // prices and capacities for unpublished events included.
+    const parsed = await parse<TicketType[]>(await GET(req("GET", "/api/tickets")));
+    expect(parsed.status).toBe(400);
+    expect(errorCode(parsed)).toBe("INVALID_QUERY");
   });
 
   it("filters by eventId", async () => {
@@ -42,11 +50,33 @@ describeApi("GET /api/tickets", () => {
     expect(scoped.every((t) => t.eventId === SEED_EVENT)).toBe(true);
   });
 
-  it("returns an empty list for an unknown event", async () => {
-    const scoped = data(
-      await parse<TicketType[]>(await GET(req("GET", "/api/tickets?eventId=nope"))),
+  it("404s an unknown event rather than returning an empty list", async () => {
+    const parsed = await parse<TicketType[]>(
+      await GET(req("GET", "/api/tickets?eventId=nope")),
     );
-    expect(scoped).toEqual([]);
+    expect(parsed.status).toBe(404);
+  });
+
+  it("serves a published event's tickets to an anonymous visitor", async () => {
+    // The public event page needs these, so `event:read` is the bar, not
+    // `tickets:manage`.
+    const { signOut } = await import("./helpers");
+    await signOut();
+    const parsed = await parse<TicketType[]>(
+      await GET(req("GET", `/api/tickets?eventId=${SEED_EVENT}`)),
+    );
+    expect(parsed.status).toBe(200);
+    await signInAsOwner();
+  });
+
+  it("refuses an anonymous caller the right to create one", async () => {
+    const { signOut } = await import("./helpers");
+    await signOut();
+    const parsed = await parse<TicketType>(
+      await POST(req("POST", "/api/tickets", validTicket)),
+    );
+    expect(parsed.status).toBe(401);
+    await signInAsOwner();
   });
 });
 

@@ -93,6 +93,8 @@ const sessionInput = z.object({
 
 /** `POST /api/events` */
 export const createEventSchema = z.object({
+  /** Optional: defaults to the caller's own workspace. */
+  workspaceId: z.string().optional(),
   title: nonEmpty,
   description: z.string(),
   mode: eventMode,
