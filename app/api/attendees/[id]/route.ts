@@ -1,39 +1,15 @@
-import { NextResponse } from "next/server";
-
 import { setAttendeeTags } from "@/lib/server";
-import type { ApiResponse, Attendee } from "@/types";
+import { handler, notFound, ok, readJson } from "@/lib/server/http";
+import { attendeeTagsSchema } from "@/lib/server/schemas/attendee";
+
+type Context = { params: Promise<{ id: string }> };
 
 /** PATCH /api/attendees/:id — replace a contact's tags (string labels). */
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-): Promise<NextResponse<ApiResponse<Attendee>>> {
+export const PATCH = handler(async (request: Request, { params }: Context) => {
   const { id } = await params;
+  const { tags } = await readJson(request, attendeeTagsSchema);
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Request body must be valid JSON.", code: "INVALID_JSON" } },
-      { status: 400 },
-    );
-  }
-
-  const tags = (body as Record<string, unknown>).tags;
-  if (!Array.isArray(tags) || tags.some((t) => typeof t !== "string")) {
-    return NextResponse.json(
-      { error: { message: "tags must be an array of strings.", code: "INVALID_BODY" } },
-      { status: 400 },
-    );
-  }
-
-  const attendee = setAttendeeTags(id, tags as string[]);
-  if (attendee === undefined) {
-    return NextResponse.json(
-      { error: { message: "Contact not found.", code: "NOT_FOUND" } },
-      { status: 404 },
-    );
-  }
-  return NextResponse.json({ data: attendee });
-}
+  const attendee = setAttendeeTags(id, tags);
+  if (attendee === undefined) throw notFound("Contact not found.");
+  return ok(attendee);
+});

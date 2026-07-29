@@ -1,48 +1,15 @@
-import { NextResponse } from "next/server";
-
 import { setRegistrationStatus } from "@/lib/server";
-import type { ApiResponse, EventRegistration, RegistrationStatus } from "@/types";
+import { handler, notFound, ok, readJson } from "@/lib/server/http";
+import { registrationStatusSchema } from "@/lib/server/schemas/registration";
 
-const STATUSES: readonly RegistrationStatus[] = [
-  "pending",
-  "accepted",
-  "rejected",
-];
+type Context = { params: Promise<{ registrationId: string }> };
 
 /** PATCH /api/events/:id/registrations/:registrationId — accept/reject a request. */
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ registrationId: string }> },
-): Promise<NextResponse<ApiResponse<EventRegistration>>> {
+export const PATCH = handler(async (request: Request, { params }: Context) => {
   const { registrationId } = await params;
+  const { status } = await readJson(request, registrationStatusSchema);
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Request body must be valid JSON.", code: "INVALID_JSON" } },
-      { status: 400 },
-    );
-  }
-
-  const status = (body as Record<string, unknown>).status;
-  if (typeof status !== "string" || !STATUSES.includes(status as RegistrationStatus)) {
-    return NextResponse.json(
-      { error: { message: "Invalid status.", code: "INVALID_BODY" } },
-      { status: 400 },
-    );
-  }
-
-  const registration = setRegistrationStatus(
-    registrationId,
-    status as RegistrationStatus,
-  );
-  if (registration === undefined) {
-    return NextResponse.json(
-      { error: { message: "Registration not found.", code: "NOT_FOUND" } },
-      { status: 404 },
-    );
-  }
-  return NextResponse.json({ data: registration });
-}
+  const registration = setRegistrationStatus(registrationId, status);
+  if (registration === undefined) throw notFound("Registration not found.");
+  return ok(registration);
+});
