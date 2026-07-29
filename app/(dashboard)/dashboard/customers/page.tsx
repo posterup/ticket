@@ -11,10 +11,13 @@ import { formatJalaliDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { ContactsTable, type Contact } from "@/components/dashboard/ContactsTable";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "مخاطبین | پوستر" };
 
 export default async function CustomersPage() {
+  await requireManagerPage();
+
   const attendees = await listAttendees();
   const joinedByAttendee = new Map(
     await Promise.all(

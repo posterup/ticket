@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Bell } from "lucide-react";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "اعلان‌ها | پوستر" };
 
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+  await requireManagerPage();
+
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
       <div>

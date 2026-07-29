@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { redirect } from "next/navigation";
+
+import { getCurrentUser, listMemberships } from "@/lib/server/auth/guards";
 import { listWorkspaces } from "@/lib/server";
 import { Logo } from "@/components/Logo";
 import { Sidebar } from "@/components/dashboard/Sidebar";
@@ -11,6 +14,18 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // The real gate. Middleware only checks that a cookie exists; this catches
+  // an expired session, and a signed-in user who owns no workspace.
+  //
+  // Written as plain conditions rather than try/catch around requireManager():
+  // `redirect()` works by throwing, so catching around it swallows the very
+  // signal it depends on. Neither case is exceptional here anyway.
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/dashboard");
+
+  const memberships = await listMemberships(user.id);
+  if (memberships.length === 0) redirect("/me");
+
   const workspaces = await listWorkspaces();
 
   return (

@@ -13,9 +13,11 @@
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 
+import { SESSION_COOKIE } from "@/lib/session-cookie";
+
 import { db } from "../db";
 
-export const SESSION_COOKIE = "poster_session";
+export { SESSION_COOKIE };
 export const SESSION_TTL_DAYS = 30;
 
 const TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;

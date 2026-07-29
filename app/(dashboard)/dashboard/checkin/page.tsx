@@ -7,10 +7,13 @@ import {
   CheckinPanel,
   type CheckinEvent,
 } from "@/components/checkin/CheckinPanel";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "پذیرش | پوستر" };
 
 export default async function CheckinPage() {
+  await requireManagerPage();
+
   const [allEvents, initialChecked] = await Promise.all([
     listEvents(),
     listCheckedHolderIds(),

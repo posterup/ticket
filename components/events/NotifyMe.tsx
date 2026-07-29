@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { Bell, BellRing } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { isLoggedIn } from "@/lib/auth";
 import { isNotified, setNotified } from "@/lib/notify";
 
 /**
@@ -16,12 +15,19 @@ import { isNotified, setNotified } from "@/lib/notify";
  */
 export function NotifyMe({
   eventId,
+  loggedIn,
   idleLabel = "خبرم کن",
   activeLabel = "خبرتان می‌کنیم",
   size = "lg",
   className,
 }: {
   eventId: string;
+  /**
+   * Resolved on the server by the page that renders this, rather than read
+   * from the browser — which also removes the flash of the wrong label on
+   * first paint.
+   */
+  loggedIn: boolean;
   idleLabel?: string;
   activeLabel?: string;
   size?: "sm" | "md" | "lg";
@@ -36,7 +42,7 @@ export function NotifyMe({
   }, [eventId]);
 
   function onClick() {
-    if (!isLoggedIn()) {
+    if (!loggedIn) {
       router.push(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }

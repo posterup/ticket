@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 
 import { listEvents } from "@/lib/server";
 import { EventsTimeline } from "@/components/dashboard/EventsTimeline";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "رویدادها | پوستر" };
 
 export default async function EventsPage() {
+  await requireManagerPage();
+
   const events = await listEvents();
 
   return (

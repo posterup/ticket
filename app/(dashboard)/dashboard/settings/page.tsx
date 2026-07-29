@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   type LucideIcon,
 } from "lucide-react";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "تنظیمات | پوستر" };
 
@@ -20,10 +21,12 @@ interface SettingRow {
 
 const ROWS: SettingRow[] = [
   {
-    href: "/dashboard/settings/password",
-    label: "تغییر رمز عبور",
-    hint: "رمز عبور حساب خود را به‌روزرسانی کنید.",
+    // Sign-in is by one-time code, so there is no password to change. Changing
+    // the phone number is the equivalent, and needs its own verification flow.
+    label: "تغییر شماره موبایل",
+    hint: "شماره‌ای که با آن وارد می‌شوید.",
     icon: KeyRound,
+    soon: true,
   },
   {
     label: "اعلان‌ها",
@@ -39,7 +42,9 @@ const ROWS: SettingRow[] = [
   },
 ];
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  await requireManagerPage();
+
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
       <div className="flex items-center gap-2">

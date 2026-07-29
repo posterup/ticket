@@ -4,10 +4,13 @@ import { computeFinance, WITHDRAW_FEE } from "@/lib/finance/compute";
 import { formatToman } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { WalletPanel } from "@/components/finance/WalletPanel";
+import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "مالی | پوستر" };
 
 export default async function FinancePage() {
+  await requireManagerPage();
+
   const f = await computeFinance();
 
   return (

@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
 
 // Self-hosted Vazirmatn (variable). Bundled at build time so the deploy has no
 // external font dependency (avoids build-time Google Fonts fetch failures).
 import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 
-import { AUTH_COOKIE } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/server/auth/guards";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
@@ -33,7 +32,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const loggedIn = (await cookies()).get(AUTH_COOKIE)?.value === "1";
+  const loggedIn = (await getCurrentUser()) !== null;
 
   return (
     <html lang="fa" dir="rtl" data-auth={loggedIn ? "in" : "out"}>
