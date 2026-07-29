@@ -5,8 +5,11 @@
  * otherwise open a new connection pool each time until Postgres refuses more.
  * Stashing the client on `globalThis` keeps one pool per process.
  *
- * `DATABASE_URL` should be the pooled connection string; `DIRECT_URL` is used
- * only by migrations (see `prisma.config.ts`).
+ * The client is created lazily, on first use rather than on import. Importing
+ * `lib/server` must not require a database — the production build traces these
+ * modules, and test files that never touch the database still import them.
+ * A missing `DATABASE_URL` therefore fails at the first query, with a message
+ * that says what to do, instead of at module load.
  */
 
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -26,15 +29,27 @@ function createClient(): PrismaClient {
   }
   return new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["warn", "error"]
-        : ["error"],
+    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 }
 
-export const db: PrismaClient = globalForPrisma.prisma ?? createClient();
+function client(): PrismaClient {
+  const existing = globalForPrisma.prisma;
+  if (existing) return existing;
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
+  const created = createClient();
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = created;
+  }
+  return created;
 }
+
+/**
+ * The Prisma client. A proxy so the connection is opened on first property
+ * access — `db.event.findMany(…)` — not when this module is imported.
+ */
+export const db: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, property, receiver) {
+    return Reflect.get(client(), property, receiver);
+  },
+});

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { it, expect } from "vitest";
 
 import { GET, POST } from "@/app/api/events/route";
 import {
@@ -10,7 +10,7 @@ import { POST as POST_SESSION } from "@/app/api/events/[id]/sessions/route";
 import { PATCH as PATCH_SESSION } from "@/app/api/events/[id]/sessions/[sessionId]/route";
 import type { Event, EventSession, Venue } from "@/types";
 
-import { ctx, data, errorCode, parse, req } from "./helpers";
+import { ctx, data, errorCode, parse, req , describeApi } from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 
@@ -33,7 +33,7 @@ async function createEvent(overrides: Record<string, unknown> = {}) {
   return data(parsed);
 }
 
-describe("GET /api/events", () => {
+describeApi("GET /api/events", () => {
   it("returns the seeded events", async () => {
     const events = data(await parse<Event[]>(await GET()));
     expect(events.length).toBeGreaterThan(0);
@@ -47,7 +47,7 @@ describe("GET /api/events", () => {
   });
 });
 
-describe("POST /api/events", () => {
+describeApi("POST /api/events", () => {
   it("creates a draft event with a venue and sessions", async () => {
     const event = await createEvent();
     expect(event.title).toBe("رویداد آزمایشی");
@@ -97,7 +97,7 @@ describe("POST /api/events", () => {
   });
 });
 
-describe("GET /api/events/:id", () => {
+describeApi("GET /api/events/:id", () => {
   it("resolves a seeded event", async () => {
     const parsed = await parse<Event>(
       await GET_ONE(req("GET", "/"), ctx({ id: SEED_EVENT })),
@@ -114,7 +114,7 @@ describe("GET /api/events/:id", () => {
   });
 });
 
-describe("PATCH /api/events/:id", () => {
+describeApi("PATCH /api/events/:id", () => {
   it("publishes an event", async () => {
     const event = await createEvent();
     const parsed = await parse<Event>(
@@ -168,7 +168,7 @@ describe("PATCH /api/events/:id", () => {
   });
 });
 
-describe("PATCH /api/events/:id/venue", () => {
+describeApi("PATCH /api/events/:id/venue", () => {
   it("edits venue fields", async () => {
     const event = await createEvent();
     const parsed = await parse<Venue>(
@@ -203,7 +203,7 @@ describe("PATCH /api/events/:id/venue", () => {
   });
 });
 
-describe("sessions", () => {
+describeApi("sessions", () => {
   it("appends a session", async () => {
     const event = await createEvent();
     const parsed = await parse<EventSession>(

@@ -1,10 +1,14 @@
 /**
- * Check-in state over the in-memory {@link checkins} set. Holder ids are the
- * deterministic ids from `lib/checkin/data.ts`, so recorded check-ins survive
- * a page refresh.
+ * Check-in state.
+ *
+ * ⚠️ Still in-memory. Holder ids are the synthetic ones from
+ * `lib/checkin/data.ts`, which stand in for issued tickets — there is nothing
+ * real to check in against until checkout starts writing `Ticket` rows. The
+ * `CheckIn` table exists and keys off `ticketId`; this module moves onto it
+ * once tickets are issued, and the synthetic ids retire with it.
  */
 
-import { checkins } from "./store";
+const checkins = new Set<string>();
 
 /** All currently checked-in holder ids. */
 export async function listCheckedHolderIds(): Promise<string[]> {

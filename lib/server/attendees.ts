@@ -1,78 +1,103 @@
 /**
- * Attendee (CRM contact) data-access over the in-memory {@link attendees}
- * store. Swap the array operations for real queries when a datastore is added.
+ * Attendee (CRM contact) data-access over Postgres.
+ *
+ * Contacts are tenant-scoped: each belongs to one workspace, and so do the
+ * tags applied to them.
  */
 
 import type { Attendee, Event } from "@/types";
 
-import { attendees } from "./store";
-import { listEvents } from "./events";
+import { db } from "./db";
+import { toAttendee, toEvent, type AttendeeRow, type EventRow } from "./mappers";
+
+const TAG_INCLUDE = { tags: { include: { tag: true } } } as const;
 
 /** Return all CRM contacts, newest first. */
 export async function listAttendees(): Promise<Attendee[]> {
-  return [...attendees].sort((a, b) =>
-    a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
-  );
+  const rows = await db.attendee.findMany({
+    include: TAG_INCLUDE,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => toAttendee(row as AttendeeRow));
 }
 
 /** Look up a single contact by id. */
 export async function getAttendeeById(
   id: string,
 ): Promise<Attendee | undefined> {
-  return attendees.find((a) => a.id === id);
+  const row = await db.attendee.findUnique({
+    where: { id },
+    include: TAG_INCLUDE,
+  });
+  return row ? toAttendee(row as AttendeeRow) : undefined;
 }
 
 /** Distinct CRM tag labels with how many contacts carry each, most-used first. */
 export async function listAttendeeTags(): Promise<
   { label: string; count: number }[]
 > {
-  const byLabel = new Map<string, number>();
-  for (const a of attendees) {
-    for (const tag of a.tags) {
-      byLabel.set(tag.label, (byLabel.get(tag.label) ?? 0) + 1);
-    }
-  }
-  return [...byLabel.entries()]
-    .map(([label, count]) => ({ label, count }))
+  const tags = await db.attendeeTag.findMany({
+    select: { label: true, _count: { select: { links: true } } },
+  });
+  return tags
+    .map((t) => ({ label: t.label, count: t._count.links }))
+    .filter((t) => t.count > 0)
     .sort((a, b) => b.count - a.count);
 }
 
-/** Replace a contact's tags (from string labels); returns it, or `undefined`. */
+/**
+ * Replace a contact's tags (from string labels); returns it, or `undefined`.
+ *
+ * Labels that do not exist yet are created in the contact's own workspace, so
+ * the CRM vocabulary stays per-tenant.
+ */
 export async function setAttendeeTags(
   id: string,
   labels: string[],
 ): Promise<Attendee | undefined> {
-  const attendee = attendees.find((a) => a.id === id);
+  const attendee = await db.attendee.findUnique({
+    where: { id },
+    select: { id: true, workspaceId: true },
+  });
   if (!attendee) return undefined;
-  attendee.tags = labels.map((label, i) => ({ id: `t-${i}-${label}`, label }));
-  return attendee;
+
+  const wanted = [...new Set(labels)];
+  const tagIds = await Promise.all(
+    wanted.map(async (label) => {
+      const tag = await db.attendeeTag.upsert({
+        where: {
+          workspaceId_label: { workspaceId: attendee.workspaceId, label },
+        },
+        create: { workspaceId: attendee.workspaceId, label },
+        update: {},
+        select: { id: true },
+      });
+      return tag.id;
+    }),
+  );
+
+  await db.$transaction([
+    db.attendeeTagLink.deleteMany({ where: { attendeeId: id } }),
+    db.attendeeTagLink.createMany({
+      data: tagIds.map((tagId) => ({ attendeeId: id, tagId })),
+    }),
+  ]);
+
+  return getAttendeeById(id);
 }
 
 /**
- * Mock mapping of which events a contact has joined. Real issued-ticket
- * records don't exist yet; this keeps the CRM contact view populated until
- * a purchases/tickets join lands.
+ * Events a contact has joined.
+ *
+ * Derived from their paid orders. Until checkout writes orders this is empty,
+ * where it used to be a hardcoded map — the CRM history becomes real rather
+ * than illustrative.
  */
-const ATTENDEE_EVENTS: Record<string, string[]> = {
-  "e1000000-0000-4000-8000-000000000001": [
-    "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
-    "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03",
-    "3f1a6c2e-0005-4a10-9b21-1a2b3c4d5e05",
-  ],
-  "e1000000-0000-4000-8000-000000000002": [
-    "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02",
-    "3f1a6c2e-0007-4a10-9b21-1a2b3c4d5e07",
-  ],
-  "e1000000-0000-4000-8000-000000000003": [
-    "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
-    "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03",
-    "3f1a6c2e-0004-4a10-9b21-1a2b3c4d5e04",
-    "3f1a6c2e-0006-4a10-9b21-1a2b3c4d5e06",
-  ],
-};
-
-/** Events a contact has joined (mock; see {@link ATTENDEE_EVENTS}). */
 export async function listEventsByAttendee(id: string): Promise<Event[]> {
-  const ids = new Set(ATTENDEE_EVENTS[id] ?? []);
-  return (await listEvents()).filter((e) => ids.has(e.id));
+  const rows = await db.event.findMany({
+    where: { orders: { some: { attendeeId: id, status: "PAID" } } },
+    include: { venue: true, sessions: { orderBy: { startAt: "asc" } } },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => toEvent(row as EventRow));
 }

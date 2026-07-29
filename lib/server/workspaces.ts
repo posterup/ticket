@@ -1,150 +1,96 @@
 /**
- * Workspace data-access over an in-memory seed. A static event->workspace map
- * stands in for a real `event.workspaceId` foreign key until a datastore is
- * added.
+ * Workspace data-access over Postgres.
+ *
+ * Event ownership is now a real `Event.workspaceId` foreign key, replacing the
+ * hand-maintained slug→event-ids map this module used to carry.
  */
 
 import type { Event, Workspace } from "@/types";
+import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 
-import { listEvents } from "./events";
+import { db } from "./db";
+import { toEvent, toWorkspace, type EventRow } from "./mappers";
 
-const workspaces: Workspace[] = [
-  {
-    id: "w1000000-0000-4000-8000-000000000001",
-    slug: "ava-events",
-    name: "استودیو رویداد آوا",
-    type: "business",
-    bio: "برگزارکنندهٔ کنسرت‌ها و همایش‌های فرهنگی و فناوری در تهران.",
-    avatar: "آ",
-    followers: 12480,
-    following: 86,
-    verified: true,
-    createdAt: "2025-11-02T09:00:00.000Z",
-  },
-  {
-    id: "w1000000-0000-4000-8000-000000000002",
-    slug: "negar-karimi",
-    name: "نگار کریمی",
-    type: "personal",
-    bio: "عکاس و مدرس عکاسی خیابانی.",
-    avatar: "ن",
-    followers: 3120,
-    following: 145,
-    createdAt: "2026-01-18T12:30:00.000Z",
-  },
-  {
-    id: "w1000000-0000-4000-8000-000000000003",
-    slug: "chef-collective",
-    name: "کلکسیون سرآشپز",
-    type: "business",
-    bio: "برگزارکنندهٔ فستیوال‌ها و رویدادهای غذا و آشپزی در سراسر ایران.",
-    avatar: "س",
-    followers: 5860,
-    following: 42,
-    verified: true,
-    createdAt: "2025-12-09T08:00:00.000Z",
-  },
-  {
-    id: "w1000000-0000-4000-8000-000000000004",
-    slug: "iran-runners",
-    name: "باشگاه دوندگان ایران",
-    type: "business",
-    bio: "برگزاری دوهای همگانی و ماراتن در شهرهای مختلف کشور.",
-    avatar: "د",
-    followers: 7340,
-    following: 58,
-    verified: true,
-    createdAt: "2025-10-21T07:30:00.000Z",
-  },
-];
+const EVENT_INCLUDE = {
+  venue: true,
+  sessions: { orderBy: { startAt: "asc" } },
+} as const;
 
-/** slug -> owned event ids (stand-in for event.workspaceId). */
-const EVENT_WORKSPACE: Record<string, string[]> = {
-  "ava-events": [
-    "3f1a6c2e-0015-4a10-9b21-1a2b3c4d5e15",
-    "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
-    "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03",
-    "3f1a6c2e-0005-4a10-9b21-1a2b3c4d5e05",
-    "3f1a6c2e-0007-4a10-9b21-1a2b3c4d5e07",
-    "3f1a6c2e-0008-4a10-9b21-1a2b3c4d5e08",
-    "3f1a6c2e-0009-4a10-9b21-1a2b3c4d5e09",
-    "3f1a6c2e-0011-4a10-9b21-1a2b3c4d5e11",
-    "3f1a6c2e-0012-4a10-9b21-1a2b3c4d5e12",
-    "3f1a6c2e-0013-4a10-9b21-1a2b3c4d5e13",
-  ],
-  "negar-karimi": [
-    "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02",
-    "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10",
-  ],
-  "chef-collective": [
-    "3f1a6c2e-0004-4a10-9b21-1a2b3c4d5e04",
-    "3f1a6c2e-0014-4a10-9b21-1a2b3c4d5e14",
-  ],
-  "iran-runners": ["3f1a6c2e-0006-4a10-9b21-1a2b3c4d5e06"],
-};
+/** Recurring events stay hidden from listings while calendar mode is off. */
+const listingFilter = CALENDAR_MODE_ENABLED
+  ? {}
+  : { mode: { not: "RECURRING" as const } };
 
 export async function listWorkspaces(): Promise<Workspace[]> {
-  return [...workspaces];
+  const rows = await db.workspace.findMany({ orderBy: { createdAt: "asc" } });
+  return rows.map(toWorkspace);
 }
 
 export async function getWorkspaceBySlug(
   slug: string,
 ): Promise<Workspace | undefined> {
-  return workspaces.find((w) => w.slug === slug);
+  const row = await db.workspace.findUnique({ where: { slug } });
+  return row ? toWorkspace(row) : undefined;
 }
 
 /** Events owned by a workspace (by slug). */
 export async function listEventsByWorkspace(slug: string): Promise<Event[]> {
-  const ids = new Set(EVENT_WORKSPACE[slug] ?? []);
-  return (await listEvents()).filter((e) => ids.has(e.id));
+  const rows = await db.event.findMany({
+    where: { workspace: { slug }, ...listingFilter },
+    include: EVENT_INCLUDE,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => toEvent(row as EventRow));
 }
 
 /**
  * Events for many workspaces at once, keyed by slug. Batched so directory
- * pages avoid one lookup per workspace inside a `.map()`.
+ * pages avoid one query per workspace inside a `.map()`.
  */
 export async function listEventsByWorkspaces(
   slugs: string[],
 ): Promise<Map<string, Event[]>> {
-  const all = await listEvents();
-  return new Map(
-    slugs.map((slug) => {
-      const ids = new Set(EVENT_WORKSPACE[slug] ?? []);
-      return [slug, all.filter((e) => ids.has(e.id))];
-    }),
-  );
+  const out = new Map<string, Event[]>(slugs.map((slug) => [slug, []]));
+  if (slugs.length === 0) return out;
+
+  const rows = await db.event.findMany({
+    where: { workspace: { slug: { in: slugs } }, ...listingFilter },
+    include: { ...EVENT_INCLUDE, workspace: { select: { slug: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  for (const row of rows) {
+    out.get(row.workspace.slug)?.push(toEvent(row as EventRow));
+  }
+  return out;
 }
 
-/**
- * The workspace that owns a given event. Every event always has an organiser:
- * unmapped events fall back to the first workspace so the public page never
- * shows an event without a manager.
- */
+/** The workspace that owns a given event. */
 export async function getWorkspaceByEvent(
   eventId: string,
 ): Promise<Workspace | undefined> {
-  const slug = Object.keys(EVENT_WORKSPACE).find((s) =>
-    EVENT_WORKSPACE[s].includes(eventId),
-  );
-  return (slug ? await getWorkspaceBySlug(slug) : undefined) ?? workspaces[0];
+  const row = await db.event.findUnique({
+    where: { id: eventId },
+    select: { workspace: true },
+  });
+  return row ? toWorkspace(row.workspace) : undefined;
 }
 
 /**
  * Owning workspace for many events at once, keyed by event id. Batched so
- * listing pages resolve organisers in one pass; the same "fall back to the
- * first workspace" rule as {@link getWorkspaceByEvent} applies.
+ * listing pages resolve organisers in one query.
  */
 export async function getWorkspacesByEvents(
   eventIds: string[],
 ): Promise<Map<string, Workspace>> {
-  const bySlug = new Map(workspaces.map((w) => [w.slug, w]));
-  const ownerOf = new Map<string, Workspace>();
-  for (const [slug, ids] of Object.entries(EVENT_WORKSPACE)) {
-    const workspace = bySlug.get(slug);
-    if (!workspace) continue;
-    for (const id of ids) ownerOf.set(id, workspace);
+  const out = new Map<string, Workspace>();
+  if (eventIds.length === 0) return out;
+
+  const rows = await db.event.findMany({
+    where: { id: { in: eventIds } },
+    select: { id: true, workspace: true },
+  });
+  for (const row of rows) {
+    out.set(row.id, toWorkspace(row.workspace));
   }
-  return new Map(
-    eventIds.map((id) => [id, ownerOf.get(id) ?? workspaces[0]]),
-  );
+  return out;
 }

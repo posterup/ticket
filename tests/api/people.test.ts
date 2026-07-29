@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { it, expect } from "vitest";
 
 import {
   GET as LIST_GUESTS,
@@ -24,7 +24,7 @@ import type {
   EventRegistration,
 } from "@/types";
 
-import { ctx, data, errorCode, parse, req } from "./helpers";
+import { ctx, data, errorCode, parse, req , describeApi } from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 const SEED_SESSION = "c1000000-0000-4000-8000-000000000001";
@@ -32,7 +32,7 @@ const SEED_REGISTRATION = "r1000000-0000-4000-8000-000000000001";
 /** The seeded approval-gated event the registration requests belong to. */
 const APPROVAL_EVENT = "3f1a6c2e-0010-4a10-9b21-1a2b3c4d5e10";
 
-describe("guests", () => {
+describeApi("guests", () => {
   it("lists an event's guests", async () => {
     const guests = data(
       await parse<EventGuest[]>(
@@ -144,7 +144,7 @@ describe("guests", () => {
   });
 });
 
-describe("collaborators", () => {
+describeApi("collaborators", () => {
   it("adds a pending request and lists it", async () => {
     const collab = data(
       await parse<EventCollaborator>(
@@ -214,7 +214,7 @@ describe("collaborators", () => {
   });
 });
 
-describe("registrations", () => {
+describeApi("registrations", () => {
   it("lists an event's requests", async () => {
     const listed = data(
       await parse<EventRegistration[]>(

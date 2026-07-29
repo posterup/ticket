@@ -1,28 +1,31 @@
-/**
- * Event collaborator (co-host) data-access over the in-memory
- * {@link eventCollaborators} store.
- */
+/** Event collaborator (co-host) data-access over Postgres. */
 
-import type { EventCollaborator, CollaboratorChannel } from "@/types";
+import type { CollaboratorChannel, EventCollaborator } from "@/types";
 
-import { eventCollaborators } from "./store";
+import { db } from "./db";
+import { toCollaborator } from "./mappers";
+import { COLLABORATOR_CHANNEL_TO_DB } from "./mappers/enums";
 
 /** Collaborators/requests for an event, newest first. */
 export async function listCollaborators(
   eventId: string,
 ): Promise<EventCollaborator[]> {
-  return eventCollaborators
-    .filter((c) => c.eventId === eventId)
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const rows = await db.eventCollaborator.findMany({
+    where: { eventId },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(toCollaborator);
 }
 
 /** Accepted collaborators only (used on the public event page). */
 export async function listAcceptedCollaborators(
   eventId: string,
 ): Promise<EventCollaborator[]> {
-  return (await listCollaborators(eventId)).filter(
-    (c) => c.status === "accepted",
-  );
+  const rows = await db.eventCollaborator.findMany({
+    where: { eventId, status: "ACCEPTED" },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(toCollaborator);
 }
 
 export interface AddCollaboratorInput {
@@ -38,25 +41,31 @@ export async function addCollaborator(
   eventId: string,
   input: AddCollaboratorInput,
 ): Promise<EventCollaborator> {
-  const collaborator: EventCollaborator = {
-    id: crypto.randomUUID(),
-    eventId,
-    channel: input.channel,
-    label: input.label,
-    sub: input.sub,
-    workspaceSlug: input.workspaceSlug,
-    avatar: input.avatar,
-    status: "pending",
-    createdAt: new Date().toISOString(),
-  };
-  eventCollaborators.push(collaborator);
-  return collaborator;
+  // Resolve the invitee now when it names a workspace, so accepting it later
+  // is a status change rather than a lookup that might no longer match.
+  const invitee = input.workspaceSlug
+    ? await db.workspace.findUnique({
+        where: { slug: input.workspaceSlug },
+        select: { id: true },
+      })
+    : null;
+
+  const row = await db.eventCollaborator.create({
+    data: {
+      eventId,
+      channel: COLLABORATOR_CHANNEL_TO_DB[input.channel],
+      label: input.label,
+      sub: input.sub,
+      workspaceSlug: input.workspaceSlug,
+      avatar: input.avatar,
+      inviteeWorkspaceId: invitee?.id,
+    },
+  });
+  return toCollaborator(row);
 }
 
 /** Remove a collaboration request; returns true when one was removed. */
 export async function removeCollaborator(id: string): Promise<boolean> {
-  const i = eventCollaborators.findIndex((c) => c.id === id);
-  if (i < 0) return false;
-  eventCollaborators.splice(i, 1);
-  return true;
+  const { count } = await db.eventCollaborator.deleteMany({ where: { id } });
+  return count > 0;
 }

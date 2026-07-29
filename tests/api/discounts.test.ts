@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { it, expect } from "vitest";
 
 import { GET, POST } from "@/app/api/discounts/route";
 import { POST as VALIDATE } from "@/app/api/discounts/validate/route";
 import type { DiscountCode, DiscountValidation } from "@/types";
 
-import { data, errorCode, parse, req } from "./helpers";
+import { data, errorCode, parse, req , describeApi } from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 const OTHER_EVENT = "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02";
@@ -18,7 +18,7 @@ const validDiscount = {
   expiresAt: null,
 };
 
-describe("GET /api/discounts", () => {
+describeApi("GET /api/discounts", () => {
   it("lists the seeded codes", async () => {
     const codes = data(await parse<DiscountCode[]>(await GET(req("GET", "/api/discounts"))));
     expect(codes.map((c) => c.code)).toEqual(
@@ -38,7 +38,7 @@ describe("GET /api/discounts", () => {
   });
 });
 
-describe("POST /api/discounts", () => {
+describeApi("POST /api/discounts", () => {
   it("creates a code, normalised to upper case", async () => {
     const parsed = await parse<DiscountCode>(
       await POST(req("POST", "/api/discounts", { ...validDiscount, code: "lower1" })),
@@ -108,7 +108,7 @@ describe("POST /api/discounts", () => {
   });
 });
 
-describe("POST /api/discounts/validate", () => {
+describeApi("POST /api/discounts/validate", () => {
   it("applies an org-wide code to any event", async () => {
     const parsed = await parse<DiscountValidation>(
       await VALIDATE(

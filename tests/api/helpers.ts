@@ -6,9 +6,19 @@
  * and error envelopes — under test without an HTTP server.
  */
 
+import { describe } from "vitest";
+
 import type { ApiResponse } from "@/types";
 
 const BASE = "http://test.local";
+
+/**
+ * `describe` for suites that exercise handlers against the database.
+ *
+ * Skips without `DATABASE_URL` so a fresh clone and CI stay green; run
+ * `npm run db:reset` to exercise them.
+ */
+export const describeApi = describe.skipIf(!process.env.DATABASE_URL);
 
 /** A JSON request. Pass a raw string as `body` to exercise malformed JSON. */
 export function req(

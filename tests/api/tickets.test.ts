@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { it, expect } from "vitest";
 
 import { GET, POST } from "@/app/api/tickets/route";
 import { PATCH } from "@/app/api/tickets/[id]/route";
 import type { TicketType } from "@/types";
 
-import { ctx, data, errorCode, parse, req } from "./helpers";
+import { ctx, data, errorCode, parse, req , describeApi } from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 
@@ -26,7 +26,7 @@ async function createTicket(overrides: Record<string, unknown> = {}) {
   return data(parsed);
 }
 
-describe("GET /api/tickets", () => {
+describeApi("GET /api/tickets", () => {
   it("lists every ticket type when unfiltered", async () => {
     const all = data(await parse<TicketType[]>(await GET(req("GET", "/api/tickets"))));
     expect(all.length).toBeGreaterThan(0);
@@ -50,7 +50,7 @@ describe("GET /api/tickets", () => {
   });
 });
 
-describe("POST /api/tickets", () => {
+describeApi("POST /api/tickets", () => {
   it("creates a ticket type", async () => {
     const ticket = await createTicket();
     expect(ticket.name).toBe("عادی");
@@ -100,7 +100,7 @@ describe("POST /api/tickets", () => {
   });
 });
 
-describe("PATCH /api/tickets/:id", () => {
+describeApi("PATCH /api/tickets/:id", () => {
   it("edits price and capacity", async () => {
     const ticket = await createTicket();
     const parsed = await parse<TicketType>(

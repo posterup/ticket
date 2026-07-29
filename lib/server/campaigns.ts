@@ -1,37 +1,18 @@
 /**
- * Marketing campaign data-access + audience segments over the in-memory store.
- * Replace with real campaign/segment queries when a datastore is added.
+ * Marketing campaign data-access and audience segments over Postgres.
+ *
+ * Segments are derived from CRM tags rather than stored: a tag *is* a segment,
+ * so there is nothing to keep in sync.
  */
 
 import type { Campaign } from "@/types";
 
-import { attendees } from "./store";
-
-const campaigns: Campaign[] = [
-  {
-    id: "cmp10000-0000-4000-8000-000000000001",
-    name: "یادآوری کنسرت همایون شجریان",
-    channel: "sms",
-    segment: "همه مخاطبان",
-    status: "sent",
-    recipients: 3,
-    message: "کنسرت همایون شجریان، ۲۳ مرداد در برج میلاد. بلیت‌ها رو به اتمام است.",
-    sentAt: "2026-07-15T10:00:00.000Z",
-  },
-  {
-    id: "cmp10000-0000-4000-8000-000000000002",
-    name: "تخفیف زودهنگام همایش استارتاپی",
-    channel: "sms",
-    segment: "برگزارکننده",
-    status: "sent",
-    recipients: 1,
-    message: "با کد EARLY تا پایان هفته از تخفیف بلیت زودهنگام بهره‌مند شوید.",
-    sentAt: "2026-07-10T08:30:00.000Z",
-  },
-];
+import { db } from "./db";
+import { toCampaign } from "./mappers";
 
 export async function listCampaigns(): Promise<Campaign[]> {
-  return [...campaigns];
+  const rows = await db.campaign.findMany({ orderBy: { createdAt: "asc" } });
+  return rows.map(toCampaign);
 }
 
 export interface Segment {
@@ -40,31 +21,31 @@ export interface Segment {
   count: number;
 }
 
-/** Attendees belonging to a segment (`all`, or a tag label). */
-function segmentAttendees(segmentId: string) {
-  if (segmentId === "all") return attendees;
-  return attendees.filter((a) => a.tags.some((t) => t.label === segmentId));
-}
-
 /** Mobile numbers for a segment (for the SMS gateway). */
 export async function segmentMobiles(segmentId: string): Promise<string[]> {
-  return segmentAttendees(segmentId).map((a) => a.phone);
+  const rows = await db.attendee.findMany({
+    where:
+      segmentId === "all"
+        ? undefined
+        : { tags: { some: { tag: { label: segmentId } } } },
+    select: { phone: true },
+  });
+  return rows.map((r) => r.phone);
 }
 
 /** Audience segments derived from attendee tags (plus an "all" segment). */
 export async function listSegments(): Promise<Segment[]> {
-  const byTag = new Map<string, number>();
-  for (const a of attendees) {
-    for (const tag of a.tags) {
-      byTag.set(tag.label, (byTag.get(tag.label) ?? 0) + 1);
-    }
-  }
+  const [total, tags] = await Promise.all([
+    db.attendee.count(),
+    db.attendeeTag.findMany({
+      select: { label: true, _count: { select: { links: true } } },
+    }),
+  ]);
+
   return [
-    { id: "all", label: "همه مخاطبان", count: attendees.length },
-    ...[...byTag.entries()].map(([label, count]) => ({
-      id: label,
-      label,
-      count,
-    })),
+    { id: "all", label: "همه مخاطبان", count: total },
+    ...tags
+      .filter((t) => t._count.links > 0)
+      .map((t) => ({ id: t.label, label: t.label, count: t._count.links })),
   ];
 }

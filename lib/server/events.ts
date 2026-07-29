@@ -1,6 +1,8 @@
 /**
- * Event data-access functions over the in-memory {@link events} store.
- * Replace the array operations with real queries when a datastore is added.
+ * Event data-access over Postgres.
+ *
+ * Reads always include the venue and sessions, because `Event` in `types/`
+ * carries them inline — the wire shape is unchanged from the in-memory era.
  */
 
 import type {
@@ -14,27 +16,45 @@ import type {
 import { expandSchedule, type ScheduleDraft } from "@/lib/create/types";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 
-import { events } from "./store";
+import { db } from "./db";
+import { toEvent, toSession, toVenue, type EventRow } from "./mappers";
+import {
+  EVENT_MODE_TO_DB,
+  EVENT_STATUS_TO_DB,
+  EVENT_VISIBILITY_TO_DB,
+  SESSION_AVAILABILITY_TO_DB,
+} from "./mappers/enums";
+
+/** Everything {@link toEvent} needs, with sessions in chronological order. */
+const INCLUDE = {
+  venue: true,
+  sessions: { orderBy: { startAt: "asc" } },
+} as const;
 
 /**
  * Return every event, newest first. While calendar mode is disabled, recurring
  * (تقویمی) events are hidden from every listing so the mode leaves no trace;
- * direct lookups ({@link getEventById}) still resolve them. See {@link CALENDAR_MODE_ENABLED}.
+ * direct lookups ({@link getEventById}) still resolve them.
  */
 export async function listEvents(): Promise<Event[]> {
-  return [...events]
-    .filter((event) => CALENDAR_MODE_ENABLED || event.mode !== "recurring")
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const rows = await db.event.findMany({
+    where: CALENDAR_MODE_ENABLED ? undefined : { mode: { not: "RECURRING" } },
+    include: INCLUDE,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => toEvent(row as EventRow));
 }
 
 /** Return a single event by id, or `undefined` when not found. */
 export async function getEventById(id: string): Promise<Event | undefined> {
-  return events.find((event) => event.id === id);
+  const row = await db.event.findUnique({ where: { id }, include: INCLUDE });
+  return row ? toEvent(row as EventRow) : undefined;
 }
 
 /** Return a single event by its custom slug, or `undefined`. */
 export async function getEventBySlug(slug: string): Promise<Event | undefined> {
-  return events.find((event) => event.slug === slug);
+  const row = await db.event.findUnique({ where: { slug }, include: INCLUDE });
+  return row ? toEvent(row as EventRow) : undefined;
 }
 
 /** Resolve an event by id first, then by custom slug (public routes). */
@@ -44,38 +64,68 @@ export async function getEventByIdOrSlug(
   return (await getEventById(idOrSlug)) ?? (await getEventBySlug(idOrSlug));
 }
 
+/**
+ * The workspace a new event belongs to.
+ *
+ * Ownership comes from the session once auth lands. Until then a caller may
+ * name a workspace explicitly, and anything else falls back to the first —
+ * mirroring what `getWorkspaceByEvent` did for unmapped events before.
+ */
+async function resolveWorkspaceId(preferred?: string): Promise<string> {
+  if (preferred) {
+    const found = await db.workspace.findUnique({
+      where: { id: preferred },
+      select: { id: true },
+    });
+    if (found) return found.id;
+  }
+  const first = await db.workspace.findFirst({
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!first) {
+    throw new Error("No workspace exists to own the event — seed the database.");
+  }
+  return first.id;
+}
+
 /** Create and persist a new event, returning the stored record. */
-export async function createEvent(input: CreateEventInput): Promise<Event> {
-  const id = crypto.randomUUID();
-  const now = new Date().toISOString();
+export async function createEvent(
+  input: CreateEventInput & { workspaceId?: string },
+): Promise<Event> {
+  const workspaceId = await resolveWorkspaceId(input.workspaceId);
 
-  const venue: Venue = { id: crypto.randomUUID(), ...input.venue };
+  // The venue is created first: passing a scalar `workspaceId` alongside a
+  // nested `venue.create` would put Prisma in its unchecked-input mode, which
+  // does not accept nested writes.
+  const venue = await db.venue.create({ data: { ...input.venue } });
 
-  const sessions: EventSession[] = input.sessions.map((session) => ({
-    id: crypto.randomUUID(),
-    eventId: id,
-    ...session,
-  }));
-
-  const event: Event = {
-    id,
-    title: input.title,
-    description: input.description,
-    status: input.status ?? "draft",
-    mode: input.mode,
-    venue,
-    sessions,
-    recurrence: input.recurrence,
-    tags: input.tags ?? [],
-    visibility: input.visibility ?? "public",
-    audienceTags: input.audienceTags ?? [],
-    requiresApproval: input.requiresApproval ?? false,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  events.push(event);
-  return event;
+  const row = await db.event.create({
+    data: {
+      workspaceId,
+      venueId: venue.id,
+      title: input.title,
+      description: input.description,
+      status: EVENT_STATUS_TO_DB[input.status ?? "draft"],
+      mode: EVENT_MODE_TO_DB[input.mode],
+      recurrence: input.recurrence ? (input.recurrence as object) : undefined,
+      tags: input.tags ?? [],
+      visibility: EVENT_VISIBILITY_TO_DB[input.visibility ?? "public"],
+      audienceTags: input.audienceTags ?? [],
+      requiresApproval: input.requiresApproval ?? false,
+      sessions: {
+        create: input.sessions.map((s) => ({
+          startAt: new Date(s.startAt),
+          endAt: new Date(s.endAt),
+          ...(s.availability
+            ? { availability: SESSION_AVAILABILITY_TO_DB[s.availability] }
+            : {}),
+        })),
+      },
+    },
+    include: INCLUDE,
+  });
+  return toEvent(row as EventRow);
 }
 
 /** Fields an organizer may edit on an existing event. */
@@ -118,61 +168,88 @@ function toScheduleDraft(spec: RecurrenceSchedule): ScheduleDraft {
 }
 
 /**
- * Regenerate an event's concrete sessions from a calendar schedule, preserving
- * each surviving session's id, availability, and cancelled flag by matching on
- * date + start time so existing references stay intact.
+ * Regenerate an event's sessions from a calendar schedule.
+ *
+ * Sessions are matched on start time rather than id — that is what the
+ * `@@unique([eventId, startAt])` index exists for — so a surviving سانس keeps
+ * its row, and with it its availability, cancelled flag and any references.
  */
-function sessionsFromSchedule(
-  event: Event,
+async function applySchedule(
+  eventId: string,
   spec: RecurrenceSchedule,
-): EventSession[] {
-  const prev = new Map(
-    event.sessions.map((s) => [`${s.startAt.slice(0, 16)}`, s]),
-  );
-  return expandSchedule(toScheduleDraft(spec)).map((s) => {
-    const startAt = `${s.date}T${s.startTime}:00.000Z`;
-    const endAt = `${s.date}T${s.endTime || s.startTime}:00.000Z`;
-    const match = prev.get(startAt.slice(0, 16));
-    return {
-      id: match?.id ?? `${event.id}-${s.date}-${s.id}`,
-      eventId: event.id,
-      startAt,
-      endAt,
-      ...(match?.availability ? { availability: match.availability } : {}),
-      ...(match?.cancelled ? { cancelled: match.cancelled } : {}),
-    };
-  });
+): Promise<void> {
+  const existing = await db.eventSession.findMany({ where: { eventId } });
+  const byStart = new Map(existing.map((s) => [s.startAt.toISOString(), s]));
+
+  const wanted = expandSchedule(toScheduleDraft(spec)).map((s) => ({
+    startAt: new Date(`${s.date}T${s.startTime}:00.000Z`),
+    endAt: new Date(`${s.date}T${s.endTime || s.startTime}:00.000Z`),
+  }));
+  const wantedKeys = new Set(wanted.map((s) => s.startAt.toISOString()));
+
+  await db.$transaction([
+    // Drop the سانس‌ها the new schedule no longer contains.
+    db.eventSession.deleteMany({
+      where: {
+        eventId,
+        id: {
+          in: existing
+            .filter((s) => !wantedKeys.has(s.startAt.toISOString()))
+            .map((s) => s.id),
+        },
+      },
+    }),
+    // Add the ones it gained; survivors are left untouched.
+    ...wanted
+      .filter((s) => !byStart.has(s.startAt.toISOString()))
+      .map((s) =>
+        db.eventSession.create({
+          data: { eventId, startAt: s.startAt, endAt: s.endAt },
+        }),
+      ),
+  ]);
 }
 
-/** Apply an in-place update to an event; returns it, or `undefined` if absent. */
+/** Apply an update to an event; returns it, or `undefined` if absent. */
 export async function updateEvent(
   id: string,
   patch: EventUpdate,
 ): Promise<Event | undefined> {
-  const event = events.find((e) => e.id === id);
-  if (!event) return undefined;
-  if (patch.title !== undefined) event.title = patch.title;
-  if (patch.description !== undefined) event.description = patch.description;
-  if (patch.status !== undefined) event.status = patch.status;
-  if (patch.visibility !== undefined) event.visibility = patch.visibility;
-  if (patch.audienceTags !== undefined) event.audienceTags = patch.audienceTags;
-  if (patch.requiresApproval !== undefined) {
-    event.requiresApproval = patch.requiresApproval;
-  }
-  if (patch.slug !== undefined) event.slug = patch.slug;
+  const exists = await db.event.findUnique({ where: { id }, select: { id: true } });
+  if (!exists) return undefined;
+
   if (patch.recurrenceSchedule !== undefined) {
-    event.recurrenceSchedule = patch.recurrenceSchedule;
-    event.sessions = sessionsFromSchedule(event, patch.recurrenceSchedule);
-    event.recurrence = {
-      frequency: "weekly",
-      interval: 1,
-      ...(patch.recurrenceSchedule.byDay.length > 0
-        ? { byDay: patch.recurrenceSchedule.byDay }
-        : {}),
-    };
+    await applySchedule(id, patch.recurrenceSchedule);
   }
-  event.updatedAt = new Date().toISOString();
-  return event;
+
+  await db.event.update({
+    where: { id },
+    data: {
+      title: patch.title,
+      description: patch.description,
+      status: patch.status ? EVENT_STATUS_TO_DB[patch.status] : undefined,
+      visibility: patch.visibility
+        ? EVENT_VISIBILITY_TO_DB[patch.visibility]
+        : undefined,
+      audienceTags: patch.audienceTags,
+      requiresApproval: patch.requiresApproval,
+      slug: patch.slug,
+      ...(patch.recurrenceSchedule !== undefined
+        ? {
+            recurrenceSchedule: patch.recurrenceSchedule as object,
+            recurrence: {
+              frequency: "weekly",
+              interval: 1,
+              ...(patch.recurrenceSchedule.byDay.length > 0
+                ? { byDay: patch.recurrenceSchedule.byDay }
+                : {}),
+            } as object,
+          }
+        : {}),
+    },
+  });
+
+  return getEventById(id);
 }
 
 /** Append a new سانس (session) to an event; returns it, or `undefined`. */
@@ -180,18 +257,24 @@ export async function addSession(
   eventId: string,
   input: { startAt: string; endAt: string; availability?: SessionAvailability },
 ): Promise<EventSession | undefined> {
-  const event = events.find((e) => e.id === eventId);
-  if (!event) return undefined;
-  const session: EventSession = {
-    id: crypto.randomUUID(),
-    eventId,
-    startAt: input.startAt,
-    endAt: input.endAt,
-    ...(input.availability ? { availability: input.availability } : {}),
-  };
-  event.sessions.push(session);
-  event.updatedAt = new Date().toISOString();
-  return session;
+  const exists = await db.event.findUnique({
+    where: { id: eventId },
+    select: { id: true },
+  });
+  if (!exists) return undefined;
+
+  const row = await db.eventSession.create({
+    data: {
+      eventId,
+      startAt: new Date(input.startAt),
+      endAt: new Date(input.endAt),
+      ...(input.availability
+        ? { availability: SESSION_AVAILABILITY_TO_DB[input.availability] }
+        : {}),
+    },
+  });
+  await db.event.update({ where: { id: eventId }, data: { updatedAt: new Date() } });
+  return toSession(row);
 }
 
 /** Venue fields an organizer may edit from the dashboard. */
@@ -202,24 +285,20 @@ export type VenueUpdate = Partial<
   >
 >;
 
-/** Update an event's venue in place; returns it, or `undefined` if absent. */
+/** Update an event's venue; returns it, or `undefined` if absent. */
 export async function updateVenue(
   eventId: string,
   patch: VenueUpdate,
 ): Promise<Venue | undefined> {
-  const event = events.find((e) => e.id === eventId);
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    select: { venueId: true },
+  });
   if (!event) return undefined;
-  const v = event.venue;
-  if (patch.name !== undefined) v.name = patch.name;
-  if (patch.province !== undefined) v.province = patch.province;
-  if (patch.city !== undefined) v.city = patch.city;
-  if (patch.address !== undefined) v.address = patch.address;
-  if (patch.capacity !== undefined) v.capacity = patch.capacity;
-  if (patch.lat !== undefined) v.lat = patch.lat;
-  if (patch.lng !== undefined) v.lng = patch.lng;
-  if (patch.hideAddress !== undefined) v.hideAddress = patch.hideAddress;
-  event.updatedAt = new Date().toISOString();
-  return v;
+
+  const row = await db.venue.update({ where: { id: event.venueId }, data: patch });
+  await db.event.update({ where: { id: eventId }, data: { updatedAt: new Date() } });
+  return toVenue(row);
 }
 
 /** Fields an organizer may edit on a single سانس (session). */
@@ -228,7 +307,7 @@ export type SessionUpdate = Partial<
 >;
 
 /**
- * Update one session of an event in place (reschedule or cancel/restore).
+ * Update one session of an event (reschedule or cancel/restore).
  * Returns the session, or `undefined` when the event/session is not found.
  */
 export async function updateSession(
@@ -236,13 +315,20 @@ export async function updateSession(
   sessionId: string,
   patch: SessionUpdate,
 ): Promise<EventSession | undefined> {
-  const event = events.find((e) => e.id === eventId);
-  const session = event?.sessions.find((s) => s.id === sessionId);
-  if (!event || !session) return undefined;
-  if (patch.startAt !== undefined) session.startAt = patch.startAt;
-  if (patch.endAt !== undefined) session.endAt = patch.endAt;
-  if (patch.cancelled !== undefined) session.cancelled = patch.cancelled;
-  if (patch.availability !== undefined) session.availability = patch.availability;
-  event.updatedAt = new Date().toISOString();
-  return session;
+  const session = await db.eventSession.findUnique({ where: { id: sessionId } });
+  if (!session || session.eventId !== eventId) return undefined;
+
+  const row = await db.eventSession.update({
+    where: { id: sessionId },
+    data: {
+      startAt: patch.startAt ? new Date(patch.startAt) : undefined,
+      endAt: patch.endAt ? new Date(patch.endAt) : undefined,
+      cancelled: patch.cancelled,
+      availability: patch.availability
+        ? SESSION_AVAILABILITY_TO_DB[patch.availability]
+        : undefined,
+    },
+  });
+  await db.event.update({ where: { id: eventId }, data: { updatedAt: new Date() } });
+  return toSession(row);
 }
