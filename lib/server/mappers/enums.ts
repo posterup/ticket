@@ -15,6 +15,7 @@ import type {
   CollaboratorChannel,
   CollaboratorStatus,
   DiscountKind,
+  EventCollabRole,
   EventMode,
   EventStatus,
   EventVisibility,
@@ -23,6 +24,7 @@ import type {
   SessionAvailability,
   TicketCategory,
   TicketStatus,
+  WorkspaceRole,
   WorkspaceType,
 } from "@/types";
 
@@ -138,3 +140,16 @@ export const WORKSPACE_TYPE_TO_DB: Record<WorkspaceType, P.WorkspaceType> = {
   business: P.WorkspaceType.BUSINESS,
 };
 export const WORKSPACE_TYPE_FROM_DB = invert(WORKSPACE_TYPE_TO_DB);
+
+export const WORKSPACE_ROLE_TO_DB: Record<WorkspaceRole, P.WorkspaceRole> = {
+  owner: P.WorkspaceRole.OWNER,
+  admin: P.WorkspaceRole.ADMIN,
+  staff: P.WorkspaceRole.STAFF,
+};
+export const WORKSPACE_ROLE_FROM_DB = invert(WORKSPACE_ROLE_TO_DB);
+
+export const COLLAB_ROLE_TO_DB: Record<EventCollabRole, P.EventCollabRole> = {
+  "co-host": P.EventCollabRole.CO_HOST,
+  checkin: P.EventCollabRole.CHECKIN,
+};
+export const COLLAB_ROLE_FROM_DB = invert(COLLAB_ROLE_TO_DB);
