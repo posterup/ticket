@@ -78,41 +78,28 @@ const DEV_USERS = [
 ] as const;
 
 /**
- * Wipe in FK-safe order so `db:reset` is idempotent.
+ * Empty every table.
  *
- * Commerce first: tickets and order items reference ticket types, so deleting
- * those types before their children fails on the foreign key — and leaves the
- * database half-cleared.
+ * Derived from the database rather than listed by hand. A hand-written list
+ * has to be extended with each new model and silently rots when it is not —
+ * this seed broke twice that way, once when orders arrived and again when the
+ * finance tables did, each time failing on a foreign key *after* having
+ * already deleted half the data.
+ *
+ * `TRUNCATE ... CASCADE` also sidesteps ordering entirely, so there is no
+ * dependency sequence left to get wrong.
  */
 async function clear(): Promise<void> {
-  await db.checkIn.deleteMany();
-  await db.ticket.deleteMany();
-  await db.payment.deleteMany();
-  await db.discountRedemption.deleteMany();
-  await db.orderItem.deleteMany();
-  await db.order.deleteMany();
+  const tables = await db.$queryRaw<{ tablename: string }[]>`
+    SELECT tablename
+      FROM pg_tables
+     WHERE schemaname = 'public'
+       AND tablename <> '_prisma_migrations'
+  `;
+  if (tables.length === 0) return;
 
-  await db.bookmark.deleteMany();
-  await db.notifySubscription.deleteMany();
-  await db.follow.deleteMany();
-  await db.session.deleteMany();
-  await db.otpCode.deleteMany();
-
-  await db.attendeeTagLink.deleteMany();
-  await db.attendeeTag.deleteMany();
-  await db.eventCollaborator.deleteMany();
-  await db.eventRegistration.deleteMany();
-  await db.eventGuest.deleteMany();
-  await db.discountCode.deleteMany();
-  await db.ticketType.deleteMany();
-  await db.eventSession.deleteMany();
-  await db.attendee.deleteMany();
-  await db.event.deleteMany();
-  await db.venue.deleteMany();
-  await db.campaign.deleteMany();
-  await db.workspaceMember.deleteMany();
-  await db.workspace.deleteMany();
-  await db.user.deleteMany();
+  const list = tables.map((t) => `"public"."${t.tablename}"`).join(", ");
+  await db.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
 }
 
 async function main(): Promise<void> {

@@ -12,7 +12,9 @@ import { SESSION_COOKIE } from "@/lib/session-cookie";
  * handler calls its own guard. An expired-but-present cookie therefore slips
  * past this and is caught there, which is correct.
  */
-const PROTECTED = ["/dashboard", "/me", "/tickets/create"];
+// Personal surfaces: they show the viewer their own data, so an anonymous
+// visitor gets the sign-in page rather than a convincingly empty one.
+const PROTECTED = ["/dashboard", "/me", "/feed", "/tickets/create"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export function middleware(request: NextRequest) {
@@ -40,6 +42,9 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/me/:path*",
+    // Both forms: `:path*` alone did not match the bare "/feed".
+    "/feed",
+    "/feed/:path*",
     "/tickets/create/:path*",
     "/login",
     "/signup",
