@@ -1,0 +1,730 @@
+// Poster (پوستر) — Event CRM & ticketing.
+//
+// Conventions, and why:
+//
+// * Ids are plain `String`, not `@db.Uuid`. Session ids are currently derived
+//   (`${eventId}-${date}-${slot}`) and are not UUID-shaped, so a uuid column
+//   would reject them. `@@unique([eventId, startAt])` is what recurrence
+//   regeneration actually keys off.
+// * Money is `Int`, integer Toman throughout, matching `Money` in `types/api.ts`.
+// * Timestamps are `DateTime` here but ISO strings on the wire. Conversion
+//   happens in `lib/server/mappers/`, nowhere else, so `types/` stays stable.
+// * Enum members are SCREAMING_CASE (Prisma forbids hyphens) and `@map` to the
+//   hyphenated values the TypeScript unions use. `lib/server/mappers/enums.ts`
+//   bridges the two and is unit-tested against drift.
+// * `Json` is reserved for values read and written whole and never queried by
+//   their internals. Everything else is relational.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── identity ─────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  /// Normalised to the `09xxxxxxxxx` form by `normalizeMobile()`.
+  phone         String    @unique
+  fullName      String?
+  email         String?   @unique
+  avatarUrl     String?
+  /// Internal staff. Never settable through the API.
+  platformAdmin Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  sessions            Session[]
+  memberships         WorkspaceMember[]
+  orders              Order[]
+  follows             Follow[]
+  bookmarks           Bookmark[]
+  notifySubscriptions NotifySubscription[]
+  crmRecords          Attendee[]
+  collaborations      EventCollaborator[]  @relation("CollabInvitee")
+  collaborationsSent  EventCollaborator[]  @relation("CollabInviter")
+  createdEvents       Event[]              @relation("EventCreator")
+  checkInsPerformed   CheckIn[]
+
+  @@index([createdAt])
+}
+
+model Session {
+  id         String    @id @default(uuid())
+  userId     String
+  /// sha256 of the opaque token. The raw token exists only in the cookie.
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum OtpPurpose {
+  LOGIN        @map("login")
+  PHONE_CHANGE @map("phone-change")
+}
+
+model OtpCode {
+  id       String     @id @default(uuid())
+  phone    String
+  /// hmac-sha256(code, AUTH_SECRET). A 6-digit code has too little entropy for
+  /// a slow hash to add anything the attempt limit does not already provide.
+  codeHash String
+  purpose  OtpPurpose @default(LOGIN)
+
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  // Rate-limit windows are counted off these two.
+  @@index([phone, createdAt])
+  @@index([ip, createdAt])
+  @@index([expiresAt])
+}
+
+// ───────────────────────────── organisation ─────────────────────────────
+
+enum WorkspaceType {
+  PERSONAL @map("personal")
+  BUSINESS @map("business")
+}
+
+enum WorkspaceRole {
+  OWNER @map("owner")
+  ADMIN @map("admin")
+  STAFF @map("staff")
+}
+
+model Workspace {
+  id       String        @id @default(uuid())
+  slug     String        @unique
+  name     String
+  type     WorkspaceType
+  bio      String?
+  /// 1–2 character initials.
+  avatar   String
+  banner   String?
+  verified Boolean       @default(false)
+
+  /// Seeded social proof. Live counts are these plus the real rows.
+  seedFollowers Int      @default(0)
+  seedFollowing Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members        WorkspaceMember[]
+  events         Event[]
+  attendees      Attendee[]
+  attendeeTags   AttendeeTag[]
+  discounts      DiscountCode[]
+  campaigns      Campaign[]
+  followers      Follow[]
+  bankAccounts   BankAccount[]
+  withdrawals    Withdrawal[]
+  collaborations EventCollaborator[] @relation("CollabInviteeWorkspace")
+}
+
+/// Membership is what makes someone an "event manager" — there is deliberately
+/// no role column on User, so becoming an organiser is one insert.
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole
+  createdAt   DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  // The requireManager() hot path.
+  @@index([userId])
+}
+
+model Follow {
+  userId      String
+  workspaceId String
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+// ───────────────────────────── events ─────────────────────────────
+
+enum EventStatus {
+  DRAFT     @map("draft")
+  PUBLISHED @map("published")
+  CANCELLED @map("cancelled")
+  COMPLETED @map("completed")
+}
+
+enum EventVisibility {
+  PUBLIC   @map("public")
+  LINK     @map("link")
+  AUDIENCE @map("audience")
+}
+
+enum EventMode {
+  ONE_TIME      @map("one-time")
+  RECURRING     @map("recurring")
+  MULTI_SESSION @map("multi-session")
+}
+
+enum SessionAvailability {
+  FULL        @map("full")
+  ALMOST_FULL @map("almost-full")
+  SOON        @map("soon")
+  AVAILABLE   @map("available")
+}
+
+model Venue {
+  id          String  @id @default(uuid())
+  name        String
+  province    String?
+  city        String
+  address     String
+  capacity    Int
+  onlineUrl   String?
+  lat         Float?
+  lng         Float?
+  hideAddress Boolean @default(false)
+
+  events   Event[]
+  sessions EventSession[]
+}
+
+model Event {
+  id String @id @default(uuid())
+  /// Replaces the hardcoded EVENT_WORKSPACE map. Every event has an owner.
+  workspaceId     String
+  createdByUserId String?
+  title           String
+  description     String
+  status          EventStatus @default(DRAFT)
+  mode            EventMode
+  venueId         String
+
+  /// RecurrenceRule — read and written whole, never queried into.
+  recurrence Json?
+  /// RecurrenceSchedule — likewise.
+  recurrenceSchedule Json?
+
+  tags             String[]
+  categories       String[]
+  visibility       EventVisibility @default(PUBLIC)
+  audienceTags     String[]
+  requiresApproval Boolean         @default(false)
+  waitlist         Boolean         @default(false)
+  slug             String?         @unique
+
+  /// Seeded engagement baseline; live counts add the Bookmark rows.
+  seedGoing      Int      @default(0)
+  seedInterested Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  venue     Venue     @relation(fields: [venueId], references: [id])
+  createdBy User?     @relation("EventCreator", fields: [createdByUserId], references: [id])
+
+  sessions            EventSession[]
+  ticketTypes         TicketType[]
+  discounts           DiscountCode[]
+  guests              EventGuest[]
+  registrations       EventRegistration[]
+  collaborators       EventCollaborator[]
+  orders              Order[]
+  bookmarks           Bookmark[]
+  notifySubscriptions NotifySubscription[]
+
+  @@index([workspaceId, status])
+  @@index([status, visibility])
+}
+
+model EventSession {
+  id           String              @id @default(uuid())
+  eventId      String
+  startAt      DateTime
+  endAt        DateTime
+  venueId      String?
+  cancelled    Boolean             @default(false)
+  availability SessionAvailability @default(AVAILABLE)
+
+  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  venue Venue? @relation(fields: [venueId], references: [id])
+
+  guests  EventGuest[]
+  orders  Order[]
+  tickets Ticket[]
+
+  /// Recurrence regeneration matches surviving sessions on this, not on the id.
+  @@unique([eventId, startAt])
+  @@index([eventId, startAt])
+}
+
+enum TicketCategory {
+  GENERAL    @map("general")
+  VIP        @map("vip")
+  STUDENT    @map("student")
+  EARLY_BIRD @map("early-bird")
+  BACKSTAGE  @map("backstage")
+  GROUP      @map("group")
+}
+
+model TicketType {
+  id      String @id @default(uuid())
+  eventId String
+  name    String
+  /// Integer Toman. 0 is a free ticket.
+  price    Int
+  capacity Int
+  /// Authoritative once orders exist — no longer an estimate.
+  sold     Int @default(0)
+  /// Held by pending, unexpired orders. `sold + reserved <= capacity`.
+  reserved Int @default(0)
+
+  salesStartAt DateTime
+  salesEndAt   DateTime
+  category     TicketCategory
+  description  String?
+  createdAt    DateTime       @default(now())
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  tickets    Ticket[]
+
+  @@index([eventId])
+}
+
+// ───────────────────────────── commerce ─────────────────────────────
+
+enum OrderStatus {
+  PENDING_PAYMENT @map("pending-payment")
+  PAID            @map("paid")
+  EXPIRED         @map("expired")
+  FAILED          @map("failed")
+  CANCELLED       @map("cancelled")
+  REFUNDED        @map("refunded")
+}
+
+enum PaymentStatus {
+  INITIATED  @map("initiated")
+  REDIRECTED @map("redirected")
+  VERIFIED   @map("verified")
+  FAILED     @map("failed")
+  REVERSED   @map("reversed")
+}
+
+model Order {
+  id String @id @default(uuid())
+  /// Human tracking code (کد پیگیری) shown on the order page.
+  code String @unique
+
+  eventId   String
+  sessionId String?
+  /// Null for guest checkout.
+  userId     String?
+  buyerName  String
+  buyerPhone String
+  /// CRM contact, upserted when the order is paid.
+  attendeeId String?
+
+  subtotal       Int
+  discountAmount Int         @default(0)
+  total          Int
+  discountCodeId String?
+  status         OrderStatus @default(PENDING_PAYMENT)
+
+  /// Inventory-hold deadline; the sweeper releases past this.
+  expiresAt DateTime
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  event        Event         @relation(fields: [eventId], references: [id])
+  session      EventSession? @relation(fields: [sessionId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+  attendee     Attendee?     @relation(fields: [attendeeId], references: [id])
+  discountCode DiscountCode? @relation(fields: [discountCodeId], references: [id])
+
+  items      OrderItem[]
+  payments   Payment[]
+  tickets    Ticket[]
+  redemption DiscountRedemption?
+
+  @@index([userId, createdAt])
+  @@index([eventId, status])
+  // The expiry sweeper.
+  @@index([status, expiresAt])
+}
+
+model OrderItem {
+  id           String @id @default(uuid())
+  orderId      String
+  ticketTypeId String
+  quantity     Int
+  /// Snapshot — TicketType.price may change after the order is placed.
+  unitPrice    Int
+
+  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id])
+
+  @@index([orderId])
+}
+
+model Payment {
+  id      String @id @default(uuid())
+  orderId String
+  /// "zarinpal" | "zarinpal-sandbox" | "mock" | "free"
+  provider String
+  /// Toman, as charged. Rial conversion happens only inside the adapter.
+  amount   Int
+
+  /// Zarinpal Authority — also the idempotency key for the callback.
+  authority   String?       @unique
+  refId       String?       @unique
+  cardPan     String?
+  status      PaymentStatus @default(INITIATED)
+  rawRequest  Json?
+  rawResponse Json?
+  createdAt   DateTime      @default(now())
+  verifiedAt  DateTime?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+enum TicketStatus {
+  ISSUED     @map("issued")
+  CHECKED_IN @map("checked-in")
+  CANCELLED  @map("cancelled")
+  REFUNDED   @map("refunded")
+}
+
+model Ticket {
+  id           String  @id @default(uuid())
+  orderId      String
+  ticketTypeId String
+  sessionId    String?
+  holderName   String
+  holderPhone  String?
+  /// 32 random bytes, base64url. What the door scanner reads.
+  qrToken  String       @unique
+  status   TicketStatus @default(ISSUED)
+  issuedAt DateTime     @default(now())
+
+  order      Order         @relation(fields: [orderId], references: [id])
+  ticketType TicketType    @relation(fields: [ticketTypeId], references: [id])
+  session    EventSession? @relation(fields: [sessionId], references: [id])
+  checkIn    CheckIn?
+
+  @@index([orderId])
+  @@index([ticketTypeId, status])
+}
+
+model CheckIn {
+  id String @id @default(uuid())
+  /// One check-in per ticket, enforced by the database rather than by a guard.
+  ticketId    String   @unique
+  checkedById String?
+  checkedInAt DateTime @default(now())
+
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  checkedBy User?  @relation(fields: [checkedById], references: [id])
+}
+
+enum DiscountKind {
+  PERCENT @map("percent")
+  FIXED   @map("fixed")
+}
+
+model DiscountCode {
+  id          String @id @default(uuid())
+  workspaceId String
+  /// Null scopes the code to every event of the workspace.
+  eventId   String?
+  sessionId String?
+
+  /// Stored upper-case; uniqueness is per workspace.
+  code           String
+  kind           DiscountKind
+  value          Int
+  maxRedemptions Int?
+  redemptions    Int          @default(0)
+  expiresAt      DateTime?
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  event     Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  orders        Order[]
+  redemptionLog DiscountRedemption[]
+
+  @@unique([workspaceId, code])
+  @@index([eventId])
+}
+
+/// One redemption per order — this is what finally makes `redemptions` real.
+model DiscountRedemption {
+  id             String   @id @default(uuid())
+  discountCodeId String
+  orderId        String   @unique
+  amount         Int
+  createdAt      DateTime @default(now())
+
+  discountCode DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ───────────────────────────── CRM ─────────────────────────────
+
+model Attendee {
+  id String @id @default(uuid())
+  /// The CRM is tenant-scoped: a contact belongs to one workspace.
+  workspaceId String
+  /// Linked platform account, when the phone matches a User.
+  userId      String?
+  fullName    String
+  phone       String
+  notes       String?
+
+  customFields Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id])
+
+  tags   AttendeeTagLink[]
+  orders Order[]
+
+  @@unique([workspaceId, phone])
+  @@index([userId])
+}
+
+model AttendeeTag {
+  id          String  @id @default(uuid())
+  workspaceId String
+  label       String
+  color       String?
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  links     AttendeeTagLink[]
+
+  @@unique([workspaceId, label])
+}
+
+model AttendeeTagLink {
+  attendeeId String
+  tagId      String
+
+  attendee Attendee    @relation(fields: [attendeeId], references: [id], onDelete: Cascade)
+  tag      AttendeeTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([attendeeId, tagId])
+  @@index([tagId])
+}
+
+// ───────────────────────────── engagement ─────────────────────────────
+
+enum BookmarkState {
+  INTERESTED @map("interested")
+  GOING      @map("going")
+}
+
+/// Server-side replacement for the `poster-rsvp` localStorage store.
+model Bookmark {
+  userId    String
+  eventId   String
+  state     BookmarkState
+  createdAt DateTime      @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+  // Powers getEventEngagement().
+  @@index([eventId, state])
+}
+
+/// Server-side replacement for the `poster-notify` localStorage store.
+model NotifySubscription {
+  userId     String
+  eventId    String
+  createdAt  DateTime  @default(now())
+  notifiedAt DateTime?
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+  @@index([eventId])
+}
+
+// ───────────────────────────── invites ─────────────────────────────
+
+enum GuestRsvp {
+  PENDING  @map("pending")
+  GOING    @map("going")
+  DECLINED @map("declined")
+}
+
+enum GuestChannel {
+  PHONE    @map("phone")
+  USERNAME @map("username")
+}
+
+enum RegistrationStatus {
+  PENDING  @map("pending")
+  ACCEPTED @map("accepted")
+  REJECTED @map("rejected")
+}
+
+enum CollaboratorChannel {
+  WORKSPACE @map("workspace")
+  PHONE     @map("phone")
+  USERNAME  @map("username")
+}
+
+enum CollaboratorStatus {
+  PENDING  @map("pending")
+  ACCEPTED @map("accepted")
+  REVOKED  @map("revoked")
+}
+
+enum EventCollabRole {
+  CO_HOST @map("co-host")
+  CHECKIN @map("checkin")
+}
+
+model EventGuest {
+  id        String       @id @default(uuid())
+  eventId   String
+  sessionId String
+  contact   String
+  channel   GuestChannel
+  status    GuestRsvp    @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  event   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  session EventSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
+}
+
+model EventRegistration {
+  id        String             @id @default(uuid())
+  eventId   String
+  userId    String?
+  name      String
+  phone     String
+  tickets   Int
+  status    RegistrationStatus @default(PENDING)
+  createdAt DateTime           @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, status])
+}
+
+/// Invites may name a workspace, or a raw phone/username for someone who has
+/// not signed up yet — so the invitee ids are resolved on acceptance, and
+/// authorization only ever consults accepted rows with a resolved id.
+model EventCollaborator {
+  id            String              @id @default(uuid())
+  eventId       String
+  channel       CollaboratorChannel
+  label         String
+  sub           String
+  workspaceSlug String?
+  avatar        String?
+  role          EventCollabRole     @default(CO_HOST)
+  status        CollaboratorStatus  @default(PENDING)
+
+  inviteeUserId      String?
+  inviteeWorkspaceId String?
+  invitedByUserId    String?
+  createdAt          DateTime  @default(now())
+  acceptedAt         DateTime?
+
+  event            Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  inviteeUser      User?      @relation("CollabInvitee", fields: [inviteeUserId], references: [id])
+  inviteeWorkspace Workspace? @relation("CollabInviteeWorkspace", fields: [inviteeWorkspaceId], references: [id])
+  invitedBy        User?      @relation("CollabInviter", fields: [invitedByUserId], references: [id])
+
+  @@index([eventId, status])
+  // requireEventAccess() hot paths.
+  @@index([inviteeUserId, status])
+  @@index([inviteeWorkspaceId, status])
+}
+
+// ───────────────────────────── marketing & finance ─────────────────────────────
+
+model Campaign {
+  id          String    @id @default(uuid())
+  workspaceId String
+  name        String
+  channel     String    @default("sms")
+  segment     String
+  status      String    @default("draft")
+  recipients  Int       @default(0)
+  message     String
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model BankAccount {
+  id          String   @id @default(uuid())
+  workspaceId String
+  iban        String
+  bankName    String
+  holder      String
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  withdrawals Withdrawal[]
+
+  @@unique([workspaceId, iban])
+}
+
+model Withdrawal {
+  id                String    @id @default(uuid())
+  workspaceId       String
+  bankAccountId     String
+  amount            Int
+  fee               Int
+  status            String    @default("pending")
+  requestedByUserId String?
+  createdAt         DateTime  @default(now())
+  settledAt         DateTime?
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id])
+
+  @@index([workspaceId, createdAt])
+}
