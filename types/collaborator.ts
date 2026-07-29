@@ -1,6 +1,14 @@
 import type { IsoDateTime } from "./api";
 
 export type CollaboratorChannel = "workspace" | "phone" | "username";
+
+/**
+ * What an accepted collaborator may do on the event.
+ *
+ * - `co-host`: run the event alongside the organizer.
+ * - `checkin`: work the door only.
+ */
+export type EventCollabRole = "co-host" | "checkin";
 export type CollaboratorStatus = "pending" | "accepted";
 
 /**

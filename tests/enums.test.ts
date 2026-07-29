@@ -43,6 +43,8 @@ const PAIRS: readonly EnumPair[] = [
     M.COLLABORATOR_STATUS_FROM_DB,
   ],
   ["WorkspaceType", M.WORKSPACE_TYPE_TO_DB, M.WORKSPACE_TYPE_FROM_DB],
+  ["WorkspaceRole", M.WORKSPACE_ROLE_TO_DB, M.WORKSPACE_ROLE_FROM_DB],
+  ["EventCollabRole", M.COLLAB_ROLE_TO_DB, M.COLLAB_ROLE_FROM_DB],
 ];
 
 describe.each(PAIRS)("%s enum mapping", (_name, toDb, fromDb) => {
@@ -67,6 +69,8 @@ describe("hyphenated domain values", () => {
     expect(M.TICKET_CATEGORY_TO_DB["early-bird"]).toBe("EARLY_BIRD");
     expect(M.TICKET_STATUS_TO_DB["checked-in"]).toBe("CHECKED_IN");
     expect(M.SESSION_AVAILABILITY_TO_DB["almost-full"]).toBe("ALMOST_FULL");
+
+    expect(M.COLLAB_ROLE_TO_DB["co-host"]).toBe("CO_HOST");
 
     expect(M.EVENT_MODE_FROM_DB.ONE_TIME).toBe("one-time");
     expect(M.TICKET_CATEGORY_FROM_DB.EARLY_BIRD).toBe("early-bird");
