@@ -350,3 +350,39 @@ export async function updateSession(
   await db.event.update({ where: { id: eventId }, data: { updatedAt: new Date() } });
   return toSession(row);
 }
+
+export type DeleteOutcome =
+  | { ok: true }
+  | { ok: false; reason: "not-found" | "has-sales"; message: string };
+
+/**
+ * Delete an event.
+ *
+ * Refused once anything has been sold: an event with paid orders is the only
+ * record of what those buyers hold, and cascading it away would take their
+ * tickets with it. Cancelling is the right move there, which is why
+ * `EventStatus` has a `cancelled` member.
+ */
+export async function deleteEvent(id: string): Promise<DeleteOutcome> {
+  const event = await db.event.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!event) {
+    return { ok: false, reason: "not-found", message: "رویداد یافت نشد." };
+  }
+
+  const sold = await db.order.count({
+    where: { eventId: id, status: { in: ["PAID", "REFUNDED"] } },
+  });
+  if (sold > 0) {
+    return {
+      ok: false,
+      reason: "has-sales",
+      message: "رویدادی که بلیت فروخته است حذف نمی‌شود؛ آن را لغو کنید.",
+    };
+  }
+
+  await db.event.delete({ where: { id } });
+  return { ok: true };
+}

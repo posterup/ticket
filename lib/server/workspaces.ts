@@ -9,6 +9,7 @@ import type { Event, Workspace } from "@/types";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 
 import { db } from "./db";
+import { HttpError } from "./http";
 import { toEvent, toWorkspace, type EventRow } from "./mappers";
 
 const EVENT_INCLUDE = {
@@ -93,4 +94,19 @@ export async function getWorkspacesByEvents(
     out.set(row.id, toWorkspace(row.workspace));
   }
   return out;
+}
+
+/**
+ * Resolve a slug to its workspace id, for routes keyed by slug.
+ *
+ * Throws rather than returning undefined, because every caller wants the same
+ * 404 and would otherwise repeat it.
+ */
+export async function workspaceIdBySlug(slug: string): Promise<string> {
+  const row = await db.workspace.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!row) throw new HttpError(404, "NOT_FOUND", "فضای کاری یافت نشد.");
+  return row.id;
 }

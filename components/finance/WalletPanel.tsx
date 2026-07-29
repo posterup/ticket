@@ -24,7 +24,7 @@ import type {
   BankAccount,
   Withdrawal,
   WithdrawalStatus,
-} from "@/lib/finance/compute";
+} from "@/lib/server/finance";
 
 const STATUS: Record<WithdrawalStatus, { label: string; dot: string }> = {
   paid: { label: "واریز شد", dot: "bg-success" },

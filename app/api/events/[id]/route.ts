@@ -1,6 +1,6 @@
-import { updateEvent } from "@/lib/server";
+import { deleteEvent, updateEvent } from "@/lib/server";
 import { requireEventAccess } from "@/lib/server/auth/guards";
-import { handler, ok, readJson } from "@/lib/server/http";
+import { handler, HttpError, notFound, ok, readJson } from "@/lib/server/http";
 import { eventUpdateSchema } from "@/lib/server/schemas/event";
 
 type Context = { params: Promise<{ id: string }> };
@@ -33,3 +33,23 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
   // requireEventAccess already 404s a missing event, so this cannot be absent.
   return ok(event!);
 });
+
+/**
+ * DELETE /api/events/:id — remove an event that has sold nothing.
+ *
+ * `event:delete` is owner-only: an admin runs the event, but ending its
+ * existence is the owner's call.
+ */
+export const DELETE = handler(
+  async (_request: Request, { params }: Context) => {
+    const { id } = await params;
+    await requireEventAccess(id, "event:delete");
+
+    const result = await deleteEvent(id);
+    if (!result.ok) {
+      if (result.reason === "not-found") throw notFound(result.message);
+      throw new HttpError(409, "CONFLICT", result.message);
+    }
+    return ok({ id });
+  },
+);
