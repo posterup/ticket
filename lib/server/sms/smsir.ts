@@ -73,3 +73,57 @@ export async function sendBulkSms(
     return { ok: false, sent: 0, error: "ارتباط با سرویس پیامک برقرار نشد." };
   }
 }
+
+/** sms.ir routes one-time codes through the verify/pattern API, not bulk. */
+const VERIFY_ENDPOINT = "https://api.sms.ir/v1/send/verify";
+
+/**
+ * Send a one-time code via sms.ir's verify/pattern API.
+ *
+ * Operator policy routes OTPs through an approved template rather than the
+ * bulk endpoint — bulk-sent codes are commonly filtered — so this needs
+ * `SMSIR_OTP_TEMPLATE_ID` in addition to the API key. The template is expected
+ * to take a single `CODE` parameter.
+ */
+export async function sendVerifySms(
+  mobile: string,
+  code: string,
+): Promise<SendSmsResult> {
+  const apiKey = process.env.SMSIR_API_KEY;
+  const templateId = process.env.SMSIR_OTP_TEMPLATE_ID;
+  if (!apiKey || !templateId) {
+    return {
+      ok: false,
+      sent: 0,
+      error:
+        "سرویس پیامک پیکربندی نشده است (SMSIR_API_KEY / SMSIR_OTP_TEMPLATE_ID).",
+    };
+  }
+
+  const recipient = normalizeMobile(mobile);
+  if (!/^09\d{9}$/.test(recipient)) {
+    return { ok: false, sent: 0, error: "شماره موبایل معتبر نیست." };
+  }
+
+  try {
+    const res = await fetch(VERIFY_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-API-KEY": apiKey,
+      },
+      body: JSON.stringify({
+        mobile: recipient,
+        templateId: Number(templateId),
+        parameters: [{ name: "CODE", value: code }],
+      }),
+    });
+    if (!res.ok) {
+      return { ok: false, sent: 0, error: `خطای سرویس پیامک (${res.status}).` };
+    }
+    return { ok: true, sent: 1 };
+  } catch {
+    return { ok: false, sent: 0, error: "ارتباط با سرویس پیامک برقرار نشد." };
+  }
+}

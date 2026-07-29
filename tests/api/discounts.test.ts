@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { it, expect, beforeAll } from "vitest";
 
 import { GET, POST } from "@/app/api/discounts/route";
 import { POST as VALIDATE } from "@/app/api/discounts/validate/route";
@@ -8,6 +8,15 @@ import { data, errorCode, parse, req , describeApi } from "./helpers";
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 const OTHER_EVENT = "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02";
+
+/** Codes these tests create; cleared up front so reruns start clean. */
+const CREATED_CODES = ["LOWER1", "DUPE1", "PCT101", "FIXED1", "ZERO1", "TESTCODE"];
+
+beforeAll(async () => {
+  if (!process.env.DATABASE_URL) return;
+  const { db } = await import("@/lib/server/db");
+  await db.discountCode.deleteMany({ where: { code: { in: CREATED_CODES } } });
+});
 
 const validDiscount = {
   eventId: null,
