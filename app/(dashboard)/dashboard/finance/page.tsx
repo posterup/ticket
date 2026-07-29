@@ -1,82 +1,83 @@
-import type { Metadata } from "next";
+"use client";
 
-import { computeFinance, WITHDRAW_FEE } from "@/lib/server";
+import { useApi } from "@/lib/client/api";
+import { useActiveWorkspace } from "@/components/dashboard/ActiveWorkspace";
+import { AsyncState } from "@/components/ui/async-state";
 import { formatToman } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { WalletPanel } from "@/components/finance/WalletPanel";
-import { requireManagerPage } from "@/lib/server/auth/guards";
+import type { Finance } from "@/lib/server/finance";
 
-export const metadata: Metadata = { title: "مالی | پوستر" };
+/** Mirrors WITHDRAW_FEE; the server is still the authority on the amount. */
+const WITHDRAW_FEE = 5_000;
 
-export default async function FinancePage() {
-  const { workspace } = await requireManagerPage();
+export default function FinancePage() {
+  const workspace = useActiveWorkspace();
+  const { data, error, loading, reload } = useApi<Finance>(
+    workspace ? `/api/workspaces/${workspace.slug}/finance` : null,
+  );
 
-  // Scoped to the workspace being managed; finance is per-tenant.
-  const f = await computeFinance(workspace.workspaceId);
+  if (!data) {
+    return (
+      <AsyncState
+        loading={loading || !workspace}
+        error={error}
+        onRetry={reload}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
       <WalletPanel
-        balance={f.balance}
+        balance={data.balance}
         fee={WITHDRAW_FEE}
-        accounts={f.bankAccounts}
-        withdrawals={f.withdrawals}
+        accounts={data.bankAccounts}
+        withdrawals={data.withdrawals}
       />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-foreground">تراکنش‌های اخیر</h2>
-        <div className="overflow-hidden rounded-lg border border-border">
-          <table className="w-full text-start text-sm">
-            <thead>
-              <tr className="border-b border-border bg-subtle text-xs text-muted">
-                <th className="px-5 py-3 text-start font-medium">خریدار</th>
-                <th className="px-5 py-3 text-start font-medium">رویداد</th>
-                <th className="px-5 py-3 text-start font-medium">مبلغ</th>
-                <th className="px-5 py-3 text-start font-medium">وضعیت</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {f.transactions.map((t) => (
-                <tr key={t.id}>
-                  <td className="px-5 py-3.5 font-medium text-foreground">
-                    {t.buyer}
-                  </td>
-                  <td className="px-5 py-3.5 text-muted">{t.event}</td>
-                  <td className="px-5 py-3.5 text-foreground">
-                    {formatToman(t.amount)}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <StatusPill
-                      label={t.status === "paid" ? "پرداخت‌شده" : "مسترد"}
-                      tone={t.status === "paid" ? "success" : "danger"}
-                    />
-                  </td>
+        <h2 className="text-sm font-semibold text-foreground">
+          تراکنش‌های اخیر
+        </h2>
+        {data.transactions.length === 0 ? (
+          <p className="rounded-lg border border-border p-6 text-center text-sm text-muted">
+            هنوز فروشی ثبت نشده است.
+          </p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-border">
+            <table className="w-full text-start text-sm">
+              <thead>
+                <tr className="border-b border-border bg-subtle text-xs text-muted">
+                  <th className="px-5 py-3 text-start font-medium">خریدار</th>
+                  <th className="px-5 py-3 text-start font-medium">رویداد</th>
+                  <th className="px-5 py-3 text-start font-medium">مبلغ</th>
+                  <th className="px-5 py-3 text-start font-medium">وضعیت</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {data.transactions.map((t) => (
+                  <tr key={t.id} className="border-b border-border last:border-0">
+                    <td className="px-5 py-3 text-foreground">{t.buyer}</td>
+                    <td className="px-5 py-3 text-muted">{t.event}</td>
+                    <td className="px-5 py-3 text-foreground">
+                      {formatToman(t.amount)}
+                    </td>
+                    <td
+                      className={cn(
+                        "px-5 py-3",
+                        t.status === "refunded" ? "text-danger" : "text-success",
+                      )}
+                    >
+                      {t.status === "refunded" ? "بازگشت وجه" : "پرداخت‌شده"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </div>
-  );
-}
-
-function StatusPill({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "success" | "warning" | "danger";
-}) {
-  const dot = {
-    success: "bg-success",
-    warning: "bg-warning",
-    danger: "bg-danger",
-  }[tone];
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-subtle px-2.5 py-1 text-xs text-muted">
-      <span className={cn("size-1.5 rounded-full", dot)} />
-      {label}
-    </span>
   );
 }

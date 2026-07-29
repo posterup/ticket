@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   type LucideIcon,
 } from "lucide-react";
-import { requireManagerPage } from "@/lib/server/auth/guards";
 
 export const metadata: Metadata = { title: "تنظیمات | پوستر" };
 
@@ -42,8 +41,7 @@ const ROWS: SettingRow[] = [
   },
 ];
 
-export default async function SettingsPage() {
-  await requireManagerPage();
+export default function SettingsPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">

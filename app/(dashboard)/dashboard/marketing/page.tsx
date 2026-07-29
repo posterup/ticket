@@ -1,18 +1,23 @@
-import type { Metadata } from "next";
+"use client";
 
-import { listCampaigns, listSegments } from "@/lib/server";
+import { useApi } from "@/lib/client/api";
+import { useActiveWorkspace } from "@/components/dashboard/ActiveWorkspace";
+import { AsyncState } from "@/components/ui/async-state";
 import { MarketingPanel } from "@/components/marketing/MarketingPanel";
-import { requireManagerPage } from "@/lib/server/auth/guards";
+import type { Segment } from "@/lib/server/campaigns";
+import type { Campaign } from "@/types";
 
-export const metadata: Metadata = { title: "بازاریابی | پوستر" };
+interface Data {
+  campaigns: Campaign[];
+  segments: Segment[];
+  workspaceId: string;
+}
 
-export default async function MarketingPage() {
-  const { workspace } = await requireManagerPage();
-
-  const [campaigns, segments] = await Promise.all([
-    listCampaigns(workspace.workspaceId),
-    listSegments(workspace.workspaceId),
-  ]);
+export default function MarketingPage() {
+  const workspace = useActiveWorkspace();
+  const { data, error, loading, reload } = useApi<Data>(
+    workspace ? `/api/workspaces/${workspace.slug}/campaigns` : null,
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -24,11 +29,20 @@ export default async function MarketingPage() {
           کمپین‌های پیامکی را برای مخاطبان خود بسازید و ارسال کنید.
         </p>
       </div>
-      <MarketingPanel
-        seedCampaigns={campaigns}
-        segments={segments}
-        workspaceId={workspace.workspaceId}
-      />
+
+      {data ? (
+        <MarketingPanel
+          seedCampaigns={data.campaigns}
+          segments={data.segments}
+          workspaceId={data.workspaceId}
+        />
+      ) : (
+        <AsyncState
+          loading={loading || !workspace}
+          error={error}
+          onRetry={reload}
+        />
+      )}
     </div>
   );
 }

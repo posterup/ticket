@@ -1,40 +1,26 @@
+"use client";
+
 import Link from "next/link";
 import { MapPin, CalendarDays, ArrowLeft, BadgeCheck, Users } from "lucide-react";
 
-import {
-  listEvents,
-  minPriceByEvent,
-  getWorkspacesByEvents,
-  getEventEngagements,
-} from "@/lib/server";
-import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
-import { modeLabel } from "@/lib/events/labels";
+import { useApi } from "@/lib/client/api";
+import type { DiscoverEvent } from "@/components/events/EventsExplorer";
+import { formatNumber } from "@/lib/format";
 import { EventCover } from "@/components/events/EventCover";
-
-function fromPrice(min: number | undefined): string | null {
-  if (min === undefined) return null;
-  return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
-}
 
 /**
  * Landing discovery strip: a few upcoming events, each tied to the organizer
  * page that owns it — so the front door shows the social platform in action
  * rather than only describing it.
  */
-export async function FeaturedEvents() {
-  const events = (await listEvents())
-    .filter((e) => e.status === "published")
-    .slice(0, 3);
+export function FeaturedEvents() {
+  // The public list already carries only published, publicly-visible events.
+  const { data } = useApi<DiscoverEvent[]>("/api/events/discover");
+  const events = (data ?? []).slice(0, 3);
 
+  // Renders nothing until there is something to show, rather than a skeleton
+  // on the marketing page.
   if (events.length === 0) return null;
-
-  // Resolved in one batch each, rather than per card below.
-  const ids = events.map((e) => e.id);
-  const [prices, orgs, engagement] = await Promise.all([
-    minPriceByEvent(ids),
-    getWorkspacesByEvents(ids),
-    getEventEngagements(ids),
-  ]);
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
@@ -58,10 +44,8 @@ export async function FeaturedEvents() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {events.map((event) => {
-          const price = fromPrice(prices.get(event.id));
-          const firstSession = event.sessions[0];
-          const organizer = orgs.get(event.id);
-          const going = engagement.get(event.id)?.going ?? 0;
+          const { price, going } = event;
+          const organizer = event.org;
           return (
             <Link
               key={event.id}
@@ -86,22 +70,22 @@ export async function FeaturedEvents() {
                   </span>
                 </span>
               ) : null}
-              {modeLabel(event.mode) ? (
-                <span className="text-xs text-faint">{modeLabel(event.mode)}</span>
+              {event.modeLabel ? (
+                <span className="text-xs text-faint">{event.modeLabel}</span>
               ) : null}
               <h3 className="mt-1 text-base font-semibold text-foreground">
                 {event.title}
               </h3>
               <div className="mt-4 flex flex-col gap-2 text-sm text-muted">
-                {firstSession ? (
+                {event.dateLabel ? (
                   <span className="flex items-center gap-2">
                     <CalendarDays className="size-4 text-faint" aria-hidden />
-                    {formatJalaliDate(firstSession.startAt)}
+                    {event.dateLabel}
                   </span>
                 ) : null}
                 <span className="flex items-center gap-2">
                   <MapPin className="size-4 text-faint" aria-hidden />
-                  {event.venue.name}، {event.venue.city}
+                  {event.venueName}، {event.city}
                 </span>
                 {going > 0 ? (
                   <span className="flex items-center gap-2">

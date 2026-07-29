@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Check, ChevronsUpDown, Plus, ExternalLink } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { ACTIVE_WORKSPACE_COOKIE } from "@/lib/active-workspace";
+import { useWorkspaceSwitcher } from "@/components/dashboard/ActiveWorkspace";
 import type { Workspace } from "@/types";
 
 /**
@@ -17,20 +16,11 @@ import type { Workspace } from "@/types";
  * nothing server-side could see — picking a workspace changed this label and
  * nothing else on the page.
  */
-export function WorkspaceSwitcher({
-  workspaces,
-  activeId: initialActiveId,
-}: {
-  workspaces: Workspace[];
-  /** Resolved on the server against the user's memberships. */
-  activeId?: string;
-}) {
-  const router = useRouter();
+export function WorkspaceSwitcher() {
+  const { workspaces, active, select } = useWorkspaceSwitcher();
   const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState(
-    initialActiveId ?? workspaces[0]?.id ?? "",
-  );
   const ref = useRef<HTMLDivElement>(null);
+  const activeId = active?.id ?? "";
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -42,17 +32,13 @@ export function WorkspaceSwitcher({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const active = workspaces.find((w) => w.id === activeId) ?? workspaces[0];
   if (!active) return null;
 
-  function select(id: string) {
-    setActiveId(id);
+  function choose(id: string) {
+    // Context holds the choice, so every page below re-requests its own data
+    // against the new workspace.
+    select(id);
     setOpen(false);
-    // A year is fine — it is a preference, and the server re-checks it against
-    // the caller's memberships on every render.
-    document.cookie = `${ACTIVE_WORKSPACE_COOKIE}=${id}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    // Re-render the server components so the page actually changes.
-    router.refresh();
   }
 
   const typeLabel = (w: Workspace) =>
@@ -89,7 +75,7 @@ export function WorkspaceSwitcher({
               type="button"
               role="menuitemradio"
               aria-checked={w.id === active.id}
-              onClick={() => select(w.id)}
+              onClick={() => choose(w.id)}
               className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-start outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
             >
               <Avatar workspace={w} small />

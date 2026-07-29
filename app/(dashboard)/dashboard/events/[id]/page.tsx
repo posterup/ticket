@@ -1,21 +1,11 @@
-import type { Metadata } from "next";
+"use client";
+
+import { use } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
-import {
-  getEventById,
-  listTickets,
-  listDiscounts,
-  listCheckedTicketIds,
-  listHolders,
-  listWorkspaces,
-  getWorkspaceByEvent,
-  listGuests,
-  listRegistrations,
-  listCollaborators,
-  listAttendeeTags,
-} from "@/lib/server";
+import { useApi } from "@/lib/client/api";
+import { AsyncState } from "@/components/ui/async-state";
 import { formatJalaliDate, formatTime } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
@@ -34,8 +24,15 @@ import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
 import type { TicketSample } from "@/components/tickets/TicketPreview";
 import { emptySlot, type ScheduleDraft } from "@/lib/create/types";
-import type { Event } from "@/types";
-import { requireManagerPage } from "@/lib/server/auth/guards";
+import type {
+  DiscountCode,
+  Event,
+  EventCollaborator,
+  EventGuest,
+  EventRegistration,
+  TicketType,
+} from "@/types";
+import type { Holder } from "@/lib/server/checkins";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -94,59 +91,46 @@ function buildScheduleDraft(event: Event): ScheduleDraft {
   };
 }
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { id } = await params;
-  const event = await getEventById(id);
-  return { title: event ? `${event.title} | پوستر` : "رویداد | پوستر" };
+interface DashboardData {
+  event: Event;
+  sessions: { id: string; label: string }[];
+  tickets: TicketType[];
+  discounts: DiscountCode[];
+  guests: EventGuest[];
+  collaborators: EventCollaborator[];
+  registrations: EventRegistration[];
+  holders: Holder[];
+  checked: string[];
+  audienceTags: { label: string; count: number }[];
+  collabWorkspaces: { slug: string; name: string; avatar: string }[];
 }
 
-export default async function EventDetailPage({ params }: Params) {
-  const { workspace } = await requireManagerPage();
+export default function EventDetailPage({ params }: Params) {
+  const { id } = use(params);
+  const { data, error, loading, reload } = useApi<DashboardData>(
+    `/api/events/${id}/dashboard`,
+  );
 
-  const { id } = await params;
-  const event = await getEventById(id);
-  if (!event) notFound();
+  if (!data) {
+    return <AsyncState loading={loading} error={error} onRetry={reload} />;
+  }
 
-  const [tickets, discounts] = await Promise.all([
-    listTickets(id),
-    listDiscounts(id),
-  ]);
+  const {
+    event,
+    tickets,
+    discounts,
+    collaborators,
+    registrations,
+    holders,
+    audienceTags,
+    collabWorkspaces,
+  } = data;
+  const sessionOptions = data.sessions;
+  const checkedHolderIds = data.checked;
+  const guests = data.guests;
   // A free event (all ticket types priced at 0) has nothing to price or
   // discount, so its «بلیت‌ها» and «تخفیف‌ها» tabs are hidden.
   const isFree = tickets.length > 0 && tickets.every((t) => t.price === 0);
-  const sessionOptions = event.sessions.map((s) => ({
-    id: s.id,
-    label: `${formatJalaliDate(s.startAt)} · ${formatTime(s.startAt)}`,
-  }));
-
-  // Workspaces a host can request to collaborate with (excluding the owner).
-  const [owner, workspaces, rawGuests, collaborators, audienceTags] =
-    await Promise.all([
-      getWorkspaceByEvent(event.id),
-      listWorkspaces(),
-      listGuests(event.id),
-      listCollaborators(event.id),
-      listAttendeeTags(workspace.workspaceId),
-    ]);
-  const collabWorkspaces = workspaces
-    .filter((w) => w.slug !== owner?.slug)
-    .map((w) => ({ slug: w.slug, name: w.name, avatar: w.avatar }));
-  const guests = rawGuests.map((g) => ({
-    id: g.id,
-    sessionId: g.sessionId,
-    contact: g.contact,
-    channel: g.channel,
-    status: g.status,
-  }));
-  const registrations = event.requiresApproval
-    ? (await listRegistrations(event.id)).map((r) => ({
-        id: r.id,
-        name: r.name,
-        phone: r.phone,
-        tickets: r.tickets,
-        status: r.status,
-      }))
-    : [];
 
   const first = event.sessions[0];
   const ticketSample: TicketSample = {
@@ -159,11 +143,6 @@ export default async function EventDetailPage({ params }: Params) {
     venue: [event.venue.name, event.venue.city].filter(Boolean).join("، "),
   };
 
-  const holders = await listHolders(
-    event.id,
-    new Map(sessionOptions.map((s) => [s.id, s.label])),
-  );
-  const checkedHolderIds = await listCheckedTicketIds(event.id);
 
   return (
     <div className="flex flex-col gap-6">

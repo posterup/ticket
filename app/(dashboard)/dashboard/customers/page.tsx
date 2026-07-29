@@ -1,54 +1,41 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
 import { QrCode, Megaphone } from "lucide-react";
 
-import {
-  listAttendees,
-  listEventsByAttendee,
-  minPriceByEvent,
-} from "@/lib/server";
+import { useApi } from "@/lib/client/api";
+import { useActiveWorkspace } from "@/components/dashboard/ActiveWorkspace";
+import { AsyncState } from "@/components/ui/async-state";
 import { formatJalaliDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { ContactsTable, type Contact } from "@/components/dashboard/ContactsTable";
-import { requireManagerPage } from "@/lib/server/auth/guards";
+import type { Attendee } from "@/types";
 
-export const metadata: Metadata = { title: "مخاطبین | پوستر" };
+interface Row {
+  contact: Attendee;
+  events: { id: string; title: string; startAt: string | null }[];
+  spent: number;
+}
 
-export default async function CustomersPage() {
-  const { workspace } = await requireManagerPage();
-
-  const attendees = await listAttendees(workspace.workspaceId);
-  const joinedByAttendee = new Map(
-    await Promise.all(
-      attendees.map(
-        async (a) => [a.id, await listEventsByAttendee(a.id)] as const,
-      ),
-    ),
-  );
-  // One batch for every joined event across every contact.
-  const prices = await minPriceByEvent(
-    [...joinedByAttendee.values()].flat().map((e) => e.id),
+export default function CustomersPage() {
+  const workspace = useActiveWorkspace();
+  const { data, error, loading, reload } = useApi<{ attendees: Row[] }>(
+    workspace ? `/api/workspaces/${workspace.slug}/attendees` : null,
   );
 
-  const contacts: Contact[] = attendees.map((a) => {
-    const joined = joinedByAttendee.get(a.id) ?? [];
-    // Mock earnings: the cheapest ticket price of each joined event.
-    const spent = joined.reduce((sum, e) => sum + (prices.get(e.id) ?? 0), 0);
-
-    return {
-      id: a.id,
-      fullName: a.fullName,
-      phone: a.phone,
-      tags: a.tags.map((t) => t.label),
-      events: joined.map((e) => ({
-        id: e.id,
-        title: e.title,
-        dateLabel: e.sessions[0] ? formatJalaliDate(e.sessions[0].startAt) : "",
-      })),
-      spent,
-    };
-  });
+  const contacts: Contact[] = (data?.attendees ?? []).map((row) => ({
+    id: row.contact.id,
+    fullName: row.contact.fullName,
+    phone: row.contact.phone,
+    tags: row.contact.tags.map((t) => t.label),
+    events: row.events.map((e) => ({
+      id: e.id,
+      title: e.title,
+      dateLabel: e.startAt ? formatJalaliDate(e.startAt) : "",
+    })),
+    spent: row.spent,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,29 +45,36 @@ export default async function CustomersPage() {
             مخاطبین
           </h1>
           <p className="mt-1 text-sm text-muted">
-            فهرست مخاطبان و مشتریان رویدادهای شما.
+            کسانی که در رویدادهای شما شرکت کرده‌اند.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2">
           <Link
             href="/dashboard/checkin"
             className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
           >
-            <QrCode aria-hidden />
-            اسکن بلیت
+            <QrCode className="size-4" aria-hidden />
+            پذیرش
           </Link>
           <Link
             href="/dashboard/marketing"
-            className={cn(buttonVariants({ variant: "primary", size: "sm" }))}
+            className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
           >
-            <Megaphone aria-hidden />
-            کمپین پیامکی
+            <Megaphone className="size-4" aria-hidden />
+            کمپین
           </Link>
         </div>
       </div>
 
-      <ContactsTable contacts={contacts} />
+      {data ? (
+        <ContactsTable contacts={contacts} />
+      ) : (
+        <AsyncState
+          loading={loading || !workspace}
+          error={error}
+          onRetry={reload}
+        />
+      )}
     </div>
   );
 }

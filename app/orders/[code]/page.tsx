@@ -1,19 +1,16 @@
-import type { Metadata } from "next";
+"use client";
+
+import { use } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
 
-import { getOrderByCode } from "@/lib/server";
+import { useApi } from "@/lib/client/api";
+import { AsyncState } from "@/components/ui/async-state";
 import { formatToman } from "@/lib/format";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
-
-export const metadata: Metadata = { title: "سفارش | پوستر" };
-
-interface Props {
-  params: Promise<{ code: string }>;
-  searchParams: Promise<{ state?: string }>;
-}
+import type { Order } from "@/types";
 
 /**
  * Where the gateway returns the buyer.
@@ -21,27 +18,38 @@ interface Props {
  * Reached by tracking code rather than id, so it can be shared and revisited
  * without a session — a guest checkout has no account to look it up under.
  */
-export default async function OrderResultPage({ params, searchParams }: Props) {
-  const { code } = await params;
-  const order = await getOrderByCode(code);
-  if (!order) notFound();
+export default function OrderResultPage({
+  params,
+}: {
+  params: Promise<{ code: string }>;
+}) {
+  const { code } = use(params);
+  const state = useSearchParams().get("state");
+  const { data: order, error, loading, reload } = useApi<Order>(
+    `/api/orders/by-code/${code}`,
+  );
 
-  const { state } = await searchParams;
+  if (!order) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col">
+        <PublicHeader />
+        <main className="mx-auto w-full max-w-lg flex-1 px-4 py-12 sm:px-6">
+          <AsyncState loading={loading} error={error} onRetry={reload} />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   const failed = state === "failed" || order.status === "failed";
   const paid = order.status === "paid";
 
   const tone = paid
-    ? { icon: CheckCircle2, className: "bg-success/10 text-success" }
+    ? { Icon: CheckCircle2, className: "bg-success/10 text-success" }
     : failed
-      ? { icon: XCircle, className: "bg-danger/10 text-danger" }
-      : { icon: Clock, className: "bg-subtle text-muted" };
-  const Icon = tone.icon;
-
-  const heading = paid
-    ? "پرداخت انجام شد"
-    : failed
-      ? "پرداخت انجام نشد"
-      : "در انتظار پرداخت";
+      ? { Icon: XCircle, className: "bg-danger/10 text-danger" }
+      : { Icon: Clock, className: "bg-subtle text-muted" };
+  const { Icon } = tone;
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -53,10 +61,10 @@ export default async function OrderResultPage({ params, searchParams }: Props) {
           >
             <Icon className="size-8" aria-hidden />
           </span>
-          <h1 className="text-xl font-bold text-foreground">{heading}</h1>
-          <p className="mt-2 text-sm text-muted">
-            {`کد پیگیری: ${order.code}`}
-          </p>
+          <h1 className="text-xl font-bold text-foreground">
+            {paid ? "پرداخت انجام شد" : failed ? "پرداخت انجام نشد" : "در انتظار پرداخت"}
+          </h1>
+          <p className="mt-2 text-sm text-muted">{`کد پیگیری: ${order.code}`}</p>
 
           <dl className="mt-6 flex flex-col gap-2 text-sm">
             {order.items.map((item) => (
@@ -72,9 +80,7 @@ export default async function OrderResultPage({ params, searchParams }: Props) {
             {order.discountAmount > 0 ? (
               <div className="flex justify-between gap-4">
                 <dt className="text-muted">تخفیف</dt>
-                <dd className="text-success">
-                  {`− ${formatToman(order.discountAmount)}`}
-                </dd>
+                <dd className="text-success">{`− ${formatToman(order.discountAmount)}`}</dd>
               </div>
             ) : null}
             <div className="mt-1 flex justify-between gap-4 border-t border-border pt-2 font-semibold">

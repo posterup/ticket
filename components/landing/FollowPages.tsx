@@ -1,12 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { BadgeCheck, ArrowLeft } from "lucide-react";
 
-import {
-  listWorkspaces,
-  listEventsByWorkspaces,
-  listFollowedSlugs,
-} from "@/lib/server";
-import { getCurrentUser } from "@/lib/server/auth/guards";
+import { useApi } from "@/lib/client/api";
+import type { Workspace } from "@/types";
 import { formatNumber } from "@/lib/format";
 import { FollowChip } from "@/components/workspace/FollowChip";
 
@@ -14,16 +12,20 @@ import { FollowChip } from "@/components/workspace/FollowChip";
  * Landing social strip: organizer/person pages to follow, reinforcing the
  * "follow pages and see their events" core of the platform.
  */
-export async function FollowPages() {
-  const workspaces = await listWorkspaces();
+export function FollowPages() {
+  const { data } = useApi<Workspace[]>("/api/workspaces");
+  const me = useApi<{ user: unknown | null }>("/api/auth/me");
+  const following = useApi<Workspace[]>(
+    me.data?.user ? "/api/me/following" : null,
+  );
+
+  const workspaces = data ?? [];
+  // Renders nothing until there is something: a skeleton on the marketing page
+  // is worse than the section appearing a moment later.
   if (workspaces.length === 0) return null;
 
-  // One batch instead of a lookup per card.
-  const eventsBySlug = await listEventsByWorkspaces(
-    workspaces.map((w) => w.slug),
-  );
-  const viewer = await getCurrentUser();
-  const followed = new Set(viewer ? await listFollowedSlugs(viewer.id) : []);
+  const followed = new Set((following.data ?? []).map((w) => w.slug));
+  const viewer = me.data?.user ?? null;
 
   return (
     <section className="border-t border-border bg-subtle">
@@ -71,9 +73,8 @@ export async function FollowPages() {
                     ) : null}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted">
-                    {formatNumber(w.followers)} دنبال‌کننده ·{" "}
-                    {formatNumber(eventsBySlug.get(w.slug)?.length ?? 0)}{" "}
-                    رویداد
+                    {formatNumber(w.followers)} دنبال‌کننده{" "}
+                    
                   </span>
                 </span>
               </Link>

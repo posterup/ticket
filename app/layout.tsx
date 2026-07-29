@@ -5,7 +5,6 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 
-import { getCurrentUser } from "@/lib/server/auth/guards";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
@@ -27,17 +26,15 @@ export const viewport: Viewport = {
   ],
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const loggedIn = (await getCurrentUser()) !== null;
-
   return (
-    <html lang="fa" dir="rtl" data-auth={loggedIn ? "in" : "out"}>
+    <html lang="fa" dir="rtl">
       <body>
-        <AppShell loggedIn={loggedIn}>{children}</AppShell>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

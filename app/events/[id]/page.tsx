@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+"use client";
 
-import { getCurrentUser } from "@/lib/server/auth/guards";
-import { getViewerState } from "@/lib/server";
+import { use } from "react";
+
+import { useApi } from "@/lib/client/api";
+import { AsyncState } from "@/components/ui/async-state";
+import Link from "next/link";
+
 import {
   MapPin,
   Clock,
@@ -13,12 +15,6 @@ import {
   Video,
 } from "lucide-react";
 
-import {
-  getEventByIdOrSlug,
-  listTickets,
-  getWorkspaceByEvent,
-  listAcceptedCollaborators,
-} from "@/lib/server";
 import {
   formatJalaliDate,
   formatTime,
@@ -44,12 +40,6 @@ interface Params {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { id } = await params;
-  const event = await getEventByIdOrSlug(id);
-  return { title: event ? `${event.title} | پوستر` : "رویداد | پوستر" };
-}
-
 function priceLabel(prices: number[]): string | null {
   if (prices.length === 0) return null;
   const min = Math.min(...prices);
@@ -58,22 +48,39 @@ function priceLabel(prices: number[]): string | null {
   return min === max ? formatToman(min) : `از ${formatToman(min)}`;
 }
 
-export default async function PublicEventDetail({ params }: Params) {
-  const { id } = await params;
-  const event = await getEventByIdOrSlug(id);
-  if (!event) notFound();
+interface PageData {
+  event: Event;
+  tickets: TicketType[];
+  organizer: Workspace | null;
+  collaborators: EventCollaborator[];
+  signedIn: boolean;
+  viewerState: { bookmark: string | null; notify: boolean };
+}
 
-  const [tickets, organizer, collaborators, viewer] = await Promise.all([
-    listTickets(event.id),
-    getWorkspaceByEvent(event.id),
-    listAcceptedCollaborators(event.id),
-    getCurrentUser(),
-  ]);
-  const loggedIn = viewer !== null;
-  // So the button reads correctly on first paint rather than after an effect.
-  const viewerState = viewer
-    ? await getViewerState(viewer.id, event.id)
-    : { bookmark: null, notify: false };
+export default function PublicEventDetail({ params }: Params) {
+  const { id } = use(params);
+  // One request: the page needs all of it before it can show anything useful.
+  const { data, error, loading, reload } = useApi<PageData>(
+    `/api/events/${id}/page-data`,
+  );
+
+  if (!data) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col">
+        <PublicHeader />
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
+          <AsyncState loading={loading} error={error} onRetry={reload} />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const { event, tickets, collaborators } = data;
+  // The API returns null; the Hosts component treats absent as undefined.
+  const organizer = data.organizer ?? undefined;
+  const loggedIn = data.signedIn;
+  const viewerState = data.viewerState;
 
   const sessions = [...event.sessions].sort((a, b) =>
     a.startAt.localeCompare(b.startAt),
