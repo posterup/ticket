@@ -128,7 +128,9 @@ describe.skipIf(!db)("seeded database matches the fixtures", () => {
     const byId = new Map(rows.map((r) => [r.id, r]));
     for (const d of fixtures) {
       expect(byId.get(d.id)?.code).toBe(d.code.toUpperCase());
-      expect(byId.get(d.id)?.redemptions).toBe(d.redemptions);
+      // A floor, not an equality: settling an order legitimately increments
+      // this, and the order suite shares the database.
+      expect(byId.get(d.id)?.redemptions).toBeGreaterThanOrEqual(d.redemptions);
       // Every code is scoped to a workspace, including the org-wide ones.
       expect(byId.get(d.id)?.workspaceId).toBeTruthy();
     }
