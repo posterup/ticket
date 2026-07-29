@@ -28,25 +28,47 @@ serves its in-memory seed data, so a fresh clone runs with no setup.
 
 ## Database
 
-The Prisma schema (`prisma/schema.prisma`) is the target datastore; the data
-layer in `lib/server/` still reads the in-memory seed until the migration
-lands. To provision a database:
+`prisma/schema.prisma` is the datastore. The data layer in `lib/server/` still
+reads the in-memory fixtures, so the app runs without a database — but the
+seed, migrations and `tests/seed.test.ts` need one.
+
+Any Postgres works. Locally:
 
 ```bash
-npx prisma init --db     # provisions Prisma Postgres, writes DATABASE_URL to .env
-npm run db:migrate       # create and apply the migration
+docker run -d --name poster-db \
+  -e POSTGRES_PASSWORD=poster -e POSTGRES_DB=poster \
+  -p 5434:5432 postgres:16
+
+echo 'DATABASE_URL="postgresql://postgres:poster@localhost:5434/poster?schema=public"' > .env
+
+npm run db:migrate   # apply migrations
+npm run db:seed      # load the fixtures
 ```
+
+For a managed database instead, `npx prisma init --db` provisions Prisma
+Postgres and writes `DATABASE_URL` for you — it needs an interactive terminal
+for the browser login.
 
 | Script | Purpose |
 | --- | --- |
 | `npm run db:generate` | Regenerate the client (also runs on `postinstall`) |
 | `npm run db:migrate` | Create and apply a migration in development |
-| `npm run db:reset` | Drop, re-migrate and re-seed |
+| `npm run db:seed` | Load the fixtures |
+| `npm run db:reset` | Drop, re-migrate and re-seed — **destroys all data** |
 | `npm run db:studio` | Browse the data |
 
+The seed preserves every hardcoded fixture id, so a reset produces a database
+indistinguishable from the in-memory arrays it mirrors. It also creates four
+sign-in accounts, one owning each workspace: `09120000001` (ava-events),
+`09120000002` (negar-karimi), `09120000003` (chef-collective) and
+`09120000004` (iran-runners).
+
 Connection URLs live in `prisma.config.ts` (Prisma 7 keeps them out of the
-schema), read from `DATABASE_URL`. The generated client is written to
+schema), read from `DATABASE_URL` in `.env`. The generated client is written to
 `generated/` and is git-ignored.
+
+Without `DATABASE_URL` the suite still passes — `tests/seed.test.ts` skips
+itself rather than failing.
 
 ## Messaging (SMS & email)
 

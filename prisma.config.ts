@@ -1,3 +1,6 @@
+// Prisma 7 no longer reads `.env` itself, and the CLI runs outside Next's
+// env loading — so load it here or every command sees an empty DATABASE_URL.
+import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 /**
