@@ -5,9 +5,11 @@ import { MarketingPanel } from "@/components/marketing/MarketingPanel";
 
 export const metadata: Metadata = { title: "بازاریابی | پوستر" };
 
-export default function MarketingPage() {
-  const campaigns = listCampaigns();
-  const segments = listSegments();
+export default async function MarketingPage() {
+  const [campaigns, segments] = await Promise.all([
+    listCampaigns(),
+    listSegments(),
+  ]);
 
   return (
     <div className="flex flex-col gap-8">

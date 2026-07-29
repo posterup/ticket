@@ -12,7 +12,7 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
   const { id, sessionId } = await params;
   const patch = await readJson(request, sessionUpdateSchema);
 
-  const session = updateSession(id, sessionId, patch);
+  const session = await updateSession(id, sessionId, patch);
   if (session === undefined) throw notFound("Session was not found.");
   return ok(session);
 });

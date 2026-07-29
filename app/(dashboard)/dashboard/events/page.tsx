@@ -5,8 +5,8 @@ import { EventsTimeline } from "@/components/dashboard/EventsTimeline";
 
 export const metadata: Metadata = { title: "رویدادها | پوستر" };
 
-export default function EventsPage() {
-  const events = listEvents();
+export default async function EventsPage() {
+  const events = await listEvents();
 
   return (
     <div className="flex flex-col gap-6">

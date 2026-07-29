@@ -8,7 +8,7 @@ import {
 /** GET /api/discounts — list codes, optionally scoped by `?eventId=`. */
 export const GET = handler(async (request: Request) => {
   const { eventId } = readQuery(request, listDiscountsQuery);
-  return ok(listDiscounts(eventId));
+  return ok(await listDiscounts(eventId));
 });
 
 /** POST /api/discounts — create a discount code. 409 when the code is taken. */
@@ -16,9 +16,9 @@ export const POST = handler(async (request: Request) => {
   // The schema has already trimmed and upper-cased `code`.
   const input = await readJson(request, createDiscountSchema);
 
-  if (listDiscounts().some((d) => d.code === input.code)) {
+  if ((await listDiscounts()).some((d) => d.code === input.code)) {
     throw new HttpError(409, "DUPLICATE", "این کد قبلاً ثبت شده است.");
   }
 
-  return ok(createDiscount(input), 201);
+  return ok(await createDiscount(input), 201);
 });

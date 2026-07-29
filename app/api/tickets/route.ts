@@ -8,11 +8,11 @@ import {
 /** GET /api/tickets — list ticket types, optionally filtered by `?eventId=`. */
 export const GET = handler(async (request: Request) => {
   const { eventId } = readQuery(request, listTicketsQuery);
-  return ok(listTickets(eventId));
+  return ok(await listTickets(eventId));
 });
 
 /** POST /api/tickets — create a ticket type. 400 on invalid body, 201 on success. */
 export const POST = handler(async (request: Request) => {
   const input = await readJson(request, createTicketTypeSchema);
-  return ok(createTicketType(input), 201);
+  return ok(await createTicketType(input), 201);
 });

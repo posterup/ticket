@@ -9,15 +9,51 @@ import type { CreateTicketTypeInput, TicketType } from "@/types";
 import { ticketTypes } from "./store";
 
 /** Return ticket types, optionally scoped to a single event. */
-export function listTickets(eventId?: string): TicketType[] {
+export async function listTickets(eventId?: string): Promise<TicketType[]> {
   if (eventId === undefined) {
     return [...ticketTypes];
   }
   return ticketTypes.filter((ticket) => ticket.eventId === eventId);
 }
 
+/**
+ * Ticket types for many events at once, keyed by event id.
+ *
+ * Batched so listing pages resolve prices in one round trip instead of calling
+ * {@link listTickets} inside a `.map()`.
+ */
+export async function listTicketsForEvents(
+  eventIds: string[],
+): Promise<Map<string, TicketType[]>> {
+  const wanted = new Set(eventIds);
+  const out = new Map<string, TicketType[]>(eventIds.map((id) => [id, []]));
+  for (const ticket of ticketTypes) {
+    if (wanted.has(ticket.eventId)) out.get(ticket.eventId)?.push(ticket);
+  }
+  return out;
+}
+
+/**
+ * Cheapest ticket price per event ("from X Toman"), keyed by event id. Events
+ * with no ticket types are absent from the map.
+ */
+export async function minPriceByEvent(
+  eventIds: string[],
+): Promise<Map<string, number>> {
+  const byEvent = await listTicketsForEvents(eventIds);
+  const out = new Map<string, number>();
+  for (const [eventId, tickets] of byEvent) {
+    if (tickets.length > 0) {
+      out.set(eventId, Math.min(...tickets.map((t) => t.price)));
+    }
+  }
+  return out;
+}
+
 /** Create and persist a new ticket type, returning the stored record. */
-export function createTicketType(input: CreateTicketTypeInput): TicketType {
+export async function createTicketType(
+  input: CreateTicketTypeInput,
+): Promise<TicketType> {
   const ticketType: TicketType = {
     id: crypto.randomUUID(),
     eventId: input.eventId,
@@ -52,10 +88,10 @@ export type TicketTypeUpdate = Partial<
  * Update a ticket type in place. Returns the record, or `undefined` when no
  * ticket type has the given id.
  */
-export function updateTicketType(
+export async function updateTicketType(
   id: string,
   patch: TicketTypeUpdate,
-): TicketType | undefined {
+): Promise<TicketType | undefined> {
   const ticket = ticketTypes.find((t) => t.id === id);
   if (!ticket) return undefined;
   if (patch.name !== undefined) ticket.name = patch.name;

@@ -45,12 +45,12 @@ export interface SessionRef {
  * holder is assigned to one of the event's سانس‌ها so check-in can verify a
  * guest arrived at the right session.
  */
-export function buildHolders(
+export async function buildHolders(
   eventId: string,
   index: number,
   sessions: SessionRef[],
-): Holder[] {
-  const ticketNames = listTickets(eventId).map((t) => t.name);
+): Promise<Holder[]> {
+  const ticketNames = (await listTickets(eventId)).map((t) => t.name);
   const types = ticketNames.length > 0 ? ticketNames : ["عمومی"];
   const sess: SessionRef[] =
     sessions.length > 0 ? sessions : [{ id: `${eventId}-s0`, label: "سانس" }];

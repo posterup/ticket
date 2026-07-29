@@ -8,7 +8,7 @@ import type { EventGuest, GuestRsvp } from "@/types";
 import { eventGuests } from "./store";
 
 /** Guests invited to an event, newest first. */
-export function listGuests(eventId: string): EventGuest[] {
+export async function listGuests(eventId: string): Promise<EventGuest[]> {
   return eventGuests
     .filter((g) => g.eventId === eventId)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -21,7 +21,10 @@ export interface AddGuestInput {
 }
 
 /** Add a guest to a session of an event; returns the stored record. */
-export function addGuest(eventId: string, input: AddGuestInput): EventGuest {
+export async function addGuest(
+  eventId: string,
+  input: AddGuestInput,
+): Promise<EventGuest> {
   const guest: EventGuest = {
     id: crypto.randomUUID(),
     eventId,
@@ -36,10 +39,10 @@ export function addGuest(eventId: string, input: AddGuestInput): EventGuest {
 }
 
 /** Update a guest's RSVP status; returns it, or `undefined` if absent. */
-export function setGuestStatus(
+export async function setGuestStatus(
   id: string,
   status: GuestRsvp,
-): EventGuest | undefined {
+): Promise<EventGuest | undefined> {
   const guest = eventGuests.find((g) => g.id === id);
   if (!guest) return undefined;
   guest.status = status;
@@ -47,7 +50,7 @@ export function setGuestStatus(
 }
 
 /** Remove a guest; returns true when one was removed. */
-export function removeGuest(id: string): boolean {
+export async function removeGuest(id: string): Promise<boolean> {
   const i = eventGuests.findIndex((g) => g.id === id);
   if (i < 0) return false;
   eventGuests.splice(i, 1);

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 import {
   listEvents,
-  listTickets,
-  getWorkspaceByEvent,
+  minPriceByEvent,
+  getWorkspacesByEvents,
 } from "@/lib/server";
 import { formatJalaliDate, formatToman } from "@/lib/format";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -15,32 +15,39 @@ export const metadata: Metadata = {
   description: "رویدادهایی که نشان کرده‌اید و صفحه‌هایی که دنبال می‌کنید.",
 };
 
-function fromPrice(eventId: string): string | null {
-  const prices = listTickets(eventId).map((t) => t.price);
-  if (prices.length === 0) return null;
-  const min = Math.min(...prices);
+function fromPrice(min: number | undefined): string | null {
+  if (min === undefined) return null;
   return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
 }
 
-export default function MePage() {
-  const events: MeEvent[] = listEvents()
-    .filter((e) => e.status === "published")
-    .map((event) => {
-      const org = getWorkspaceByEvent(event.id);
-      const firstSession = event.sessions[0];
-      return {
-        id: event.id,
-        title: event.title,
-        city: event.venue.city,
-        venueName: event.venue.name,
-        dateLabel: firstSession ? formatJalaliDate(firstSession.startAt) : "",
-        price: fromPrice(event.id),
-        tags: event.tags,
-        org: org
-          ? { name: org.name, avatar: org.avatar, verified: Boolean(org.verified) }
-          : null,
-      };
-    });
+export default async function MePage() {
+  const published = (await listEvents()).filter(
+    (e) => e.status === "published",
+  );
+  const ids = published.map((e) => e.id);
+
+  // Resolved in one batch each, rather than per row inside the map below.
+  const [prices, orgs] = await Promise.all([
+    minPriceByEvent(ids),
+    getWorkspacesByEvents(ids),
+  ]);
+
+  const events: MeEvent[] = published.map((event) => {
+    const org = orgs.get(event.id);
+    const firstSession = event.sessions[0];
+    return {
+      id: event.id,
+      title: event.title,
+      city: event.venue.city,
+      venueName: event.venue.name,
+      dateLabel: firstSession ? formatJalaliDate(firstSession.startAt) : "",
+      price: fromPrice(prices.get(event.id)),
+      tags: event.tags,
+      org: org
+        ? { name: org.name, avatar: org.avatar, verified: Boolean(org.verified) }
+        : null,
+    };
+  });
 
   return (
     <div className="flex min-h-[100dvh] flex-col">

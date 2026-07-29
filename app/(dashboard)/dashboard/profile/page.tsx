@@ -6,8 +6,8 @@ import { AccountMenu } from "@/components/dashboard/AccountMenu";
 
 export const metadata: Metadata = { title: "پروفایل | پوستر" };
 
-export default function ProfilePage() {
-  const workspaces = listWorkspaces();
+export default async function ProfilePage() {
+  const workspaces = await listWorkspaces();
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">

@@ -1,6 +1,7 @@
 /**
- * Discount-code data-access + validation over an in-memory array. Replace the
- * array operations with real queries when a datastore is added.
+ * Discount-code data-access over an in-memory array. Replace the array
+ * operations with real queries when a datastore is added; the redemption rules
+ * themselves live in `./rules` and stay datastore-free.
  *
  * ⚠️ Codes created via {@link createDiscount} live in a module-level array, so
  * on serverless they persist only within a single instance. Seeded codes are
@@ -13,6 +14,10 @@ import type {
   DiscountValidation,
   Money,
 } from "@/types";
+
+import { checkDiscountEligibility, normalizeCode } from "./rules";
+
+export { computeDiscountAmount, normalizeCode } from "./rules";
 
 const CONCERT_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 
@@ -56,18 +61,22 @@ const discounts: DiscountCode[] = [
 ];
 
 /** Return discount codes, optionally scoped to a single event (plus org-wide). */
-export function listDiscounts(eventId?: string): DiscountCode[] {
+export async function listDiscounts(
+  eventId?: string,
+): Promise<DiscountCode[]> {
   if (eventId === undefined) return [...discounts];
   return discounts.filter((d) => d.eventId === null || d.eventId === eventId);
 }
 
 /** Create and persist a new discount code, returning the stored record. */
-export function createDiscount(input: CreateDiscountInput): DiscountCode {
+export async function createDiscount(
+  input: CreateDiscountInput,
+): Promise<DiscountCode> {
   const discount: DiscountCode = {
     id: crypto.randomUUID(),
     eventId: input.eventId,
     sessionId: input.sessionId ?? null,
-    code: input.code.trim().toUpperCase(),
+    code: normalizeCode(input.code),
     kind: input.kind,
     value: input.value,
     maxRedemptions: input.maxRedemptions,
@@ -80,55 +89,19 @@ export function createDiscount(input: CreateDiscountInput): DiscountCode {
   return discount;
 }
 
-/** The Toman amount a valid code removes from `subtotal` (never below zero). */
-export function computeDiscountAmount(
-  discount: DiscountCode,
-  subtotal: Money,
-): Money {
-  const raw =
-    discount.kind === "percent"
-      ? Math.floor((subtotal * discount.value) / 100)
-      : discount.value;
-  return Math.max(0, Math.min(raw, subtotal));
-}
-
 /**
  * Validate a redemption of `rawCode` against an order. Returns a discriminated
  * result carrying either the computed discount or a Persian failure reason.
  */
-export function validateDiscount(
+export async function validateDiscount(
   rawCode: string,
   eventId: string,
   subtotal: Money,
-): DiscountValidation {
-  const code = rawCode.trim().toUpperCase();
-  if (!code) return { ok: false, reason: "کد تخفیف را وارد کنید." };
-  if (subtotal <= 0) return { ok: false, reason: "مبلغ سفارش نامعتبر است." };
+): Promise<DiscountValidation> {
+  const code = normalizeCode(rawCode);
+  const discount = code
+    ? discounts.find((d) => d.code === code)
+    : undefined;
 
-  const discount = discounts.find((d) => d.code === code);
-  if (!discount || !discount.active) {
-    return { ok: false, reason: "کد تخفیف معتبر نیست." };
-  }
-  if (discount.eventId !== null && discount.eventId !== eventId) {
-    return { ok: false, reason: "این کد برای این رویداد قابل استفاده نیست." };
-  }
-  if (discount.expiresAt && new Date(discount.expiresAt).getTime() < Date.now()) {
-    return { ok: false, reason: "مهلت استفاده از این کد به پایان رسیده است." };
-  }
-  if (
-    discount.maxRedemptions !== null &&
-    discount.redemptions >= discount.maxRedemptions
-  ) {
-    return { ok: false, reason: "ظرفیت استفاده از این کد تکمیل شده است." };
-  }
-
-  const discountAmount = computeDiscountAmount(discount, subtotal);
-  return {
-    ok: true,
-    code: discount.code,
-    kind: discount.kind,
-    value: discount.value,
-    discountAmount,
-    total: subtotal - discountAmount,
-  };
+  return checkDiscountEligibility({ rawCode, discount, eventId, subtotal });
 }

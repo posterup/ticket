@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
-import { listWorkspaces, listEventsByWorkspace, listTickets } from "@/lib/server";
+import {
+  listWorkspaces,
+  listEventsByWorkspaces,
+  minPriceByEvent,
+} from "@/lib/server";
 import { formatJalaliDate, formatToman } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -16,18 +20,24 @@ export const metadata: Metadata = {
   description: "رویدادهای صفحه‌هایی که دنبال می‌کنید.",
 };
 
-function fromPrice(eventId: string): string | null {
-  const prices = listTickets(eventId).map((t) => t.price);
-  if (prices.length === 0) return null;
-  const min = Math.min(...prices);
+function fromPrice(min: number | undefined): string | null {
+  if (min === undefined) return null;
   return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
 }
 
-export default function FeedPage() {
-  const workspaces = listWorkspaces();
+export default async function FeedPage() {
+  const workspaces = await listWorkspaces();
+
+  // Both resolved in one batch, rather than per workspace/event in the map.
+  const eventsBySlug = await listEventsByWorkspaces(
+    workspaces.map((w) => w.slug),
+  );
+  const prices = await minPriceByEvent(
+    [...eventsBySlug.values()].flat().map((e) => e.id),
+  );
 
   const withKey = workspaces.flatMap((w) =>
-    listEventsByWorkspace(w.slug).map((e) => ({
+    (eventsBySlug.get(w.slug) ?? []).map((e) => ({
       sortKey: e.sessions[0]?.startAt ?? "",
       event: {
         id: e.id,
@@ -35,7 +45,7 @@ export default function FeedPage() {
         modeLabel: modeLabel(e.mode),
         venue: `${e.venue.name}، ${e.venue.city}`,
         dateLabel: e.sessions[0] ? formatJalaliDate(e.sessions[0].startAt) : "",
-        price: fromPrice(e.id),
+        price: fromPrice(prices.get(e.id)),
         tags: e.tags,
         wsSlug: w.slug,
         wsName: w.name,

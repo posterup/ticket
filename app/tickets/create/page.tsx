@@ -12,7 +12,9 @@ export const metadata: Metadata = {
     "رویداد خود را بسازید: مکان، سانس‌ها، انواع بلیت و تنظیمات حریم خصوصی.",
 };
 
-export default function CreateTicketPage() {
+export default async function CreateTicketPage() {
+  const availableTags = await listAttendeeTags();
+
   return (
     <div className="min-h-[100dvh]">
       <header className="auth-mobile-hide border-b border-border">
@@ -45,7 +47,7 @@ export default function CreateTicketPage() {
           </p>
         </div>
 
-        <EventComposer availableTags={listAttendeeTags()} />
+        <EventComposer availableTags={availableTags} />
       </main>
     </div>
   );

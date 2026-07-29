@@ -53,9 +53,9 @@ export interface EventSalesStat {
   revenue: number;
 }
 
-export function computeByEvent(): Record<string, EventSalesStat> {
+export async function computeByEvent(): Promise<Record<string, EventSalesStat>> {
   const out: Record<string, EventSalesStat> = {};
-  for (const t of listTickets()) {
+  for (const t of await listTickets()) {
     const sold = Math.round(t.capacity * (SELL_RATIO[t.category] ?? 0.5));
     const prev = out[t.eventId] ?? { sold: 0, capacity: 0, revenue: 0 };
     out[t.eventId] = {
@@ -67,8 +67,8 @@ export function computeByEvent(): Record<string, EventSalesStat> {
   return out;
 }
 
-export function computeAnalytics(): Analytics {
-  const tickets = listTickets();
+export async function computeAnalytics(): Promise<Analytics> {
+  const tickets = await listTickets();
   let revenue = 0;
   let ticketsSold = 0;
   let capacity = 0;

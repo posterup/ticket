@@ -12,5 +12,5 @@ export const POST = handler(async (request: Request) => {
     request,
     validateDiscountSchema,
   );
-  return ok(validateDiscount(code, eventId, subtotal));
+  return ok(await validateDiscount(code, eventId, subtotal));
 });

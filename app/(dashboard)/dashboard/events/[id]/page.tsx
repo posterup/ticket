@@ -95,17 +95,19 @@ function buildScheduleDraft(event: Event): ScheduleDraft {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
-  const event = getEventById(id);
+  const event = await getEventById(id);
   return { title: event ? `${event.title} | پوستر` : "رویداد | پوستر" };
 }
 
 export default async function EventDetailPage({ params }: Params) {
   const { id } = await params;
-  const event = getEventById(id);
+  const event = await getEventById(id);
   if (!event) notFound();
 
-  const tickets = listTickets(id);
-  const discounts = listDiscounts(id);
+  const [tickets, discounts] = await Promise.all([
+    listTickets(id),
+    listDiscounts(id),
+  ]);
   // A free event (all ticket types priced at 0) has nothing to price or
   // discount, so its «بلیت‌ها» and «تخفیف‌ها» tabs are hidden.
   const isFree = tickets.length > 0 && tickets.every((t) => t.price === 0);
@@ -115,21 +117,26 @@ export default async function EventDetailPage({ params }: Params) {
   }));
 
   // Workspaces a host can request to collaborate with (excluding the owner).
-  const owner = getWorkspaceByEvent(event.id);
-  const collabWorkspaces = listWorkspaces()
+  const [owner, workspaces, rawGuests, collaborators, audienceTags] =
+    await Promise.all([
+      getWorkspaceByEvent(event.id),
+      listWorkspaces(),
+      listGuests(event.id),
+      listCollaborators(event.id),
+      listAttendeeTags(),
+    ]);
+  const collabWorkspaces = workspaces
     .filter((w) => w.slug !== owner?.slug)
     .map((w) => ({ slug: w.slug, name: w.name, avatar: w.avatar }));
-  const guests = listGuests(event.id).map((g) => ({
+  const guests = rawGuests.map((g) => ({
     id: g.id,
     sessionId: g.sessionId,
     contact: g.contact,
     channel: g.channel,
     status: g.status,
   }));
-  const collaborators = listCollaborators(event.id);
-  const audienceTags = listAttendeeTags();
   const registrations = event.requiresApproval
-    ? listRegistrations(event.id).map((r) => ({
+    ? (await listRegistrations(event.id)).map((r) => ({
         id: r.id,
         name: r.name,
         phone: r.phone,
@@ -149,7 +156,8 @@ export default async function EventDetailPage({ params }: Params) {
     venue: [event.venue.name, event.venue.city].filter(Boolean).join("، "),
   };
 
-  const holders = buildHolders(event.id, 0, sessionOptions);
+  const holders = await buildHolders(event.id, 0, sessionOptions);
+  const checkedHolderIds = await listCheckedHolderIds();
 
   return (
     <div className="flex flex-col gap-6">
@@ -243,7 +251,7 @@ export default async function EventDetailPage({ params }: Params) {
                 holders={holders}
                 capacity={event.venue.capacity}
                 guests={guests}
-                initialChecked={listCheckedHolderIds()}
+                initialChecked={checkedHolderIds}
                 allowGuests={event.mode !== "recurring"}
                 onlyGuests={isFree}
               />

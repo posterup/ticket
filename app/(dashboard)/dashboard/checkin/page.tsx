@@ -10,19 +10,26 @@ import {
 
 export const metadata: Metadata = { title: "پذیرش | پوستر" };
 
-export default function CheckinPage() {
-  const events: CheckinEvent[] = listEvents().map((e, i) => {
-    const sessions = e.sessions.map((s) => ({
-      id: s.id,
-      label: `${formatJalaliDate(s.startAt)} · ${formatTime(s.startAt)}`,
-    }));
-    return {
-      id: e.id,
-      title: e.title,
-      sessions,
-      holders: buildHolders(e.id, i, sessions),
-    };
-  });
+export default async function CheckinPage() {
+  const [allEvents, initialChecked] = await Promise.all([
+    listEvents(),
+    listCheckedHolderIds(),
+  ]);
+
+  const events: CheckinEvent[] = await Promise.all(
+    allEvents.map(async (e, i) => {
+      const sessions = e.sessions.map((s) => ({
+        id: s.id,
+        label: `${formatJalaliDate(s.startAt)} · ${formatTime(s.startAt)}`,
+      }));
+      return {
+        id: e.id,
+        title: e.title,
+        sessions,
+        holders: await buildHolders(e.id, i, sessions),
+      };
+    }),
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -34,7 +41,7 @@ export default function CheckinPage() {
           مهمانان را با اسکن کد بلیت یا جستجو ثبت ورود کنید.
         </p>
       </div>
-      <CheckinPanel events={events} initialChecked={listCheckedHolderIds()} />
+      <CheckinPanel events={events} initialChecked={initialChecked} />
     </div>
   );
 }

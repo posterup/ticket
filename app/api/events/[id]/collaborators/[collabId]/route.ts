@@ -7,7 +7,9 @@ type Context = { params: Promise<{ collabId: string }> };
 export const DELETE = handler(
   async (_request: Request, { params }: Context) => {
     const { collabId } = await params;
-    if (!removeCollaborator(collabId)) throw notFound("Collaborator not found.");
+    if (!(await removeCollaborator(collabId))) {
+      throw notFound("Collaborator not found.");
+    }
     return ok({ id: collabId });
   },
 );

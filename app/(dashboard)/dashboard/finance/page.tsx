@@ -7,8 +7,8 @@ import { WalletPanel } from "@/components/finance/WalletPanel";
 
 export const metadata: Metadata = { title: "مالی | پوستر" };
 
-export default function FinancePage() {
-  const f = computeFinance();
+export default async function FinancePage() {
+  const f = await computeFinance();
 
   return (
     <div className="flex flex-col gap-8">

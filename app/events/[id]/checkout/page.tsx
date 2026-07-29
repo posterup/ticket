@@ -19,9 +19,9 @@ export const metadata: Metadata = { title: "تهیه بلیت | پوستر" };
 export default async function CheckoutPage({ params, searchParams }: Props) {
   const { id } = await params;
   const { ticket } = await searchParams;
-  const event = getEventByIdOrSlug(id);
+  const event = await getEventByIdOrSlug(id);
   if (!event) notFound();
-  const tickets = listTickets(event.id);
+  const tickets = await listTickets(event.id);
   if (tickets.length === 0) notFound();
 
   const initialTicketId =

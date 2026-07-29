@@ -9,7 +9,7 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
   const { registrationId } = await params;
   const { status } = await readJson(request, registrationStatusSchema);
 
-  const registration = setRegistrationStatus(registrationId, status);
+  const registration = await setRegistrationStatus(registrationId, status);
   if (registration === undefined) throw notFound("Registration not found.");
   return ok(registration);
 });

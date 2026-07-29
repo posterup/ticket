@@ -9,19 +9,23 @@ import { attendees } from "./store";
 import { listEvents } from "./events";
 
 /** Return all CRM contacts, newest first. */
-export function listAttendees(): Attendee[] {
+export async function listAttendees(): Promise<Attendee[]> {
   return [...attendees].sort((a, b) =>
     a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
   );
 }
 
 /** Look up a single contact by id. */
-export function getAttendeeById(id: string): Attendee | undefined {
+export async function getAttendeeById(
+  id: string,
+): Promise<Attendee | undefined> {
   return attendees.find((a) => a.id === id);
 }
 
 /** Distinct CRM tag labels with how many contacts carry each, most-used first. */
-export function listAttendeeTags(): { label: string; count: number }[] {
+export async function listAttendeeTags(): Promise<
+  { label: string; count: number }[]
+> {
   const byLabel = new Map<string, number>();
   for (const a of attendees) {
     for (const tag of a.tags) {
@@ -34,10 +38,10 @@ export function listAttendeeTags(): { label: string; count: number }[] {
 }
 
 /** Replace a contact's tags (from string labels); returns it, or `undefined`. */
-export function setAttendeeTags(
+export async function setAttendeeTags(
   id: string,
   labels: string[],
-): Attendee | undefined {
+): Promise<Attendee | undefined> {
   const attendee = attendees.find((a) => a.id === id);
   if (!attendee) return undefined;
   attendee.tags = labels.map((label, i) => ({ id: `t-${i}-${label}`, label }));
@@ -68,7 +72,7 @@ const ATTENDEE_EVENTS: Record<string, string[]> = {
 };
 
 /** Events a contact has joined (mock; see {@link ATTENDEE_EVENTS}). */
-export function listEventsByAttendee(id: string): Event[] {
+export async function listEventsByAttendee(id: string): Promise<Event[]> {
   const ids = new Set(ATTENDEE_EVENTS[id] ?? []);
-  return listEvents().filter((e) => ids.has(e.id));
+  return (await listEvents()).filter((e) => ids.has(e.id));
 }
