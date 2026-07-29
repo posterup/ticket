@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { computeFinance, WITHDRAW_FEE } from "@/lib/finance/compute";
+import { computeFinance, WITHDRAW_FEE } from "@/lib/server";
 import { formatToman } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { WalletPanel } from "@/components/finance/WalletPanel";
@@ -9,9 +9,10 @@ import { requireManagerPage } from "@/lib/server/auth/guards";
 export const metadata: Metadata = { title: "مالی | پوستر" };
 
 export default async function FinancePage() {
-  await requireManagerPage();
+  const { memberships } = await requireManagerPage();
 
-  const f = await computeFinance();
+  // Scoped to the workspace being managed; finance is per-tenant.
+  const f = await computeFinance(memberships[0].workspaceId);
 
   return (
     <div className="flex flex-col gap-8">

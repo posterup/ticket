@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import type { WorkspaceType } from "@/types";
 
-import { nonEmpty } from "./common";
+import { atLeastOneField, nonEmpty } from "./common";
 
 /** Accepts the shapes Iranians actually type; normalised server-side. */
 const phone = z
@@ -27,3 +27,18 @@ export const registerSchema = z.object({
   workspaceName: nonEmpty.max(120),
   workspaceType: z.enum(["personal", "business"] satisfies readonly WorkspaceType[]),
 });
+
+/**
+ * `PATCH /api/me`
+ *
+ * Every field optional, but at least one must be present — an empty patch is a
+ * mistake, not a no-op.
+ */
+export const profileSchema = atLeastOneField(
+  z.object({
+    fullName: nonEmpty.max(120).optional(),
+    /** Empty string clears it. */
+    email: z.union([z.literal(""), z.email()]).optional(),
+    avatarUrl: z.union([z.literal(""), z.url()]).optional(),
+  }),
+);
