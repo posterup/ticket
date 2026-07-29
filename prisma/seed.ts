@@ -36,6 +36,7 @@ import {
 import {
   COLLABORATOR_CHANNEL_TO_DB,
   COLLABORATOR_STATUS_TO_DB,
+  COLLAB_ROLE_TO_DB,
   DISCOUNT_KIND_TO_DB,
   EVENT_MODE_TO_DB,
   EVENT_STATUS_TO_DB,
@@ -317,6 +318,7 @@ async function main(): Promise<void> {
         sub: c.sub,
         workspaceSlug: c.workspaceSlug,
         avatar: c.avatar,
+        role: COLLAB_ROLE_TO_DB[c.role],
         status: COLLABORATOR_STATUS_TO_DB[c.status],
         // Resolved so an accepted invite actually grants access.
         inviteeWorkspaceId: c.workspaceSlug

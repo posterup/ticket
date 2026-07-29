@@ -822,6 +822,7 @@ export const eventCollaborators: EventCollaborator[] = [
     sub: "@ava-events",
     workspaceSlug: "ava-events",
     avatar: "آ",
+    role: "co-host",
     status: "accepted",
     createdAt: "2026-07-02T12:00:00.000Z",
   },
