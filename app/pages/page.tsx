@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
 
-import {
-  listWorkspaces,
-  listEventsByWorkspaces,
-  listFollowedSlugs,
-} from "@/lib/server";
-import { getCurrentUser } from "@/lib/server/auth/guards";
+import { useApi } from "@/lib/client/api";
+import { AsyncState } from "@/components/ui/async-state";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -15,20 +12,13 @@ import { Footer } from "@/components/Footer";
 import { FollowChip } from "@/components/workspace/FollowChip";
 import type { Workspace } from "@/types";
 
-export const metadata: Metadata = {
-  title: "برگزارکنندگان | پوستر",
-  description: "صفحه‌های برگزارکنندگان و کسب‌وکارها را دنبال کنید.",
-};
-
-export default async function PagesDirectory() {
-  const workspaces = await listWorkspaces();
-  // One batch instead of a lookup per card.
-  const eventsBySlug = await listEventsByWorkspaces(
-    workspaces.map((w) => w.slug),
+export default function PagesDirectory() {
+  const { data, error, loading, reload } = useApi<Workspace[]>("/api/workspaces");
+  const me = useApi<{ user: unknown | null }>("/api/auth/me");
+  const following = useApi<Workspace[]>(
+    me.data?.user ? "/api/me/following" : null,
   );
-  // Resolved here so each chip is correct on first paint.
-  const viewer = await getCurrentUser();
-  const followed = new Set(viewer ? await listFollowedSlugs(viewer.id) : []);
+  const followedSlugs = new Set((following.data ?? []).map((w) => w.slug));
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -43,17 +33,20 @@ export default async function PagesDirectory() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {workspaces.map((w) => (
-            <WorkspaceCard
-              key={w.id}
-              workspace={w}
-              eventCount={eventsBySlug.get(w.slug)?.length ?? 0}
-              following={followed.has(w.slug)}
-              signedIn={viewer !== null}
-            />
-          ))}
-        </div>
+        {data ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {data.map((w) => (
+              <WorkspaceCard
+                key={w.id}
+                workspace={w}
+                following={followedSlugs.has(w.slug)}
+                signedIn={Boolean(me.data?.user)}
+              />
+            ))}
+          </div>
+        ) : (
+          <AsyncState loading={loading} error={error} onRetry={reload} />
+        )}
       </main>
       <Footer />
     </div>
@@ -62,12 +55,10 @@ export default async function PagesDirectory() {
 
 function WorkspaceCard({
   workspace: w,
-  eventCount,
   following,
   signedIn,
 }: {
   workspace: Workspace;
-  eventCount: number;
   following: boolean;
   signedIn: boolean;
 }) {
@@ -102,15 +93,12 @@ function WorkspaceCard({
       </div>
 
       {w.bio ? (
-        <p className="line-clamp-2 text-xs leading-relaxed text-muted">
-          {w.bio}
-        </p>
+        <p className="line-clamp-2 text-xs leading-relaxed text-muted">{w.bio}</p>
       ) : null}
 
       <div className="mt-auto flex items-center justify-between gap-3">
         <span className="text-xs text-muted">
-          {formatNumber(w.followers)} دنبال‌کننده · {formatNumber(eventCount)}{" "}
-          رویداد
+          {formatNumber(w.followers)} دنبال‌کننده
         </span>
         <FollowChip
           slug={w.slug}

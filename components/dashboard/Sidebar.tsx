@@ -15,10 +15,9 @@ import {
   isActive,
   type NavItem,
 } from "@/components/dashboard/nav";
-import type { Workspace } from "@/types";
 
 /** Desktop sidebar navigation (hidden on mobile, where BottomNav takes over). */
-export function Sidebar({ workspaces }: { workspaces: Workspace[] }) {
+export function Sidebar() {
   const pathname = usePathname();
 
   return (
@@ -34,7 +33,7 @@ export function Sidebar({ workspaces }: { workspaces: Workspace[] }) {
       </div>
 
       <div className="mt-5">
-        <WorkspaceSwitcher workspaces={workspaces} />
+        <WorkspaceSwitcher />
       </div>
 
       <Link

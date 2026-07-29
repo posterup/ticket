@@ -10,8 +10,11 @@ import type { Campaign } from "@/types";
 import { db } from "./db";
 import { toCampaign } from "./mappers";
 
-export async function listCampaigns(): Promise<Campaign[]> {
-  const rows = await db.campaign.findMany({ orderBy: { createdAt: "asc" } });
+export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
+  const rows = await db.campaign.findMany({
+    where: { workspaceId },
+    orderBy: { createdAt: "asc" },
+  });
   return rows.map(toCampaign);
 }
 
@@ -22,22 +25,28 @@ export interface Segment {
 }
 
 /** Mobile numbers for a segment (for the SMS gateway). */
-export async function segmentMobiles(segmentId: string): Promise<string[]> {
+export async function segmentMobiles(
+  workspaceId: string,
+  segmentId: string,
+): Promise<string[]> {
   const rows = await db.attendee.findMany({
-    where:
-      segmentId === "all"
-        ? undefined
-        : { tags: { some: { tag: { label: segmentId } } } },
+    where: {
+      workspaceId,
+      ...(segmentId === "all"
+        ? {}
+        : { tags: { some: { tag: { label: segmentId } } } }),
+    },
     select: { phone: true },
   });
   return rows.map((r) => r.phone);
 }
 
 /** Audience segments derived from attendee tags (plus an "all" segment). */
-export async function listSegments(): Promise<Segment[]> {
+export async function listSegments(workspaceId: string): Promise<Segment[]> {
   const [total, tags] = await Promise.all([
-    db.attendee.count(),
+    db.attendee.count({ where: { workspaceId } }),
     db.attendeeTag.findMany({
+      where: { workspaceId },
       select: { label: true, _count: { select: { links: true } } },
     }),
   ]);

@@ -1,15 +1,7 @@
-import type { Metadata } from "next";
+"use client";
 
-import {
-  listFeedEvents,
-  listFollowedWorkspaces,
-  listWorkspaces,
-  minPriceByEvent,
-  getWorkspacesByEvents,
-} from "@/lib/server";
-import { getCurrentUser } from "@/lib/server/auth/guards";
-import { formatJalaliDate, formatToman } from "@/lib/format";
-import { modeLabel } from "@/lib/events/labels";
+import { useApi } from "@/lib/client/api";
+import { AsyncState } from "@/components/ui/async-state";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import {
@@ -17,67 +9,37 @@ import {
   type FeedEvent,
   type FeedWorkspace,
 } from "@/components/feed/FeedClient";
+import type { DiscoverEvent } from "@/components/events/EventsExplorer";
+import type { Event, Workspace } from "@/types";
 
-export const metadata: Metadata = {
-  title: "دنبال‌شده‌ها | پوستر",
-  description: "رویدادهای صفحه‌هایی که دنبال می‌کنید.",
-};
+export default function FeedPage() {
+  // Scoped server-side to the workspaces this viewer follows.
+  const feed = useApi<Event[]>("/api/me/feed");
+  const following = useApi<Workspace[]>("/api/me/following");
+  // Suggestions for an empty feed come from the whole directory.
+  const directory = useApi<Workspace[]>("/api/workspaces");
+  const discover = useApi<DiscoverEvent[]>("/api/events/discover");
 
-function fromPrice(min: number | undefined): string | null {
-  if (min === undefined) return null;
-  return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
-}
+  const byId = new Map((discover.data ?? []).map((d) => [d.id, d]));
 
-/**
- * The viewer's feed.
- *
- * Scoped in the query. Previously every event in the system was sent to the
- * browser, which then filtered them against a localStorage set — so the "feed"
- * was a client-side illusion over the full catalogue.
- */
-export default async function FeedPage() {
-  const user = await getCurrentUser();
-
-  // Middleware sends signed-out visitors to /login, so this is the fallback
-  // rather than the common path.
-  const [events, followed] = user
-    ? await Promise.all([
-        listFeedEvents(user.id),
-        listFollowedWorkspaces(user.id),
-      ])
-    : [[], []];
-
-  const ids = events.map((e) => e.id);
-  const [prices, orgs] = await Promise.all([
-    minPriceByEvent(ids),
-    getWorkspacesByEvents(ids),
-  ]);
-
-  const withKey = events.map((e) => {
-    const org = orgs.get(e.id);
+  const events: FeedEvent[] = (feed.data ?? []).map((e) => {
+    const d = byId.get(e.id);
     return {
-      sortKey: e.sessions[0]?.startAt ?? "",
-      event: {
-        id: e.id,
-        title: e.title,
-        modeLabel: modeLabel(e.mode),
-        venue: `${e.venue.name}، ${e.venue.city}`,
-        dateLabel: e.sessions[0] ? formatJalaliDate(e.sessions[0].startAt) : "",
-        price: fromPrice(prices.get(e.id)),
-        tags: e.tags,
-        wsSlug: org?.slug ?? "",
-        wsName: org?.name ?? "",
-        wsAvatar: org?.avatar ?? "",
-        wsVerified: Boolean(org?.verified),
-      } satisfies FeedEvent,
+      id: e.id,
+      title: e.title,
+      modeLabel: d?.modeLabel ?? null,
+      venue: `${e.venue.name}، ${e.venue.city}`,
+      dateLabel: d?.dateLabel ?? "",
+      price: d?.price ?? null,
+      tags: e.tags,
+      wsSlug: d?.org?.slug ?? "",
+      wsName: d?.org?.name ?? "",
+      wsAvatar: d?.org?.avatar ?? "",
+      wsVerified: Boolean(d?.org?.verified),
     };
   });
-  withKey.sort((a, b) =>
-    a.sortKey < b.sortKey ? 1 : a.sortKey > b.sortKey ? -1 : 0,
-  );
 
-  // Suggestions for an empty feed come from the whole directory.
-  const suggestions: FeedWorkspace[] = (await listWorkspaces()).map((w) => ({
+  const suggestions: FeedWorkspace[] = (directory.data ?? []).map((w) => ({
     slug: w.slug,
     name: w.name,
     avatar: w.avatar,
@@ -96,11 +58,20 @@ export default async function FeedPage() {
             رویدادهای صفحه‌هایی که دنبال می‌کنید.
           </p>
         </div>
-        <FeedClient
-          events={withKey.map((x) => x.event)}
-          workspaces={suggestions}
-          followingCount={followed.length}
-        />
+
+        {feed.data ? (
+          <FeedClient
+            events={events}
+            workspaces={suggestions}
+            followingCount={(following.data ?? []).length}
+          />
+        ) : (
+          <AsyncState
+            loading={feed.loading}
+            error={feed.error}
+            onRetry={feed.reload}
+          />
+        )}
       </main>
       <Footer />
     </div>

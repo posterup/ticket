@@ -137,8 +137,39 @@ export function CheckoutForm({
         });
         return;
       }
-      setOrderCode(json.data.order.code as string);
-      setRequiresPayment(Boolean(json.data.requiresPayment));
+      const order = json.data.order as { id: string; code: string };
+
+      // A free order is already settled; there is nothing to pay, and a
+      // gateway would reject a zero amount.
+      if (!json.data.requiresPayment) {
+        setOrderCode(order.code);
+        setRequiresPayment(false);
+        return;
+      }
+
+      // Hand the buyer to the gateway. The order page is where they land when
+      // it sends them back, so nothing is shown here in between.
+      // Guest checkout has no session, so the order's own phone is the proof.
+      const payRes = await fetch(
+        `/api/orders/${order.id}/pay?phone=${encodeURIComponent(
+          phone.trim().replace(/\s/g, ""),
+        )}`,
+        { method: "POST" },
+      );
+      const payJson = await payRes.json();
+      if (!payRes.ok || !("data" in payJson)) {
+        setErrors({
+          form:
+            payJson?.error?.message ??
+            "اتصال به درگاه پرداخت ممکن نشد؛ سفارش شما رزرو است.",
+        });
+        // The order exists and holds its seats, so the code is still useful.
+        setOrderCode(order.code);
+        setRequiresPayment(true);
+        return;
+      }
+      window.location.assign(payJson.data.redirectUrl as string);
+      return;
     } catch {
       setErrors({ form: "ارتباط برقرار نشد. دوباره تلاش کنید." });
     } finally {
@@ -332,7 +363,7 @@ export function CheckoutForm({
           disabled={submitting}
           onClick={() => void submit()}
         >
-          ثبت سفارش
+          {submitting ? "در حال انتقال به درگاه…" : "پرداخت و دریافت بلیت"}
         </Button>
       </aside>
     </div>

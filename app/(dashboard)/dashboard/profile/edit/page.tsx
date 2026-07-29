@@ -1,14 +1,10 @@
-import type { Metadata } from "next";
+"use client";
 
-import { listWorkspaces } from "@/lib/server";
 import { EditProfileForm } from "@/components/dashboard/EditProfileForm";
-import { requireManagerPage } from "@/lib/server/auth/guards";
+import { useWorkspaceSwitcher } from "@/components/dashboard/ActiveWorkspace";
 
-export const metadata: Metadata = { title: "ویرایش پروفایل | پوستر" };
-
-export default async function EditProfilePage() {
-  await requireManagerPage();
-
-  const workspaces = await listWorkspaces();
+export default function EditProfilePage() {
+  // From the shell, which already loaded the caller's own workspaces.
+  const { workspaces } = useWorkspaceSwitcher();
   return <EditProfileForm workspaces={workspaces} />;
 }

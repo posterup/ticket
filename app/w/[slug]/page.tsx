@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+"use client";
+
+import { use } from "react";
 import { BadgeCheck } from "lucide-react";
 
-import {
-  getWorkspaceBySlug,
-  listEventsByWorkspace,
-  listFollowedSlugs,
-} from "@/lib/server";
-import { getCurrentUser } from "@/lib/server/auth/guards";
+import { useApi } from "@/lib/client/api";
+import { AsyncState } from "@/components/ui/async-state";
 import { formatJalaliDate } from "@/lib/format";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
@@ -17,30 +14,40 @@ import {
   WorkspaceEvents,
   type WsEvent,
 } from "@/components/workspace/WorkspaceEvents";
+import type { Event, Workspace } from "@/types";
 
-interface Params {
+interface Data {
+  workspace: Workspace;
+  events: Event[];
+  following: boolean;
+  signedIn: boolean;
+}
+
+export default function WorkspacePage({
+  params,
+}: {
   params: Promise<{ slug: string }>;
-}
+}) {
+  const { slug } = use(params);
+  const { data, error, loading, reload } = useApi<Data>(
+    `/api/workspaces/${slug}`,
+  );
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  return { title: workspace ? `${workspace.name} | پوستر` : "فضای کاری | پوستر" };
-}
+  if (!data) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col">
+        <PublicHeader />
+        <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
+          <AsyncState loading={loading} error={error} onRetry={reload} />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
-export default async function WorkspacePage({ params }: Params) {
-  const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) notFound();
-
-  const viewer = await getCurrentUser();
-  const following = viewer
-    ? (await listFollowedSlugs(viewer.id)).includes(slug)
-    : false;
-
-  const events: WsEvent[] = (await listEventsByWorkspace(slug)).map((e) => {
-    const start =
-      e.sessions.map((s) => s.startAt).sort()[0] ?? e.createdAt;
+  const { workspace } = data;
+  const events: WsEvent[] = data.events.map((e) => {
+    const start = e.sessions.map((s) => s.startAt).sort()[0] ?? e.createdAt;
     return {
       id: e.id,
       title: e.title,
@@ -56,48 +63,39 @@ export default async function WorkspacePage({ params }: Params) {
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <PublicHeader />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-        {/* Banner + profile header (LinkedIn-style) */}
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <WorkspaceBanner
-            seed={workspace.slug}
-            banner={workspace.banner}
-            className="h-36 w-full sm:h-52"
-          />
-          <div className="px-5 pb-6 sm:px-6">
-            <span className="-mt-12 grid size-24 place-items-center rounded-2xl bg-foreground text-3xl font-bold text-background ring-4 ring-card sm:-mt-14 sm:size-28">
-              {workspace.avatar}
-            </span>
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 pb-12 sm:px-6">
+        <WorkspaceBanner
+          seed={workspace.slug}
+          banner={workspace.banner}
+          className="h-36 w-full rounded-xl sm:h-52"
+        />
 
-            <div className="mt-3 flex items-center gap-1.5">
-              <h1 className="text-xl font-bold text-foreground sm:text-2xl">
-                {workspace.name}
-              </h1>
+        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="flex items-center gap-1.5 text-2xl font-bold tracking-tight text-foreground">
+              <span className="truncate">{workspace.name}</span>
               {workspace.verified ? (
-                <BadgeCheck className="size-5 text-accent" aria-label="تأییدشده" />
+                <BadgeCheck className="size-5 shrink-0 text-accent" aria-label="تأییدشده" />
               ) : null}
-            </div>
+            </h1>
             {workspace.bio ? (
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+              <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted">
                 {workspace.bio}
               </p>
             ) : null}
-
-            <div className="mt-4">
-              <WorkspaceFollow
-            slug={workspace.slug}
-            initialFollowing={following}
-            signedIn={viewer !== null}
-          />
-            </div>
+          </div>
+          <div className="w-full shrink-0 sm:w-40">
+            <WorkspaceFollow
+              slug={workspace.slug}
+              initialFollowing={data.following}
+              signedIn={data.signedIn}
+            />
           </div>
         </div>
 
-        {/* Events */}
-        <section className="mt-8">
-          <h2 className="mb-4 text-sm font-semibold text-foreground">رویدادها</h2>
+        <div className="mt-10">
           <WorkspaceEvents events={events} />
-        </section>
+        </div>
       </main>
       <Footer />
     </div>

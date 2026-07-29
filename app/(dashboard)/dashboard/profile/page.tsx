@@ -1,16 +1,12 @@
-import type { Metadata } from "next";
+"use client";
 
-import { listWorkspaces } from "@/lib/server";
 import { ProfileCard } from "@/components/dashboard/ProfileCard";
 import { AccountMenu } from "@/components/dashboard/AccountMenu";
-import { requireManagerPage } from "@/lib/server/auth/guards";
+import { useWorkspaceSwitcher } from "@/components/dashboard/ActiveWorkspace";
 
-export const metadata: Metadata = { title: "پروفایل | پوستر" };
-
-export default async function ProfilePage() {
-  await requireManagerPage();
-
-  const workspaces = await listWorkspaces();
+export default function ProfilePage() {
+  // From the shell, which already loaded the caller's own workspaces.
+  const { workspaces } = useWorkspaceSwitcher();
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">

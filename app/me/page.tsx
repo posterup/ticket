@@ -1,66 +1,41 @@
-import type { Metadata } from "next";
+"use client";
 
-import {
-  listBookmarkedEvents,
-  listFollowedSlugs,
-  minPriceByEvent,
-  getWorkspacesByEvents,
-} from "@/lib/server";
-import { getCurrentUser } from "@/lib/server/auth/guards";
-import { formatJalaliDate, formatToman } from "@/lib/format";
+import { useApi } from "@/lib/client/api";
+import { AsyncState } from "@/components/ui/async-state";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { MyEventsClient, type MeEvent } from "@/components/me/MyEventsClient";
+import type { DiscoverEvent } from "@/components/events/EventsExplorer";
 import type { RsvpState } from "@/lib/rsvp";
+import type { Event, Workspace } from "@/types";
 
-export const metadata: Metadata = {
-  title: "من | پوستر",
-  description: "رویدادهایی که نشان کرده‌اید و صفحه‌هایی که دنبال می‌کنید.",
-};
-
-function fromPrice(min: number | undefined): string | null {
-  if (min === undefined) return null;
-  return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
+interface Bookmark {
+  event: Event;
+  state: "interested" | "going";
 }
 
-/**
- * The viewer's own marked events.
- *
- * Reads their bookmarks directly. Previously this fetched every published
- * event in the system and filtered it in the browser against localStorage,
- * which meant the list could not survive a new device — and that nothing
- * server-side knew it existed.
- */
-export default async function MePage() {
-  const user = await getCurrentUser();
+export default function MePage() {
+  const bookmarks = useApi<Bookmark[]>("/api/me/bookmarks");
+  const following = useApi<Workspace[]>("/api/me/following");
+  // Reused for the labels the cards show — dates and prices are formatted
+  // server-side so every surface reads the same.
+  const discover = useApi<DiscoverEvent[]>("/api/events/discover");
 
-  const [marked, followed] = user
-    ? await Promise.all([
-        listBookmarkedEvents(user.id),
-        listFollowedSlugs(user.id),
-      ])
-    : [[], []];
+  const byId = new Map((discover.data ?? []).map((d) => [d.id, d]));
 
-  const ids = marked.map((m) => m.event.id);
-  const [prices, orgs] = await Promise.all([
-    minPriceByEvent(ids),
-    getWorkspacesByEvents(ids),
-  ]);
-
-  const events: (MeEvent & { state: RsvpState })[] = marked.map(
+  const events: (MeEvent & { state: RsvpState })[] = (bookmarks.data ?? []).map(
     ({ event, state }) => {
-      const org = orgs.get(event.id);
-      const firstSession = event.sessions[0];
+      const d = byId.get(event.id);
       return {
         id: event.id,
         title: event.title,
         city: event.venue.city,
         venueName: event.venue.name,
-        dateLabel: firstSession ? formatJalaliDate(firstSession.startAt) : "",
-        price: fromPrice(prices.get(event.id)),
+        dateLabel: d?.dateLabel ?? "",
+        price: d?.price ?? null,
         tags: event.tags,
-        org: org
-          ? { name: org.name, avatar: org.avatar, verified: Boolean(org.verified) }
+        org: d?.org
+          ? { name: d.org.name, avatar: d.org.avatar, verified: d.org.verified }
           : null,
         state,
       };
@@ -79,7 +54,19 @@ export default async function MePage() {
             رویدادهایی که نشان کرده‌اید و صفحه‌هایی که دنبال می‌کنید.
           </p>
         </div>
-        <MyEventsClient events={events} followCount={followed.length} />
+
+        {bookmarks.data ? (
+          <MyEventsClient
+            events={events}
+            followCount={(following.data ?? []).length}
+          />
+        ) : (
+          <AsyncState
+            loading={bookmarks.loading}
+            error={bookmarks.error}
+            onRetry={bookmarks.reload}
+          />
+        )}
       </main>
       <Footer />
     </div>

@@ -5,21 +5,22 @@ import Link from "next/link";
 import { Check, ChevronsUpDown, Plus, ExternalLink } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useWorkspaceSwitcher } from "@/components/dashboard/ActiveWorkspace";
 import type { Workspace } from "@/types";
 
-const STORAGE_KEY = "poster-active-workspace";
-
-/** Switch between the user's workspaces (personal / business pages). */
-export function WorkspaceSwitcher({ workspaces }: { workspaces: Workspace[] }) {
+/**
+ * Switch between the user's workspaces.
+ *
+ * The choice is a cookie, not localStorage: the dashboard renders on the
+ * server, so it has to be readable there. It used to write localStorage, which
+ * nothing server-side could see — picking a workspace changed this label and
+ * nothing else on the page.
+ */
+export function WorkspaceSwitcher() {
+  const { workspaces, active, select } = useWorkspaceSwitcher();
   const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState(workspaces[0]?.id ?? "");
   const ref = useRef<HTMLDivElement>(null);
-
-  // Restore the last-selected workspace (persists across navigation).
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && workspaces.some((w) => w.id === saved)) setActiveId(saved);
-  }, [workspaces]);
+  const activeId = active?.id ?? "";
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -31,12 +32,12 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: Workspace[] }) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const active = workspaces.find((w) => w.id === activeId) ?? workspaces[0];
   if (!active) return null;
 
-  function select(id: string) {
-    setActiveId(id);
-    localStorage.setItem(STORAGE_KEY, id);
+  function choose(id: string) {
+    // Context holds the choice, so every page below re-requests its own data
+    // against the new workspace.
+    select(id);
     setOpen(false);
   }
 
@@ -74,7 +75,7 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: Workspace[] }) {
               type="button"
               role="menuitemradio"
               aria-checked={w.id === active.id}
-              onClick={() => select(w.id)}
+              onClick={() => choose(w.id)}
               className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-start outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
             >
               <Avatar workspace={w} small />

@@ -1,19 +1,17 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-import { listAttendeeTags } from "@/lib/server";
+import { useApi } from "@/lib/client/api";
 import { Logo } from "@/components/Logo";
 import { EventComposer } from "@/components/create/EventComposer";
 
-export const metadata: Metadata = {
-  title: "ساخت رویداد | پوستر",
-  description:
-    "رویداد خود را بسازید: مکان، سانس‌ها، انواع بلیت و تنظیمات حریم خصوصی.",
-};
-
-export default async function CreateTicketPage() {
-  const availableTags = await listAttendeeTags();
+export default function CreateTicketPage() {
+  // The audience tags offered belong to the workspace the event will be
+  // created under; the wizard renders without waiting for them.
+  const { data } = useApi<{ label: string; count: number }[]>("/api/me/tags");
+  const availableTags = data ?? [];
 
   return (
     <div className="min-h-[100dvh]">

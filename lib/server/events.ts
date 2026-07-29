@@ -63,6 +63,24 @@ export async function listPublicEvents(): Promise<Event[]> {
   return rows.map((row) => toEvent(row as EventRow));
 }
 
+/**
+ * Every event a workspace owns, newest first — including drafts.
+ *
+ * What the dashboard lists. `listEvents()` is deliberately not used there: it
+ * returns every event in the system, which on a dashboard is another
+ * workspace's data.
+ */
+export async function listEventsByWorkspaceId(
+  workspaceId: string,
+): Promise<Event[]> {
+  const rows = await db.event.findMany({
+    where: { workspaceId },
+    include: INCLUDE,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => toEvent(row as EventRow));
+}
+
 /** Return a single event by id, or `undefined` when not found. */
 export async function getEventById(id: string): Promise<Event | undefined> {
   const row = await db.event.findUnique({ where: { id }, include: INCLUDE });

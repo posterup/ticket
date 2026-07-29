@@ -17,7 +17,10 @@ export const POST = handler(async (request: Request) => {
   );
   await requireWorkspaceAccess(workspaceId, "campaigns:send");
 
-  const result = await sendBulkSms(await segmentMobiles(segmentId), message);
+  const result = await sendBulkSms(
+    await segmentMobiles(workspaceId, segmentId),
+    message,
+  );
   if (!result.ok) {
     // `error` is optional on SendSmsResult; keep the envelope's message filled.
     throw new HttpError(

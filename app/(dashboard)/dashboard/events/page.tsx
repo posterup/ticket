@@ -1,15 +1,18 @@
-import type { Metadata } from "next";
+"use client";
 
-import { listEvents } from "@/lib/server";
+import { useApi } from "@/lib/client/api";
+import { useActiveWorkspace } from "@/components/dashboard/ActiveWorkspace";
+import { AsyncState } from "@/components/ui/async-state";
 import { EventsTimeline } from "@/components/dashboard/EventsTimeline";
-import { requireManagerPage } from "@/lib/server/auth/guards";
+import type { Event } from "@/types";
 
-export const metadata: Metadata = { title: "رویدادها | پوستر" };
-
-export default async function EventsPage() {
-  await requireManagerPage();
-
-  const events = await listEvents();
+export default function EventsPage() {
+  const workspace = useActiveWorkspace();
+  // Waits for the workspace rather than fetching an unscoped list first and
+  // correcting it — that flash is what made switching look broken.
+  const { data, error, loading, reload } = useApi<Event[]>(
+    workspace ? `/api/workspaces/${workspace.slug}/events` : null,
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -22,7 +25,15 @@ export default async function EventsPage() {
         </p>
       </div>
 
-      <EventsTimeline events={events} />
+      {data ? (
+        <EventsTimeline events={data} />
+      ) : (
+        <AsyncState
+          loading={loading || !workspace}
+          error={error}
+          onRetry={reload}
+        />
+      )}
     </div>
   );
 }
