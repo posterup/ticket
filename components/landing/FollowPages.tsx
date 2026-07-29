@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { BadgeCheck, ArrowLeft } from "lucide-react";
 
-import { listWorkspaces, listEventsByWorkspaces } from "@/lib/server";
+import {
+  listWorkspaces,
+  listEventsByWorkspaces,
+  listFollowedSlugs,
+} from "@/lib/server";
+import { getCurrentUser } from "@/lib/server/auth/guards";
 import { formatNumber } from "@/lib/format";
 import { FollowChip } from "@/components/workspace/FollowChip";
 
@@ -17,6 +22,8 @@ export async function FollowPages() {
   const eventsBySlug = await listEventsByWorkspaces(
     workspaces.map((w) => w.slug),
   );
+  const viewer = await getCurrentUser();
+  const followed = new Set(viewer ? await listFollowedSlugs(viewer.id) : []);
 
   return (
     <section className="border-t border-border bg-subtle">
@@ -70,7 +77,12 @@ export async function FollowPages() {
                   </span>
                 </span>
               </Link>
-              <FollowChip slug={w.slug} name={w.name} />
+              <FollowChip
+                slug={w.slug}
+                name={w.name}
+                initialFollowing={followed.has(w.slug)}
+                signedIn={viewer !== null}
+              />
             </div>
           ))}
         </div>

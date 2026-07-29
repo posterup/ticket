@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/server/auth/guards";
+import { getViewerState } from "@/lib/server";
 import {
   MapPin,
   Clock,
@@ -69,6 +70,10 @@ export default async function PublicEventDetail({ params }: Params) {
     getCurrentUser(),
   ]);
   const loggedIn = viewer !== null;
+  // So the button reads correctly on first paint rather than after an effect.
+  const viewerState = viewer
+    ? await getViewerState(viewer.id, event.id)
+    : { bookmark: null, notify: false };
 
   const sessions = [...event.sessions].sort((a, b) =>
     a.startAt.localeCompare(b.startAt),
@@ -178,6 +183,7 @@ export default async function PublicEventDetail({ params }: Params) {
               event={event}
               tickets={tickets}
               loggedIn={loggedIn}
+              notified={viewerState.notify}
               className="lg:hidden"
             />
 
@@ -206,7 +212,12 @@ export default async function PublicEventDetail({ params }: Params) {
 
           {/* Sidebar (desktop) */}
           <aside className="hidden lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-6">
-            <BuyCard event={event} tickets={tickets} loggedIn={loggedIn} />
+            <BuyCard
+              event={event}
+              tickets={tickets}
+              loggedIn={loggedIn}
+              notified={viewerState.notify}
+            />
             <Hosts organizer={organizer} collaborators={collaborators} />
           </aside>
         </div>
@@ -350,12 +361,15 @@ function BuyCard({
   event,
   tickets,
   loggedIn,
+  notified,
   className,
 }: {
   event: Event;
   tickets: TicketType[];
   /** Resolved on the server, so "notify me" knows where to send a visitor. */
   loggedIn: boolean;
+  /** Whether this viewer already asked to be told about the event. */
+  notified: boolean;
   className?: string;
 }) {
   const state = resolveBuyState(event, tickets);
@@ -378,7 +392,12 @@ function BuyCard({
       break;
     case "notify":
       node = (
-        <NotifyMe eventId={event.id} loggedIn={loggedIn} idleLabel={action.label} />
+        <NotifyMe
+          eventId={event.id}
+          loggedIn={loggedIn}
+          initialNotified={notified}
+          idleLabel={action.label}
+        />
       );
       break;
     case "waitlist":
@@ -386,6 +405,7 @@ function BuyCard({
         <NotifyMe
           eventId={event.id}
           loggedIn={loggedIn}
+          initialNotified={notified}
           idleLabel={action.label}
           activeLabel="در لیست انتظار"
         />

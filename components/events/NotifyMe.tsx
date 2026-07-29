@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Bell, BellRing } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { isNotified, setNotified } from "@/lib/notify";
+import { setNotified } from "@/lib/notify";
 
 /**
  * Reminder toggle used for the "notify me" (sales not started) and "waitlist"
@@ -16,6 +16,7 @@ import { isNotified, setNotified } from "@/lib/notify";
 export function NotifyMe({
   eventId,
   loggedIn,
+  initialNotified = false,
   idleLabel = "خبرم کن",
   activeLabel = "خبرتان می‌کنیم",
   size = "lg",
@@ -28,6 +29,8 @@ export function NotifyMe({
    * first paint.
    */
   loggedIn: boolean;
+  /** Whether this viewer has already asked to be told. */
+  initialNotified?: boolean;
   idleLabel?: string;
   activeLabel?: string;
   size?: "sm" | "md" | "lg";
@@ -35,20 +38,17 @@ export function NotifyMe({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [notified, setNotifiedState] = useState(false);
+  const [notified, setNotifiedState] = useState(initialNotified);
 
-  useEffect(() => {
-    setNotifiedState(isNotified(eventId));
-  }, [eventId]);
-
-  function onClick() {
+  async function onClick() {
     if (!loggedIn) {
       router.push(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
     const next = !notified;
+    // Optimistic, reverting if the write fails.
     setNotifiedState(next);
-    setNotified(eventId, next);
+    if ((await setNotified(eventId, next)) === null) setNotifiedState(!next);
   }
 
   return (
