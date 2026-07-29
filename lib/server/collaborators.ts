@@ -8,15 +8,21 @@ import type { EventCollaborator, CollaboratorChannel } from "@/types";
 import { eventCollaborators } from "./store";
 
 /** Collaborators/requests for an event, newest first. */
-export function listCollaborators(eventId: string): EventCollaborator[] {
+export async function listCollaborators(
+  eventId: string,
+): Promise<EventCollaborator[]> {
   return eventCollaborators
     .filter((c) => c.eventId === eventId)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
 /** Accepted collaborators only (used on the public event page). */
-export function listAcceptedCollaborators(eventId: string): EventCollaborator[] {
-  return listCollaborators(eventId).filter((c) => c.status === "accepted");
+export async function listAcceptedCollaborators(
+  eventId: string,
+): Promise<EventCollaborator[]> {
+  return (await listCollaborators(eventId)).filter(
+    (c) => c.status === "accepted",
+  );
 }
 
 export interface AddCollaboratorInput {
@@ -28,10 +34,10 @@ export interface AddCollaboratorInput {
 }
 
 /** Add a collaboration request; returns the stored record. */
-export function addCollaborator(
+export async function addCollaborator(
   eventId: string,
   input: AddCollaboratorInput,
-): EventCollaborator {
+): Promise<EventCollaborator> {
   const collaborator: EventCollaborator = {
     id: crypto.randomUUID(),
     eventId,
@@ -48,7 +54,7 @@ export function addCollaborator(
 }
 
 /** Remove a collaboration request; returns true when one was removed. */
-export function removeCollaborator(id: string): boolean {
+export async function removeCollaborator(id: string): Promise<boolean> {
   const i = eventCollaborators.findIndex((c) => c.id === id);
   if (i < 0) return false;
   eventCollaborators.splice(i, 1);

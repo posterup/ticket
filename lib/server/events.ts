@@ -21,29 +21,31 @@ import { events } from "./store";
  * (تقویمی) events are hidden from every listing so the mode leaves no trace;
  * direct lookups ({@link getEventById}) still resolve them. See {@link CALENDAR_MODE_ENABLED}.
  */
-export function listEvents(): Event[] {
+export async function listEvents(): Promise<Event[]> {
   return [...events]
     .filter((event) => CALENDAR_MODE_ENABLED || event.mode !== "recurring")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 /** Return a single event by id, or `undefined` when not found. */
-export function getEventById(id: string): Event | undefined {
+export async function getEventById(id: string): Promise<Event | undefined> {
   return events.find((event) => event.id === id);
 }
 
 /** Return a single event by its custom slug, or `undefined`. */
-export function getEventBySlug(slug: string): Event | undefined {
+export async function getEventBySlug(slug: string): Promise<Event | undefined> {
   return events.find((event) => event.slug === slug);
 }
 
 /** Resolve an event by id first, then by custom slug (public routes). */
-export function getEventByIdOrSlug(idOrSlug: string): Event | undefined {
-  return getEventById(idOrSlug) ?? getEventBySlug(idOrSlug);
+export async function getEventByIdOrSlug(
+  idOrSlug: string,
+): Promise<Event | undefined> {
+  return (await getEventById(idOrSlug)) ?? (await getEventBySlug(idOrSlug));
 }
 
 /** Create and persist a new event, returning the stored record. */
-export function createEvent(input: CreateEventInput): Event {
+export async function createEvent(input: CreateEventInput): Promise<Event> {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
 
@@ -143,7 +145,10 @@ function sessionsFromSchedule(
 }
 
 /** Apply an in-place update to an event; returns it, or `undefined` if absent. */
-export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
+export async function updateEvent(
+  id: string,
+  patch: EventUpdate,
+): Promise<Event | undefined> {
   const event = events.find((e) => e.id === id);
   if (!event) return undefined;
   if (patch.title !== undefined) event.title = patch.title;
@@ -171,10 +176,10 @@ export function updateEvent(id: string, patch: EventUpdate): Event | undefined {
 }
 
 /** Append a new سانس (session) to an event; returns it, or `undefined`. */
-export function addSession(
+export async function addSession(
   eventId: string,
   input: { startAt: string; endAt: string; availability?: SessionAvailability },
-): EventSession | undefined {
+): Promise<EventSession | undefined> {
   const event = events.find((e) => e.id === eventId);
   if (!event) return undefined;
   const session: EventSession = {
@@ -198,10 +203,10 @@ export type VenueUpdate = Partial<
 >;
 
 /** Update an event's venue in place; returns it, or `undefined` if absent. */
-export function updateVenue(
+export async function updateVenue(
   eventId: string,
   patch: VenueUpdate,
-): Venue | undefined {
+): Promise<Venue | undefined> {
   const event = events.find((e) => e.id === eventId);
   if (!event) return undefined;
   const v = event.venue;
@@ -226,11 +231,11 @@ export type SessionUpdate = Partial<
  * Update one session of an event in place (reschedule or cancel/restore).
  * Returns the session, or `undefined` when the event/session is not found.
  */
-export function updateSession(
+export async function updateSession(
   eventId: string,
   sessionId: string,
   patch: SessionUpdate,
-): EventSession | undefined {
+): Promise<EventSession | undefined> {
   const event = events.find((e) => e.id === eventId);
   const session = event?.sessions.find((s) => s.id === sessionId);
   if (!event || !session) return undefined;

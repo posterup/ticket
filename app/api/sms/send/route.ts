@@ -7,7 +7,7 @@ import { sendBulkSms } from "@/lib/server/sms/smsir";
 export const POST = handler(async (request: Request) => {
   const { segmentId, message } = await readJson(request, sendSmsSchema);
 
-  const result = await sendBulkSms(segmentMobiles(segmentId), message);
+  const result = await sendBulkSms(await segmentMobiles(segmentId), message);
   if (!result.ok) {
     // `error` is optional on SendSmsResult; keep the envelope's message filled.
     throw new HttpError(

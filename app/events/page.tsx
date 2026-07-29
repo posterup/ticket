@@ -3,9 +3,9 @@ import { headers } from "next/headers";
 
 import {
   listEvents,
-  listTickets,
-  getWorkspaceByEvent,
-  getEventEngagement,
+  minPriceByEvent,
+  getWorkspacesByEvents,
+  getEventEngagements,
 } from "@/lib/server";
 import { cityFromEnglish } from "@/lib/geo/iran";
 import { formatJalaliDate, formatToman } from "@/lib/format";
@@ -22,45 +22,55 @@ export const metadata: Metadata = {
   description: "تجربه‌ها و رویدادهای جذاب اطرافتان را کشف کنید.",
 };
 
-function fromPrice(eventId: string): string | null {
-  const prices = listTickets(eventId).map((t) => t.price);
-  if (prices.length === 0) return null;
-  const min = Math.min(...prices);
+function fromPrice(min: number | undefined): string | null {
+  if (min === undefined) return null;
   return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
 }
 
 export default async function PublicEventsPage() {
-  const withKey = listEvents()
-    .filter((e) => e.status === "published")
-    .map((event) => {
-      const org = getWorkspaceByEvent(event.id);
-      const firstSession = event.sessions[0];
-      return {
+  const published = (await listEvents()).filter(
+    (e) => e.status === "published",
+  );
+  const ids = published.map((e) => e.id);
+
+  // Resolved in one batch each, rather than per row inside the map below.
+  const [prices, orgs, engagement] = await Promise.all([
+    minPriceByEvent(ids),
+    getWorkspacesByEvents(ids),
+    getEventEngagements(ids),
+  ]);
+
+  const withKey = published.map((event) => {
+    const org = orgs.get(event.id);
+    const firstSession = event.sessions[0];
+    return {
+      sortKey: firstSession?.startAt ?? "",
+      event: {
+        id: event.id,
+        title: event.title,
+        modeLabel: modeLabel(event.mode),
+        city: event.venue.city,
+        venueName: event.venue.name,
+        dateLabel: firstSession ? formatJalaliDate(firstSession.startAt) : "",
         sortKey: firstSession?.startAt ?? "",
-        event: {
-          id: event.id,
-          title: event.title,
-          modeLabel: modeLabel(event.mode),
-          city: event.venue.city,
-          venueName: event.venue.name,
-          dateLabel: firstSession ? formatJalaliDate(firstSession.startAt) : "",
-          sortKey: firstSession?.startAt ?? "",
-          price: fromPrice(event.id),
-          going: getEventEngagement(event.id).going,
-          tags: event.tags,
-          categories: event.categories ?? [],
-          org: org
-            ? {
-                slug: org.slug,
-                name: org.name,
-                avatar: org.avatar,
-                verified: Boolean(org.verified),
-              }
-            : null,
-        } satisfies DiscoverEvent,
-      };
-    });
-  withKey.sort((a, b) => (a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0));
+        price: fromPrice(prices.get(event.id)),
+        going: engagement.get(event.id)?.going ?? 0,
+        tags: event.tags,
+        categories: event.categories ?? [],
+        org: org
+          ? {
+              slug: org.slug,
+              name: org.name,
+              avatar: org.avatar,
+              verified: Boolean(org.verified),
+            }
+          : null,
+      } satisfies DiscoverEvent,
+    };
+  });
+  withKey.sort((a, b) =>
+    a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0,
+  );
   const events = withKey.map((x) => x.event);
 
   // Default the city to the visitor's (IP geolocation), else Tehran.

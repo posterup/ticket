@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { QrCode, Megaphone } from "lucide-react";
 
-import { listAttendees, listEventsByAttendee, listTickets } from "@/lib/server";
+import {
+  listAttendees,
+  listEventsByAttendee,
+  minPriceByEvent,
+} from "@/lib/server";
 import { formatJalaliDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -10,14 +14,24 @@ import { ContactsTable, type Contact } from "@/components/dashboard/ContactsTabl
 
 export const metadata: Metadata = { title: "مخاطبین | پوستر" };
 
-export default function CustomersPage() {
-  const contacts: Contact[] = listAttendees().map((a) => {
-    const joined = listEventsByAttendee(a.id);
+export default async function CustomersPage() {
+  const attendees = await listAttendees();
+  const joinedByAttendee = new Map(
+    await Promise.all(
+      attendees.map(
+        async (a) => [a.id, await listEventsByAttendee(a.id)] as const,
+      ),
+    ),
+  );
+  // One batch for every joined event across every contact.
+  const prices = await minPriceByEvent(
+    [...joinedByAttendee.values()].flat().map((e) => e.id),
+  );
+
+  const contacts: Contact[] = attendees.map((a) => {
+    const joined = joinedByAttendee.get(a.id) ?? [];
     // Mock earnings: the cheapest ticket price of each joined event.
-    const spent = joined.reduce((sum, e) => {
-      const prices = listTickets(e.id).map((t) => t.price);
-      return sum + (prices.length ? Math.min(...prices) : 0);
-    }, 0);
+    const spent = joined.reduce((sum, e) => sum + (prices.get(e.id) ?? 0), 0);
 
     return {
       id: a.id,

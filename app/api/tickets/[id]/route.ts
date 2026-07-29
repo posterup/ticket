@@ -12,7 +12,7 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
   const { id } = await params;
   const patch = await readJson(request, ticketTypeUpdateSchema);
 
-  const ticket = updateTicketType(id, patch);
+  const ticket = await updateTicketType(id, patch);
   if (ticket === undefined) throw notFound("Ticket type was not found.");
   return ok(ticket);
 });

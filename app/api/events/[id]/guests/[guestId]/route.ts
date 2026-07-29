@@ -9,7 +9,7 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
   const { guestId } = await params;
   const { status } = await readJson(request, guestStatusSchema);
 
-  const guest = setGuestStatus(guestId, status);
+  const guest = await setGuestStatus(guestId, status);
   if (guest === undefined) throw notFound("Guest not found.");
   return ok(guest);
 });
@@ -18,7 +18,7 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
 export const DELETE = handler(
   async (_request: Request, { params }: Context) => {
     const { guestId } = await params;
-    if (!removeGuest(guestId)) throw notFound("Guest not found.");
+    if (!(await removeGuest(guestId))) throw notFound("Guest not found.");
     return ok({ id: guestId });
   },
 );

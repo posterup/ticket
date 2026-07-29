@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BadgeCheck, ArrowLeft } from "lucide-react";
 
-import { listWorkspaces, listEventsByWorkspace } from "@/lib/server";
+import { listWorkspaces, listEventsByWorkspaces } from "@/lib/server";
 import { formatNumber } from "@/lib/format";
 import { FollowChip } from "@/components/workspace/FollowChip";
 
@@ -9,9 +9,14 @@ import { FollowChip } from "@/components/workspace/FollowChip";
  * Landing social strip: organizer/person pages to follow, reinforcing the
  * "follow pages and see their events" core of the platform.
  */
-export function FollowPages() {
-  const workspaces = listWorkspaces();
+export async function FollowPages() {
+  const workspaces = await listWorkspaces();
   if (workspaces.length === 0) return null;
+
+  // One batch instead of a lookup per card.
+  const eventsBySlug = await listEventsByWorkspaces(
+    workspaces.map((w) => w.slug),
+  );
 
   return (
     <section className="border-t border-border bg-subtle">
@@ -60,7 +65,8 @@ export function FollowPages() {
                   </span>
                   <span className="mt-0.5 block text-xs text-muted">
                     {formatNumber(w.followers)} دنبال‌کننده ·{" "}
-                    {formatNumber(listEventsByWorkspace(w.slug).length)} رویداد
+                    {formatNumber(eventsBySlug.get(w.slug)?.length ?? 0)}{" "}
+                    رویداد
                   </span>
                 </span>
               </Link>

@@ -6,12 +6,12 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { MobileNavDrawer } from "@/components/dashboard/MobileNavDrawer";
 import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const workspaces = listWorkspaces();
+  const workspaces = await listWorkspaces();
 
   return (
     <div className="lg:flex">

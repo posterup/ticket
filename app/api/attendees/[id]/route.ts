@@ -9,7 +9,7 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
   const { id } = await params;
   const { tags } = await readJson(request, attendeeTagsSchema);
 
-  const attendee = setAttendeeTags(id, tags);
+  const attendee = await setAttendeeTags(id, tags);
   if (attendee === undefined) throw notFound("Contact not found.");
   return ok(attendee);
 });

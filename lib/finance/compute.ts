@@ -4,7 +4,7 @@
  * and settlement records when payments land.
  */
 
-import { listTickets, getEventById } from "@/lib/server";
+import { listTickets, listEvents } from "@/lib/server";
 import { computeAnalytics } from "@/lib/analytics/compute";
 
 const PLATFORM_FEE_RATE = 0.03;
@@ -83,13 +83,18 @@ export interface Finance {
   withdrawals: Withdrawal[];
 }
 
-export function computeFinance(): Finance {
-  const gross = computeAnalytics().revenue;
-  const tickets = listTickets();
+export async function computeFinance(): Promise<Finance> {
+  const gross = (await computeAnalytics()).revenue;
+  const tickets = await listTickets();
+
+  // Resolve every referenced event title up front rather than per row.
+  const titles = new Map(
+    (await listEvents()).map((e) => [e.id, e.title] as const),
+  );
 
   const transactions: Transaction[] = BUYERS.map((buyer, i) => {
     const t = tickets[i % Math.max(1, tickets.length)];
-    const event = t ? getEventById(t.eventId)?.title ?? "رویداد" : "رویداد";
+    const event = t ? titles.get(t.eventId) ?? "رویداد" : "رویداد";
     const status: TxStatus = i % 7 === 3 ? "refunded" : "paid";
     return {
       id: `tx-${i + 1}`,

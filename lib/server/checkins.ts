@@ -7,12 +7,15 @@
 import { checkins } from "./store";
 
 /** All currently checked-in holder ids. */
-export function listCheckedHolderIds(): string[] {
+export async function listCheckedHolderIds(): Promise<string[]> {
   return [...checkins];
 }
 
 /** Record or clear a check-in for a holder. */
-export function setCheckin(holderId: string, checked: boolean): void {
+export async function setCheckin(
+  holderId: string,
+  checked: boolean,
+): Promise<void> {
   if (checked) checkins.add(holderId);
   else checkins.delete(holderId);
 }

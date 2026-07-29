@@ -3,18 +3,16 @@ import { MapPin, CalendarDays, ArrowLeft, BadgeCheck, Users } from "lucide-react
 
 import {
   listEvents,
-  listTickets,
-  getWorkspaceByEvent,
-  getEventEngagement,
+  minPriceByEvent,
+  getWorkspacesByEvents,
+  getEventEngagements,
 } from "@/lib/server";
 import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
 import { EventCover } from "@/components/events/EventCover";
 
-function fromPrice(eventId: string): string | null {
-  const prices = listTickets(eventId).map((t) => t.price);
-  if (prices.length === 0) return null;
-  const min = Math.min(...prices);
+function fromPrice(min: number | undefined): string | null {
+  if (min === undefined) return null;
   return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
 }
 
@@ -23,12 +21,20 @@ function fromPrice(eventId: string): string | null {
  * page that owns it — so the front door shows the social platform in action
  * rather than only describing it.
  */
-export function FeaturedEvents() {
-  const events = listEvents()
+export async function FeaturedEvents() {
+  const events = (await listEvents())
     .filter((e) => e.status === "published")
     .slice(0, 3);
 
   if (events.length === 0) return null;
+
+  // Resolved in one batch each, rather than per card below.
+  const ids = events.map((e) => e.id);
+  const [prices, orgs, engagement] = await Promise.all([
+    minPriceByEvent(ids),
+    getWorkspacesByEvents(ids),
+    getEventEngagements(ids),
+  ]);
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
@@ -52,10 +58,10 @@ export function FeaturedEvents() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {events.map((event) => {
-          const price = fromPrice(event.id);
+          const price = fromPrice(prices.get(event.id));
           const firstSession = event.sessions[0];
-          const organizer = getWorkspaceByEvent(event.id);
-          const going = getEventEngagement(event.id).going;
+          const organizer = orgs.get(event.id);
+          const going = engagement.get(event.id)?.going ?? 0;
           return (
             <Link
               key={event.id}

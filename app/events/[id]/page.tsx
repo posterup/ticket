@@ -43,7 +43,7 @@ interface Params {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
-  const event = getEventByIdOrSlug(id);
+  const event = await getEventByIdOrSlug(id);
   return { title: event ? `${event.title} | پوستر` : "رویداد | پوستر" };
 }
 
@@ -57,12 +57,14 @@ function priceLabel(prices: number[]): string | null {
 
 export default async function PublicEventDetail({ params }: Params) {
   const { id } = await params;
-  const event = getEventByIdOrSlug(id);
+  const event = await getEventByIdOrSlug(id);
   if (!event) notFound();
 
-  const tickets = listTickets(event.id);
-  const organizer = getWorkspaceByEvent(event.id);
-  const collaborators = listAcceptedCollaborators(event.id);
+  const [tickets, organizer, collaborators] = await Promise.all([
+    listTickets(event.id),
+    getWorkspaceByEvent(event.id),
+    listAcceptedCollaborators(event.id),
+  ]);
 
   const sessions = [...event.sessions].sort((a, b) =>
     a.startAt.localeCompare(b.startAt),

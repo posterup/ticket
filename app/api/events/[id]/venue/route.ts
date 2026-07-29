@@ -9,7 +9,7 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
   const { id } = await params;
   const patch = await readJson(request, venueUpdateSchema);
 
-  const venue = updateVenue(id, patch);
+  const venue = await updateVenue(id, patch);
   if (venue === undefined) throw notFound(`Event "${id}" was not found.`);
   return ok(venue);
 });

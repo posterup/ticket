@@ -22,6 +22,20 @@ const ENGAGEMENT: Record<string, EventEngagement> = {
 };
 
 /** Baseline engagement for an event (zeros when unseeded/newly created). */
-export function getEventEngagement(eventId: string): EventEngagement {
+export async function getEventEngagement(
+  eventId: string,
+): Promise<EventEngagement> {
   return ENGAGEMENT[eventId] ?? { going: 0, interested: 0 };
+}
+
+/**
+ * Engagement for many events at once, keyed by event id. Batched so listing
+ * pages avoid a lookup per row inside a `.map()`.
+ */
+export async function getEventEngagements(
+  eventIds: string[],
+): Promise<Map<string, EventEngagement>> {
+  return new Map(
+    eventIds.map((id) => [id, ENGAGEMENT[id] ?? { going: 0, interested: 0 }]),
+  );
 }

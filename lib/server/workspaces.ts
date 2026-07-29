@@ -83,18 +83,36 @@ const EVENT_WORKSPACE: Record<string, string[]> = {
   "iran-runners": ["3f1a6c2e-0006-4a10-9b21-1a2b3c4d5e06"],
 };
 
-export function listWorkspaces(): Workspace[] {
+export async function listWorkspaces(): Promise<Workspace[]> {
   return [...workspaces];
 }
 
-export function getWorkspaceBySlug(slug: string): Workspace | undefined {
+export async function getWorkspaceBySlug(
+  slug: string,
+): Promise<Workspace | undefined> {
   return workspaces.find((w) => w.slug === slug);
 }
 
 /** Events owned by a workspace (by slug). */
-export function listEventsByWorkspace(slug: string): Event[] {
+export async function listEventsByWorkspace(slug: string): Promise<Event[]> {
   const ids = new Set(EVENT_WORKSPACE[slug] ?? []);
-  return listEvents().filter((e) => ids.has(e.id));
+  return (await listEvents()).filter((e) => ids.has(e.id));
+}
+
+/**
+ * Events for many workspaces at once, keyed by slug. Batched so directory
+ * pages avoid one lookup per workspace inside a `.map()`.
+ */
+export async function listEventsByWorkspaces(
+  slugs: string[],
+): Promise<Map<string, Event[]>> {
+  const all = await listEvents();
+  return new Map(
+    slugs.map((slug) => {
+      const ids = new Set(EVENT_WORKSPACE[slug] ?? []);
+      return [slug, all.filter((e) => ids.has(e.id))];
+    }),
+  );
 }
 
 /**
@@ -102,9 +120,31 @@ export function listEventsByWorkspace(slug: string): Event[] {
  * unmapped events fall back to the first workspace so the public page never
  * shows an event without a manager.
  */
-export function getWorkspaceByEvent(eventId: string): Workspace | undefined {
+export async function getWorkspaceByEvent(
+  eventId: string,
+): Promise<Workspace | undefined> {
   const slug = Object.keys(EVENT_WORKSPACE).find((s) =>
     EVENT_WORKSPACE[s].includes(eventId),
   );
-  return (slug ? getWorkspaceBySlug(slug) : undefined) ?? workspaces[0];
+  return (slug ? await getWorkspaceBySlug(slug) : undefined) ?? workspaces[0];
+}
+
+/**
+ * Owning workspace for many events at once, keyed by event id. Batched so
+ * listing pages resolve organisers in one pass; the same "fall back to the
+ * first workspace" rule as {@link getWorkspaceByEvent} applies.
+ */
+export async function getWorkspacesByEvents(
+  eventIds: string[],
+): Promise<Map<string, Workspace>> {
+  const bySlug = new Map(workspaces.map((w) => [w.slug, w]));
+  const ownerOf = new Map<string, Workspace>();
+  for (const [slug, ids] of Object.entries(EVENT_WORKSPACE)) {
+    const workspace = bySlug.get(slug);
+    if (!workspace) continue;
+    for (const id of ids) ownerOf.set(id, workspace);
+  }
+  return new Map(
+    eventIds.map((id) => [id, ownerOf.get(id) ?? workspaces[0]]),
+  );
 }

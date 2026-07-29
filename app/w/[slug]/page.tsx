@@ -22,16 +22,16 @@ interface Params {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const workspace = getWorkspaceBySlug(slug);
+  const workspace = await getWorkspaceBySlug(slug);
   return { title: workspace ? `${workspace.name} | پوستر` : "فضای کاری | پوستر" };
 }
 
 export default async function WorkspacePage({ params }: Params) {
   const { slug } = await params;
-  const workspace = getWorkspaceBySlug(slug);
+  const workspace = await getWorkspaceBySlug(slug);
   if (!workspace) notFound();
 
-  const events: WsEvent[] = listEventsByWorkspace(slug).map((e) => {
+  const events: WsEvent[] = (await listEventsByWorkspace(slug)).map((e) => {
     const start =
       e.sessions.map((s) => s.startAt).sort()[0] ?? e.createdAt;
     return {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
 
-import { listWorkspaces, listEventsByWorkspace } from "@/lib/server";
+import { listWorkspaces, listEventsByWorkspaces } from "@/lib/server";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -15,8 +15,12 @@ export const metadata: Metadata = {
   description: "صفحه‌های برگزارکنندگان و کسب‌وکارها را دنبال کنید.",
 };
 
-export default function PagesDirectory() {
-  const workspaces = listWorkspaces();
+export default async function PagesDirectory() {
+  const workspaces = await listWorkspaces();
+  // One batch instead of a lookup per card.
+  const eventsBySlug = await listEventsByWorkspaces(
+    workspaces.map((w) => w.slug),
+  );
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -36,7 +40,7 @@ export default function PagesDirectory() {
             <WorkspaceCard
               key={w.id}
               workspace={w}
-              eventCount={listEventsByWorkspace(w.slug).length}
+              eventCount={eventsBySlug.get(w.slug)?.length ?? 0}
             />
           ))}
         </div>

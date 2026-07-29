@@ -30,7 +30,7 @@ const campaigns: Campaign[] = [
   },
 ];
 
-export function listCampaigns(): Campaign[] {
+export async function listCampaigns(): Promise<Campaign[]> {
   return [...campaigns];
 }
 
@@ -47,12 +47,12 @@ function segmentAttendees(segmentId: string) {
 }
 
 /** Mobile numbers for a segment (for the SMS gateway). */
-export function segmentMobiles(segmentId: string): string[] {
+export async function segmentMobiles(segmentId: string): Promise<string[]> {
   return segmentAttendees(segmentId).map((a) => a.phone);
 }
 
 /** Audience segments derived from attendee tags (plus an "all" segment). */
-export function listSegments(): Segment[] {
+export async function listSegments(): Promise<Segment[]> {
   const byTag = new Map<string, number>();
   for (const a of attendees) {
     for (const tag of a.tags) {
