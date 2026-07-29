@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/select";
 import { formatNumber } from "@/lib/format";
 import { CheckinPanel } from "@/components/checkin/CheckinPanel";
 import { GuestInvite, type GuestItem } from "@/components/dashboard/GuestInvite";
-import type { Holder, SessionRef } from "@/lib/checkin/data";
+import type { Holder, SessionRef } from "@/lib/server/checkins";
 
 /**
  * Session-first پذیرش و مهمانان tab. The host picks a سانس before anything is

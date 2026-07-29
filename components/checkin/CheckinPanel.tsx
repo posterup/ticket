@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/ui/field";
 import { formatNumber } from "@/lib/format";
-import type { Holder, SessionRef } from "@/lib/checkin/data";
+import type { Holder, SessionRef } from "@/lib/server/checkins";
 
 export interface CheckinEvent {
   id: string;
@@ -48,13 +48,30 @@ export function CheckinPanel({
   const [code, setCode] = useState("");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  // Persist a check-in change so it's still there after a refresh.
-  function persist(holderId: string, isChecked: boolean) {
-    void fetch("/api/checkin", {
+  /**
+   * Record the scan. The server is the authority on duplicates — the unique
+   * constraint on the check-in row is what actually prevents a second
+   * admission — so a rejection here is reported rather than swallowed.
+   */
+  async function persist(holder: Holder, isChecked: boolean) {
+    const res = await fetch("/api/checkin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ holderId, checked: isChecked }),
+      body: JSON.stringify({
+        eventId: event?.id,
+        qrToken: holder.qrToken,
+        checked: isChecked,
+      }),
     });
+    if (!res.ok) {
+      const json = await res.json().catch(() => null);
+      setFeedback({
+        kind: "dup",
+        msg: json?.error?.message ?? "ثبت ورود ناموفق بود.",
+      });
+      return false;
+    }
+    return true;
   }
 
   const holders = event?.holders ?? [];
@@ -83,15 +100,24 @@ export function CheckinPanel({
     setQuery("");
   }
 
-  function toggle(id: string) {
+  async function toggle(holder: Holder) {
+    const nowChecked = !checked.has(holder.id);
+    // Optimistic, reverted if the server refuses — a duplicate scan must not
+    // leave the door showing someone as admitted when they were not.
     setChecked((prev) => {
       const next = new Set(prev);
-      const nowChecked = !next.has(id);
-      if (nowChecked) next.add(id);
-      else next.delete(id);
-      persist(id, nowChecked);
+      if (nowChecked) next.add(holder.id);
+      else next.delete(holder.id);
       return next;
     });
+    if (!(await persist(holder, nowChecked))) {
+      setChecked((prev) => {
+        const next = new Set(prev);
+        if (nowChecked) next.delete(holder.id);
+        else next.add(holder.id);
+        return next;
+      });
+    }
   }
 
   function submitCode() {
@@ -110,8 +136,17 @@ export function CheckinPanel({
       setFeedback({ kind: "dup", msg: `«${holder.name}» قبلاً ثبت شده است.` });
     } else {
       setChecked((prev) => new Set(prev).add(holder.id));
-      persist(holder.id, true);
-      setFeedback({ kind: "ok", msg: `ورود «${holder.name}» ثبت شد.` });
+      void persist(holder, true).then((okResult) => {
+        if (okResult) {
+          setFeedback({ kind: "ok", msg: `ورود «${holder.name}» ثبت شد.` });
+        } else {
+          setChecked((prev) => {
+            const next = new Set(prev);
+            next.delete(holder.id);
+            return next;
+          });
+        }
+      });
     }
     setCode("");
   }
@@ -266,7 +301,7 @@ export function CheckinPanel({
                   </div>
                   <button
                     type="button"
-                    onClick={() => toggle(h.id)}
+                    onClick={() => void toggle(h)}
                     aria-pressed={isChecked}
                     className={cn(
                       "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",

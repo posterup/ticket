@@ -1,29 +1,35 @@
-import { setCheckin } from "@/lib/server";
+import { setCheckinByToken } from "@/lib/server";
 import { requireEventAccess } from "@/lib/server/auth/guards";
 import { handler, HttpError, ok, readJson } from "@/lib/server/http";
 import { checkinSchema } from "@/lib/server/schemas/checkin";
 
 /**
- * The synthetic holder ids from `lib/checkin/data.ts` are `${eventId}-h${n}`,
- * so the event they belong to is recoverable from the id itself. Once
- * checkout issues real tickets this endpoint takes a `qrToken` and looks the
- * event up properly.
+ * POST /api/checkin — admit a ticket by its scanned code.
+ *
+ * The event is named explicitly rather than inferred from the ticket, so a
+ * token from a different event is refused as a scan at the wrong door instead
+ * of quietly admitting someone.
  */
-function eventIdFromHolder(holderId: string): string | null {
-  const match = /^(.+)-h\d+$/.exec(holderId);
-  return match?.[1] ?? null;
-}
-
-/** POST /api/checkin — record or clear a holder's check-in. */
 export const POST = handler(async (request: Request) => {
-  const { holderId, checked } = await readJson(request, checkinSchema);
+  const { eventId, qrToken, checked } = await readJson(request, checkinSchema);
+  const { user } = await requireEventAccess(eventId, "checkin:perform");
 
-  const eventId = eventIdFromHolder(holderId);
-  if (!eventId) {
-    throw new HttpError(400, "INVALID_BODY", "شناسه بلیت معتبر نیست.");
+  const result = await setCheckinByToken(
+    eventId,
+    qrToken,
+    checked,
+    user?.id,
+  );
+
+  if (!result.ok) {
+    // A duplicate is a conflict the door needs to see, not a server error.
+    const status = result.reason === "not-found" ? 404 : 409;
+    throw new HttpError(
+      status,
+      result.reason === "not-found" ? "NOT_FOUND" : "CONFLICT",
+      result.message,
+    );
   }
-  await requireEventAccess(eventId, "checkin:perform");
 
-  await setCheckin(holderId, checked);
-  return ok({ holderId, checked });
+  return ok(result);
 });

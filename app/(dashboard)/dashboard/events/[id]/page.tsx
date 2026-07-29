@@ -7,7 +7,8 @@ import {
   getEventById,
   listTickets,
   listDiscounts,
-  listCheckedHolderIds,
+  listCheckedTicketIds,
+  listHolders,
   listWorkspaces,
   getWorkspaceByEvent,
   listGuests,
@@ -15,7 +16,6 @@ import {
   listCollaborators,
   listAttendeeTags,
 } from "@/lib/server";
-import { buildHolders } from "@/lib/checkin/data";
 import { formatJalaliDate, formatTime } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
@@ -159,8 +159,11 @@ export default async function EventDetailPage({ params }: Params) {
     venue: [event.venue.name, event.venue.city].filter(Boolean).join("، "),
   };
 
-  const holders = await buildHolders(event.id, 0, sessionOptions);
-  const checkedHolderIds = await listCheckedHolderIds();
+  const holders = await listHolders(
+    event.id,
+    new Map(sessionOptions.map((s) => [s.id, s.label])),
+  );
+  const checkedHolderIds = await listCheckedTicketIds(event.id);
 
   return (
     <div className="flex flex-col gap-6">
