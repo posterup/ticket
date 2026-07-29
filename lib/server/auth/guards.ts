@@ -237,12 +237,33 @@ export async function requireManagerPage(): Promise<{
   const memberships = await listMemberships(user.id);
   if (memberships.length === 0) redirect("/me");
 
-  // The cookie is a preference, not a credential: a value naming a workspace
-  // the caller does not belong to falls back rather than granting anything.
+  return { user, memberships, workspace: await activeWorkspace(memberships) };
+}
+
+/**
+ * Which workspace the caller is looking at.
+ *
+ * The cookie is a preference, not a credential: a value naming a workspace the
+ * caller does not belong to falls back to their first rather than granting
+ * anything.
+ */
+export async function activeWorkspace(
+  memberships: Membership[],
+): Promise<Membership> {
   const store = await cookies();
   const preferred = store.get(ACTIVE_WORKSPACE_COOKIE)?.value;
-  const workspace =
-    memberships.find((m) => m.workspaceId === preferred) ?? memberships[0];
+  return memberships.find((m) => m.workspaceId === preferred) ?? memberships[0];
+}
 
-  return { user, memberships, workspace };
+/**
+ * `requireManager()` plus the active workspace — for API routes, which must
+ * throw rather than redirect.
+ */
+export async function requireActiveWorkspace(): Promise<{
+  user: SessionUser;
+  memberships: Membership[];
+  workspace: Membership;
+}> {
+  const { user, memberships } = await requireManager();
+  return { user, memberships, workspace: await activeWorkspace(memberships) };
 }
