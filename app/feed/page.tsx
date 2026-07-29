@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 
 import {
+  listFeedEvents,
+  listFollowedWorkspaces,
   listWorkspaces,
-  listEventsByWorkspaces,
   minPriceByEvent,
+  getWorkspacesByEvents,
 } from "@/lib/server";
+import { getCurrentUser } from "@/lib/server/auth/guards";
 import { formatJalaliDate, formatToman } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -25,19 +28,34 @@ function fromPrice(min: number | undefined): string | null {
   return min === 0 ? "رایگان" : `از ${formatToman(min)}`;
 }
 
+/**
+ * The viewer's feed.
+ *
+ * Scoped in the query. Previously every event in the system was sent to the
+ * browser, which then filtered them against a localStorage set — so the "feed"
+ * was a client-side illusion over the full catalogue.
+ */
 export default async function FeedPage() {
-  const workspaces = await listWorkspaces();
+  const user = await getCurrentUser();
 
-  // Both resolved in one batch, rather than per workspace/event in the map.
-  const eventsBySlug = await listEventsByWorkspaces(
-    workspaces.map((w) => w.slug),
-  );
-  const prices = await minPriceByEvent(
-    [...eventsBySlug.values()].flat().map((e) => e.id),
-  );
+  // Middleware sends signed-out visitors to /login, so this is the fallback
+  // rather than the common path.
+  const [events, followed] = user
+    ? await Promise.all([
+        listFeedEvents(user.id),
+        listFollowedWorkspaces(user.id),
+      ])
+    : [[], []];
 
-  const withKey = workspaces.flatMap((w) =>
-    (eventsBySlug.get(w.slug) ?? []).map((e) => ({
+  const ids = events.map((e) => e.id);
+  const [prices, orgs] = await Promise.all([
+    minPriceByEvent(ids),
+    getWorkspacesByEvents(ids),
+  ]);
+
+  const withKey = events.map((e) => {
+    const org = orgs.get(e.id);
+    return {
       sortKey: e.sessions[0]?.startAt ?? "",
       event: {
         id: e.id,
@@ -47,17 +65,19 @@ export default async function FeedPage() {
         dateLabel: e.sessions[0] ? formatJalaliDate(e.sessions[0].startAt) : "",
         price: fromPrice(prices.get(e.id)),
         tags: e.tags,
-        wsSlug: w.slug,
-        wsName: w.name,
-        wsAvatar: w.avatar,
-        wsVerified: Boolean(w.verified),
+        wsSlug: org?.slug ?? "",
+        wsName: org?.name ?? "",
+        wsAvatar: org?.avatar ?? "",
+        wsVerified: Boolean(org?.verified),
       } satisfies FeedEvent,
-    })),
+    };
+  });
+  withKey.sort((a, b) =>
+    a.sortKey < b.sortKey ? 1 : a.sortKey > b.sortKey ? -1 : 0,
   );
-  withKey.sort((a, b) => (a.sortKey < b.sortKey ? 1 : a.sortKey > b.sortKey ? -1 : 0));
-  const events = withKey.map((x) => x.event);
 
-  const feedWorkspaces: FeedWorkspace[] = workspaces.map((w) => ({
+  // Suggestions for an empty feed come from the whole directory.
+  const suggestions: FeedWorkspace[] = (await listWorkspaces()).map((w) => ({
     slug: w.slug,
     name: w.name,
     avatar: w.avatar,
@@ -76,7 +96,11 @@ export default async function FeedPage() {
             رویدادهای صفحه‌هایی که دنبال می‌کنید.
           </p>
         </div>
-        <FeedClient events={events} workspaces={feedWorkspaces} />
+        <FeedClient
+          events={withKey.map((x) => x.event)}
+          workspaces={suggestions}
+          followingCount={followed.length}
+        />
       </main>
       <Footer />
     </div>

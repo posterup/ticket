@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -12,8 +11,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 
-import { getRsvps, type RsvpMap, type RsvpState } from "@/lib/rsvp";
-import { getFollowedSlugs } from "@/lib/follow";
+import type { RsvpState } from "@/lib/rsvp";
 import { formatNumber } from "@/lib/format";
 import { EventCover } from "@/components/events/EventCover";
 
@@ -28,25 +26,15 @@ export interface MeEvent {
   org: { name: string; avatar: string; verified: boolean } | null;
 }
 
-export function MyEventsClient({ events }: { events: MeEvent[] }) {
-  const [rsvps, setRsvps] = useState<RsvpMap | null>(null);
-  const [followCount, setFollowCount] = useState(0);
-
-  useEffect(() => {
-    setRsvps(getRsvps());
-    setFollowCount(getFollowedSlugs().length);
-  }, []);
-
-  if (rsvps === null) {
-    return <p className="text-sm text-muted">در حال بارگذاری…</p>;
-  }
-
-  const byId = new Map(events.map((e) => [e.id, e]));
-  const pick = (state: RsvpState) =>
-    Object.keys(rsvps)
-      .filter((id) => rsvps[id] === state)
-      .map((id) => byId.get(id))
-      .filter((e): e is MeEvent => Boolean(e));
+export function MyEventsClient({
+  events,
+  followCount,
+}: {
+  /** Already the viewer's own marked events, resolved server-side. */
+  events: (MeEvent & { state: RsvpState })[];
+  followCount: number;
+}) {
+  const pick = (state: RsvpState) => events.filter((e) => e.state === state);
 
   const going = pick("going");
   const interested = pick("interested");

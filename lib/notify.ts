@@ -1,36 +1,21 @@
 /**
- * Client-side "notify me when tickets go on sale" state, persisted in
- * localStorage. Stands in for a server-side reminder list until auth/persistence
- * lands. Guards `window` so it is safe to import in components rendered on the
- * server.
+ * "Tell me when this opens", server-backed.
+ *
+ * Was a `poster-notify` localStorage set, which meant nobody could actually be
+ * told — nothing server-side knew who had asked.
  */
 
-export const NOTIFY_KEY = "poster-notify";
+import type { ViewerState } from "./rsvp";
 
-export function getNotifiedEventIds(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(NOTIFY_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(parsed)
-      ? parsed.filter((s): s is string => typeof s === "string")
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-export function isNotified(eventId: string): boolean {
-  return getNotifiedEventIds().includes(eventId);
-}
-
-export function setNotified(eventId: string, notify: boolean): string[] {
-  const set = new Set(getNotifiedEventIds());
-  if (notify) set.add(eventId);
-  else set.delete(eventId);
-  const arr = [...set];
-  if (typeof window !== "undefined") {
-    localStorage.setItem(NOTIFY_KEY, JSON.stringify(arr));
-  }
-  return arr;
+/** Ask, or stop asking, to be notified about an event. Idempotent. */
+export async function setNotified(
+  eventId: string,
+  wanted: boolean,
+): Promise<ViewerState | null> {
+  const res = await fetch(`/api/events/${eventId}/notify`, {
+    method: wanted ? "POST" : "DELETE",
+  });
+  if (!res.ok) return null;
+  const json = await res.json();
+  return "data" in json ? (json.data as ViewerState) : null;
 }

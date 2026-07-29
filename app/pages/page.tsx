@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
 
-import { listWorkspaces, listEventsByWorkspaces } from "@/lib/server";
+import {
+  listWorkspaces,
+  listEventsByWorkspaces,
+  listFollowedSlugs,
+} from "@/lib/server";
+import { getCurrentUser } from "@/lib/server/auth/guards";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PublicHeader } from "@/components/PublicHeader";
@@ -21,6 +26,9 @@ export default async function PagesDirectory() {
   const eventsBySlug = await listEventsByWorkspaces(
     workspaces.map((w) => w.slug),
   );
+  // Resolved here so each chip is correct on first paint.
+  const viewer = await getCurrentUser();
+  const followed = new Set(viewer ? await listFollowedSlugs(viewer.id) : []);
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -41,6 +49,8 @@ export default async function PagesDirectory() {
               key={w.id}
               workspace={w}
               eventCount={eventsBySlug.get(w.slug)?.length ?? 0}
+              following={followed.has(w.slug)}
+              signedIn={viewer !== null}
             />
           ))}
         </div>
@@ -53,9 +63,13 @@ export default async function PagesDirectory() {
 function WorkspaceCard({
   workspace: w,
   eventCount,
+  following,
+  signedIn,
 }: {
   workspace: Workspace;
   eventCount: number;
+  following: boolean;
+  signedIn: boolean;
 }) {
   const typeLabel = w.type === "business" ? "کسب‌وکار" : "شخصی";
   return (
@@ -98,7 +112,12 @@ function WorkspaceCard({
           {formatNumber(w.followers)} دنبال‌کننده · {formatNumber(eventCount)}{" "}
           رویداد
         </span>
-        <FollowChip slug={w.slug} name={w.name} />
+        <FollowChip
+          slug={w.slug}
+          name={w.name}
+          initialFollowing={following}
+          signedIn={signedIn}
+        />
       </div>
     </div>
   );

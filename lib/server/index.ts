@@ -16,3 +16,4 @@ export * from "./workspaces";
 export * from "./campaigns";
 export * from "./checkins";
 export * from "./orders";
+export * from "./engagement-user";

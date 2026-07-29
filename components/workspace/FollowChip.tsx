@@ -1,23 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Check, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { isFollowed, setFollowed } from "@/lib/follow";
+import { setFollowed } from "@/lib/follow";
 
-/** Compact follow toggle for directory cards; persists to localStorage. */
-export function FollowChip({ slug, name }: { slug: string; name: string }) {
-  const [following, setFollowing] = useState(false);
+/**
+ * Compact follow toggle for directory cards.
+ *
+ * `initialFollowing` is resolved on the server by the page that renders this,
+ * so there is no flash of the wrong label before an effect corrects it.
+ */
+export function FollowChip({
+  slug,
+  name,
+  initialFollowing = false,
+  signedIn = true,
+}: {
+  slug: string;
+  name: string;
+  initialFollowing?: boolean;
+  signedIn?: boolean;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [following, setFollowing] = useState(initialFollowing);
 
-  useEffect(() => {
-    setFollowing(isFollowed(slug));
-  }, [slug]);
-
-  function toggle() {
+  async function toggle() {
+    if (!signedIn) {
+      router.push(`/login?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
     const next = !following;
+    // Optimistic: the button responds now and reverts if the write fails.
     setFollowing(next);
-    setFollowed(slug, next);
+    if ((await setFollowed(slug, next)) === null) setFollowing(!next);
   }
 
   return (
@@ -25,7 +44,7 @@ export function FollowChip({ slug, name }: { slug: string; name: string }) {
       type="button"
       aria-pressed={following}
       aria-label={`دنبال کردن ${name}`}
-      onClick={toggle}
+      onClick={() => void toggle()}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
         following

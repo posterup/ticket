@@ -5,7 +5,9 @@ import { BadgeCheck } from "lucide-react";
 import {
   getWorkspaceBySlug,
   listEventsByWorkspace,
+  listFollowedSlugs,
 } from "@/lib/server";
+import { getCurrentUser } from "@/lib/server/auth/guards";
 import { formatJalaliDate } from "@/lib/format";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
@@ -30,6 +32,11 @@ export default async function WorkspacePage({ params }: Params) {
   const { slug } = await params;
   const workspace = await getWorkspaceBySlug(slug);
   if (!workspace) notFound();
+
+  const viewer = await getCurrentUser();
+  const following = viewer
+    ? (await listFollowedSlugs(viewer.id)).includes(slug)
+    : false;
 
   const events: WsEvent[] = (await listEventsByWorkspace(slug)).map((e) => {
     const start =
@@ -77,7 +84,11 @@ export default async function WorkspacePage({ params }: Params) {
             ) : null}
 
             <div className="mt-4">
-              <WorkspaceFollow slug={workspace.slug} />
+              <WorkspaceFollow
+            slug={workspace.slug}
+            initialFollowing={following}
+            signedIn={viewer !== null}
+          />
             </div>
           </div>
         </div>

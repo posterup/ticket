@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, MapPin, BadgeCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { getFollowedSlugs } from "@/lib/follow";
 import { FollowChip } from "@/components/workspace/FollowChip";
 import { EventCover } from "@/components/events/EventCover";
 
@@ -33,24 +31,19 @@ export interface FeedWorkspace {
 export function FeedClient({
   events,
   workspaces,
+  followingCount,
 }: {
   events: FeedEvent[];
+  /** How many pages the viewer follows, to tell "none yet" from "none new". */
+  followingCount: number;
   workspaces: FeedWorkspace[];
 }) {
-  // null until localStorage is read on the client (avoids hydration mismatch).
-  const [followed, setFollowed] = useState<string[] | null>(null);
-  useEffect(() => {
-    setFollowed(getFollowedSlugs());
-  }, []);
-
-  if (followed === null) {
-    return <p className="text-sm text-muted">در حال بارگذاری…</p>;
-  }
-
-  const myEvents = events.filter((e) => followed.includes(e.wsSlug));
+  // `events` is already scoped to what this viewer follows — the query did it,
+  // rather than every event being shipped here and filtered in the browser.
+  const myEvents = events;
 
   if (myEvents.length === 0) {
-    return <EmptyState workspaces={workspaces} following={followed.length > 0} />;
+    return <EmptyState workspaces={workspaces} following={followingCount > 0} />;
   }
 
   return (
