@@ -67,7 +67,7 @@ export function FollowPages() {
                     <span className="truncate">{w.name}</span>
                     {w.verified ? (
                       <BadgeCheck
-                        className="size-3.5 shrink-0 text-accent"
+                        className="size-3.5 shrink-0 text-accent-text"
                         aria-label="تأییدشده"
                       />
                     ) : null}

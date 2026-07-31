@@ -78,7 +78,7 @@ function BackBar() {
           type="button"
           onClick={() => router.back()}
           aria-label="بازگشت"
-          className="grid size-10 shrink-0 place-items-center rounded-full text-foreground outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="grid size-10 shrink-0 place-items-center rounded-full text-foreground outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowRight className="size-5" aria-hidden />
         </button>

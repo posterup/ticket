@@ -63,7 +63,7 @@ export function FeaturedEvents() {
                     {organizer.name}
                     {organizer.verified ? (
                       <BadgeCheck
-                        className="size-3.5 shrink-0 text-accent"
+                        className="size-3.5 shrink-0 text-accent-text"
                         aria-label="تأییدشده"
                       />
                     ) : null}

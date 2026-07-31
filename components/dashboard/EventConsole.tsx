@@ -36,7 +36,7 @@ export function EventConsole({ tabs }: { tabs: ConsoleTab[] }) {
             aria-selected={active === t.id}
             onClick={() => setActive(t.id)}
             className={cn(
-              "-mb-px flex-1 shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-center text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30 sm:flex-none",
+              "-mb-px flex-1 shrink-0 whitespace-nowrap border-b-2 px-4 py-3 text-center text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:flex-none",
               active === t.id
                 ? "border-accent font-semibold text-foreground"
                 : "border-transparent font-medium text-muted hover:text-foreground",

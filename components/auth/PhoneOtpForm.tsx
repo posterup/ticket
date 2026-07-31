@@ -139,7 +139,7 @@ export function PhoneOtpForm({ onVerified, submitLabel = "ورود" }: Props) {
           />
         </Field>
       ) : error ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-sm text-danger-text">
           {error}
         </p>
       ) : null}

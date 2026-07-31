@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatJalaliDate, formatNumber } from "@/lib/format";
+import { formatJalaliDate, formatNumber, venueIso } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -35,16 +35,17 @@ import {
   VISIBILITY_HINTS,
 } from "@/lib/create/labels";
 import {
-  initialDraft,
+  UNLIMITED_CAPACITY,
   emptySlot,
   emptyTicket,
   expandSessions,
+  initialDraft,
   type CreateDraft,
   type LocationMode,
   type ScheduleDraft,
+  type TicketTypeDraft,
   type TimeSlot,
   type Visibility,
-  type TicketTypeDraft,
 } from "@/lib/create/types";
 import { validateDraft, type DraftErrors } from "@/lib/create/validation";
 import type { WeekDay } from "@/types";
@@ -70,9 +71,19 @@ function stepErrorKeys(step: number, draft: CreateDraft): string[] {
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-function iso(date: string, time: string): string {
-  return `${date}T${(time || "00:00")}:00.000Z`;
-}
+/**
+ * A date and time the organiser typed, as an instant.
+ *
+ * The `Z` this used to append claimed the typed time was UTC. It is not — it is
+ * the time at the venue, and every venue here is in Iran, so 18:00 was being
+ * stored as 18:00Z and shown back as ۲۱:۳۰. Three and a half hours out on every
+ * event made through this wizard, and on the calendar entry its buyers download.
+ *
+ * Shared with the dashboard's session editor, which had the same bug in the
+ * other direction — it *read* stored instants as UTC into its form fields. One
+ * conversion, used by both, is what stops the two screens disagreeing.
+ */
+const iso = venueIso;
 
 function ticketPrice(t: TicketTypeDraft): number {
   if (t.kind === "free") return 0;
@@ -328,7 +339,22 @@ export function EventComposer({
         throw new Error(json?.error?.message ?? "خطا در ساخت رویداد.");
       }
       const eventId = json.data.id as string;
-      const firstDate = expanded[0]?.date ?? new Date().toISOString().slice(0, 10);
+
+      /**
+       * When the organiser sets no sales window, selling runs until the event
+       * is over.
+       *
+       * This used to default to `iso(firstDate, "00:00")` — midnight at the
+       * *start* of the event's date, which is before the event itself. An
+       * event created for tonight was therefore born with its sales already
+       * closed, and its page said «بلیت‌ها تمام شد» to the organiser who had
+       * just made it. Any other event stopped selling the midnight before it
+       * ran.
+       */
+      const last = expanded[expanded.length - 1] ?? expanded[0];
+      const defaultSalesEnd = last
+        ? iso(last.date, last.endTime || last.startTime || "23:59")
+        : new Date(Date.now() + 365 * 86_400_000).toISOString();
       await Promise.all(
         draft.ticketTypes.map((t) =>
           fetch("/api/tickets", {
@@ -338,7 +364,11 @@ export function EventComposer({
               eventId,
               name: t.name.trim(),
               price: ticketPrice(t),
-              capacity: Math.max(0, Math.floor(Number(t.capacity) || 0)),
+              // Blank means «نامحدود», exactly as the field's placeholder says.
+              capacity:
+                t.capacity.trim() === ""
+                  ? UNLIMITED_CAPACITY
+                  : Math.max(1, Math.floor(Number(t.capacity) || 1)),
               salesStartAt:
                 t.salesSchedule && t.salesStart
                   ? iso(t.salesStart, "00:00")
@@ -346,7 +376,7 @@ export function EventComposer({
               salesEndAt:
                 t.salesSchedule && t.salesEnd
                   ? iso(t.salesEnd, "23:59")
-                  : iso(firstDate, "00:00"),
+                  : defaultSalesEnd,
               category: t.kind === "group" ? "group" : "general",
               description: t.description.trim() || undefined,
             }),
@@ -373,12 +403,12 @@ export function EventComposer({
   if (status === "success") {
     return (
       <div className="rounded-lg border border-border bg-card p-8 text-center">
-        <span className="mx-auto mb-5 grid size-14 place-items-center rounded-full bg-success/10 text-success">
+        <span className="mx-auto mb-5 grid size-14 place-items-center rounded-full bg-success/10 text-success-text">
           <CheckCircle2 className="size-8" aria-hidden />
         </span>
         <h2 className="text-xl font-bold text-foreground">رویداد ساخته شد</h2>
         <p className="mx-auto mt-2 max-w-sm text-sm text-muted">
-          {`«${createdTitle}» با ${draft.ticketTypes.length} نوع بلیت و ${expanded.length} جلسه ثبت شد.`}
+          {`«${createdTitle}» با ${formatNumber(draft.ticketTypes.length)} نوع بلیت و ${formatNumber(expanded.length)} جلسه ثبت شد.`}
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button type="button" onClick={reset}>
@@ -442,7 +472,7 @@ export function EventComposer({
                     aria-pressed={draft.visibility === v}
                     onClick={() => patch({ visibility: v })}
                     className={cn(
-                      "flex flex-col items-start gap-1 rounded-lg border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+                      "flex flex-col items-start gap-1 rounded-lg border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                       draft.visibility === v
                         ? "border-foreground bg-subtle"
                         : "border-border hover:border-border-strong",
@@ -482,7 +512,7 @@ export function EventComposer({
                           aria-pressed={active}
                           onClick={() => toggleAudienceTag(t.label)}
                           className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                             active
                               ? "border-foreground bg-foreground text-background"
                               : "border-border text-muted hover:border-border-strong hover:text-foreground",
@@ -491,7 +521,7 @@ export function EventComposer({
                           {t.label}
                           <span
                             className={cn(
-                              "text-[10px]",
+                              "text-[11px]",
                               active ? "text-background/70" : "text-faint",
                             )}
                           >
@@ -528,7 +558,7 @@ export function EventComposer({
                     aria-pressed={draft.location.mode === m}
                     onClick={() => patchLocation({ mode: m })}
                     className={cn(
-                      "rounded-md border px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                      "rounded-md border px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                       draft.location.mode === m
                         ? "border-foreground bg-subtle text-foreground"
                         : "border-border text-muted hover:border-border-strong",
@@ -689,7 +719,7 @@ export function EventComposer({
             ) : (
               <>
                 {errors.tickets ? (
-                  <p className="text-sm text-danger">{errors.tickets}</p>
+                  <p className="text-sm text-danger-text">{errors.tickets}</p>
                 ) : null}
                 {draft.ticketTypes.map((t) => (
                   <TicketEditor
@@ -720,7 +750,7 @@ export function EventComposer({
         {status === "error" ? (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger/5 p-3 text-sm text-danger"
+            className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger/5 p-3 text-sm text-danger-text"
           >
             <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
             <span>{submitError}</span>

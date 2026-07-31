@@ -78,11 +78,11 @@ export function ApprovalList({
           درخواست‌های ثبت‌نام
         </h2>
         <div className="flex items-center gap-3 text-xs text-muted">
-          <span className="text-accent">
+          <span className="text-accent-text">
             {formatNumber(pending.length)} در انتظار
           </span>
           {accepted > 0 ? (
-            <span className="text-success">
+            <span className="text-success-text">
               {formatNumber(accepted)} پذیرفته‌شده
             </span>
           ) : null}
@@ -174,7 +174,7 @@ export function ApprovalList({
                               type="button"
                               onClick={() => setStatus(r.id, "pending")}
                               aria-label="بازگرداندن به در انتظار بررسی"
-                              className="grid size-8 shrink-0 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+                              className="grid size-8 shrink-0 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <RotateCcw className="size-4" aria-hidden />
                             </button>
@@ -228,9 +228,9 @@ function Action({
       aria-label={label}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
-        tone === "success" && "hover:bg-success/10 hover:text-success",
-        tone === "danger" && "hover:bg-danger/10 hover:text-danger",
+        "inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+        tone === "success" && "hover:bg-success/10 hover:text-success-text",
+        tone === "danger" && "hover:bg-danger/10 hover:text-danger-text",
       )}
     >
       {children}
@@ -241,8 +241,8 @@ function Action({
 function StatusText({ status }: { status: RegistrationStatus }) {
   if (status === "pending") return null;
   const map = {
-    accepted: { label: "پذیرفته‌شد", cls: "text-success" },
-    rejected: { label: "رد شد", cls: "text-danger" },
+    accepted: { label: "پذیرفته‌شد", cls: "text-success-text" },
+    rejected: { label: "رد شد", cls: "text-danger-text" },
   }[status];
   return <span className={cn("shrink-0 text-xs", map.cls)}>{map.label}</span>;
 }

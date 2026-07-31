@@ -46,7 +46,7 @@ export function FollowChip({
       aria-label={`دنبال کردن ${name}`}
       onClick={() => void toggle()}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
         following
           ? "border border-border bg-card text-foreground hover:bg-subtle"
           : "bg-foreground text-background hover:opacity-90",

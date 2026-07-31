@@ -64,7 +64,7 @@ export function FeedClient({
               <span className="flex items-center gap-1">
                 {e.wsName}
                 {e.wsVerified ? (
-                  <BadgeCheck className="size-4 text-accent" aria-label="تأییدشده" />
+                  <BadgeCheck className="size-4 text-accent-text" aria-label="تأییدشده" />
                 ) : null}
               </span>
             </Link>

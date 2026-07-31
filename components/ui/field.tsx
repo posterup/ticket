@@ -41,7 +41,7 @@ export function Field({
       ) : null}
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-xs text-danger">
+        <p id={`${id}-error`} className="text-xs text-danger-text">
           {error}
         </p>
       ) : null}

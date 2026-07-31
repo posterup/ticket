@@ -191,7 +191,7 @@ export function EventAccessSettings({
                         aria-pressed={active}
                         onClick={() => toggleTag(t.label)}
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+                          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                           active
                             ? "border-foreground bg-foreground text-background"
                             : "border-border text-muted hover:border-border-strong hover:text-foreground",
@@ -200,7 +200,7 @@ export function EventAccessSettings({
                         {t.label}
                         <span
                           className={cn(
-                            "text-[10px]",
+                            "text-[11px]",
                             active ? "text-background/70" : "text-faint",
                           )}
                         >
@@ -223,7 +223,7 @@ export function EventAccessSettings({
             />
           </div>
 
-          {error ? <p className="text-xs text-danger">{error}</p> : null}
+          {error ? <p className="text-xs text-danger-text">{error}</p> : null}
 
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" onClick={save} disabled={saving || !dirty}>
@@ -315,7 +315,7 @@ function AccessOption({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-start gap-1 rounded-lg border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+        "flex flex-col items-start gap-1 rounded-lg border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "border-foreground bg-subtle"
           : "border-border hover:border-border-strong",

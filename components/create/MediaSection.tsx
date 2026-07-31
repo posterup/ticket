@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ImagePlus, Film, X, Plus } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import type { MediaItem } from "@/lib/create/types";
 
 const MAX_IMAGE = 2 * 1024 * 1024; // 2MB
@@ -83,7 +82,7 @@ export function MediaSection({
               type="button"
               onClick={() => onPosterChange(null)}
               aria-label="حذف پوستر"
-              className="absolute end-2 top-2 grid size-8 place-items-center rounded-md bg-background/80 text-foreground backdrop-blur transition-colors hover:text-danger"
+              className="absolute end-2 top-2 grid size-8 place-items-center rounded-md bg-background/80 text-foreground backdrop-blur transition-colors hover:text-danger-text"
             >
               <X className="size-4" aria-hidden />
             </button>
@@ -110,7 +109,7 @@ export function MediaSection({
               ) : (
                 <>
                   <video src={m.url} className="size-full object-cover" muted playsInline />
-                  <span className="absolute inset-0 grid place-items-center bg-foreground/20 text-white">
+                  <span className="absolute inset-0 grid place-items-center bg-foreground/50 text-white">
                     <Film className="size-6" aria-hidden />
                   </span>
                 </>
@@ -119,7 +118,7 @@ export function MediaSection({
                 type="button"
                 onClick={() => onGalleryChange(gallery.filter((g) => g.id !== m.id))}
                 aria-label="حذف رسانه"
-                className="absolute end-1.5 top-1.5 grid size-7 place-items-center rounded-md bg-background/80 text-foreground backdrop-blur transition-colors hover:text-danger"
+                className="absolute end-1.5 top-1.5 grid size-7 place-items-center rounded-md bg-background/80 text-foreground backdrop-blur transition-colors hover:text-danger-text"
               >
                 <X className="size-3.5" aria-hidden />
               </button>
@@ -139,7 +138,7 @@ export function MediaSection({
         </div>
       </div>
 
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? <p className="text-sm text-danger-text">{error}</p> : null}
     </div>
   );
 }

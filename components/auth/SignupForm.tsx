@@ -155,7 +155,7 @@ export function SignupForm() {
         </fieldset>
 
         {error ? (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-sm text-danger-text">
             {error}
           </p>
         ) : null}

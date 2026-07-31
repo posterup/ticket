@@ -129,13 +129,13 @@ export function AttendanceManager({
             <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-muted">
               همه {formatNumber(sessionGuests.length)}
             </span>
-            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-success">
+            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-success-text">
               می‌آیند {formatNumber(going)}
             </span>
             <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-muted">
               در انتظار {formatNumber(pending)}
             </span>
-            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-danger">
+            <span className="rounded-full border border-border bg-subtle px-2 py-0.5 text-danger-text">
               نمی‌آیند {formatNumber(declined)}
             </span>
           </div>

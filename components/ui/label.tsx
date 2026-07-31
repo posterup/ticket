@@ -21,7 +21,7 @@ const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
     >
       {children}
       {required ? (
-        <span className="text-danger" aria-hidden>
+        <span className="text-danger-text" aria-hidden>
           {" *"}
         </span>
       ) : null}

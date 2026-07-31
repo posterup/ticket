@@ -151,7 +151,7 @@ export function HeroIllustration() {
           <span className="text-xs text-faint">درآمد امروز</span>
         </div>
         <div className="text-lg font-bold text-foreground">۱۲٬۴۸۰٬۰۰۰</div>
-        <div className="mt-1 flex items-center gap-1 text-xs text-success">
+        <div className="mt-1 flex items-center gap-1 text-xs text-success-text">
           <ArrowUpRight className="size-3.5" aria-hidden />
           <span>۱۸٪ نسبت به دیروز</span>
         </div>

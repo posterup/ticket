@@ -93,7 +93,7 @@ export function DateRangeFields({
       <p
         className={cn(
           "text-center text-xs",
-          invalid ? "text-danger" : "text-muted",
+          invalid ? "text-danger-text" : "text-muted",
         )}
       >
         {days > 0

@@ -19,21 +19,50 @@
   --background: #fdfcff; /* near-white, faint cool */
   --foreground: #14101f; /* near-black ink */
   --muted: #5b5470; /* secondary text */
-  --faint: #8b83a3; /* captions */
+  --faint: #71688d; /* captions — darkened to clear AA (4.5:1) on --subtle */
   --subtle: #f4f1fb; /* subtle lavender surface */
   --border: #e8e3f2;
   --border-strong: #d3cce6;
   --card: rgba(255, 255, 255, 0.72); /* glass over the glow */
 
-  --accent: #ec0e83; /* neon pink */
+  /*
+    Two pinks, because a fill and a text colour have different jobs.
+
+    --accent is the brand fill: button backgrounds, dots, the focus ring. It is
+    darkened just enough that white sits on it at 4.5:1 (was 4.24) — a shift of
+    about 2% lightness, imperceptible beside the old value.
+
+    --accent-text is for accent-coloured *text* on a light surface, where the
+    fill would only reach 4.14 on the page and 3.61 inside an accent-soft chip.
+  */
+  --accent: #e10e7c; /* neon pink — brand fill */
+  --accent-text: #cf0c73; /* accent as text, AA on --background and --accent-soft */
   --accent-soft: #ffe6f4;
   --accent-foreground: #ffffff;
 
-  --success: #0aa06e; /* green */
-  --warning: #c77a08; /* amber */
-  --danger: #e5484d; /* red */
+  /* Each darkened to 4.5:1 both as text on the page and behind a white label. */
+  --success: #08845a; /* green */
+  --warning: #a76607; /* amber */
+  --danger: #e02328; /* red */
 
-  --ring: #ec0e83; /* pink glow ring */
+  /*
+    Status colours as *text*, mirroring the --accent / --accent-text split
+    above and for the same reason.
+
+    The fills are tuned against white — white-on-danger is 4.73:1. But the
+    house style for a callout is coloured text on a 10% tint of its own colour,
+    and that tint darkens the background just enough to drop the text below AA:
+    danger-on-danger/10 measured 4.05:1 and warning 4.07:1, across 27 callouts.
+
+    These are the same hues darkened until they clear 5:1 on their own tint —
+    headroom rather than the 4.5 boundary, so a future palette nudge does not
+    silently break them. The fills are untouched: a red button is still red.
+  */
+  --danger-text: #c51f23;
+  --warning-text: #935a06;
+  --success-text: #077550;
+
+  --ring: #e10e7c; /* pink glow ring */
 
   /* Reusable neon glow shadow — soft on the light base. */
   --glow: 0 0 24px -6px var(--accent);
@@ -56,7 +85,7 @@
   --segment-foreground: var(--foreground);
   --focus: var(--accent); /* pink focus ring */
   --separator: var(--border);
-  --accent-soft-foreground: var(--accent);
+  --accent-soft-foreground: var(--accent-text);
   --success-foreground: #ffffff;
   --warning-foreground: #ffffff;
   --danger-foreground: #ffffff;
@@ -64,8 +93,15 @@
   /* Form fields → white surface, brand border, large radius. */
   --field-background: #ffffff;
   --field-foreground: var(--foreground);
-  --field-placeholder: var(--faint);
-  --field-border: var(--border);
+  /* Slightly lighter than --faint: it sits on pure white, not on --subtle. */
+  --field-placeholder: #7b7196;
+  /*
+    Deliberately darker than the decorative --border hairline.
+    WCAG 1.4.11 wants 3:1 for the boundary of a control you have to find and
+    operate; the airy lavender used between cards measured 1.26 here, which is
+    invisible. Card hairlines stay light — they are decoration, not an affordance.
+  */
+  --field-border: #9e89c8;
   --field-border-width: 1px;
   --field-radius: var(--radius-md);
 }
@@ -76,11 +112,21 @@
   --color-muted: var(--muted);
   --color-faint: var(--faint);
   --color-subtle: var(--subtle);
+  --color-danger-text: var(--danger-text);
+  --color-warning-text: var(--warning-text);
+  --color-success-text: var(--success-text);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  /* The edge of a *control*, not of a surface. WCAG 1.4.11 wants 3:1 for the
+     boundary that identifies an interactive element, and --border (1.26:1 on
+     white) is a divider tint that never met it. --field-border is 3.06:1 and
+     was already defined for HeroUI; this surfaces it to the owned primitives
+     so both halves of the design system draw a field the same way. */
+  --color-field-border: var(--field-border);
   --color-card: var(--card);
 
   --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
   --color-accent-foreground: var(--accent-foreground);
 
@@ -178,6 +224,82 @@ body::before {
   }
 }
 
+/*
+  Print.
+
+  `app/orders/[code]/page.tsx` says in its own comments that it is "what a buyer
+  prints", and the fallback token beneath each QR exists precisely so a ticket
+  survives on paper when a camera will not focus. Nothing had ever been styled
+  for it: printing that page produced the site header and its navigation, a
+  footer of marketing links, and tickets sliced across page breaks — the QR of
+  one at the bottom of sheet one, its code at the top of sheet two.
+
+  Scoped to landmark elements. `PublicHeader` renders a real `<header>` and
+  `Footer` a real `<footer>`, while every in-page heading is an `<h1>`/`<h2>`,
+  so this removes the chrome without touching content.
+*/
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ink and paper. Shadows and glass render as grey mush on a printer. */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  /*
+    A ticket is an atom.
+
+    Splitting one across sheets is the failure that matters here: half a QR
+    scans as nothing, and the person at the door has the wrong half.
+  */
+  li,
+  section,
+  article {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /*
+    The QR's quiet zone has to survive.
+
+    Browsers drop backgrounds when printing unless asked. `TicketQr` draws its
+    white field as a real `<rect>` so it prints either way, but the plate behind
+    it is a background — and a scanner needs the margin as much as the modules.
+  */
+  .qr-plate {
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /*
+    The typed fallback code, larger on paper than on screen.
+
+    It exists for the moment a scanner fails, so it is read aloud or copied by
+    hand at a door — and unlike the screen, paper cannot be zoomed. Ink is free
+    here in a way that pixels are not.
+  */
+  .ticket-token {
+    font-size: 14px;
+    letter-spacing: 0.12em;
+  }
+
+  /* Reclaim the margins the screen layout spends on breathing room. */
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+}
+
 /* Shimmer skeleton for loading states. */
 .shimmer {
   position: relative;
@@ -196,6 +318,13 @@ body::before {
     transparent
   );
   animation: shimmer 1.4s infinite;
+}
+/* The shape carries the meaning; the sweep is decoration. */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after {
+    animation: none;
+    display: none;
+  }
 }
 @keyframes shimmer {
   100% {

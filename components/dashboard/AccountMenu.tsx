@@ -61,7 +61,7 @@ export function AccountMenu() {
         onClick={() => void logout()}
         className={cn(
           "flex w-full items-center gap-3 px-5 py-4 text-start outline-none transition-colors",
-          "text-danger hover:bg-subtle focus-visible:bg-subtle",
+          "text-danger-text hover:bg-subtle focus-visible:bg-subtle",
         )}
       >
         <LogOut className="size-5 shrink-0" aria-hidden />

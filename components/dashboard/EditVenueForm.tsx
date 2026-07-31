@@ -183,7 +183,7 @@ export function EditVenueForm({
           />
         </div>
       </div>
-      {error ? <p className="mt-3 text-xs text-danger">{error}</p> : null}
+      {error ? <p className="mt-3 text-xs text-danger-text">{error}</p> : null}
       <div className="mt-4 flex items-center gap-2">
         <Button type="button" size="sm" onClick={save} disabled={saving}>
           <Check aria-hidden />

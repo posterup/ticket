@@ -16,7 +16,7 @@ export function AppTopBar() {
         <Link
           href="/"
           aria-label="پوستر، صفحه اصلی"
-          className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Logo />
         </Link>
@@ -43,7 +43,7 @@ function TopAction({
     <Link
       href={href}
       aria-label={label}
-      className="grid size-10 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+      className="grid size-10 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Icon className="size-5" aria-hidden />
     </Link>
