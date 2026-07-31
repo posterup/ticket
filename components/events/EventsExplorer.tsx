@@ -194,7 +194,7 @@ export function EventsExplorer({
                       <button
                         type="button"
                         onClick={() => setVisible((v) => v + PAGE)}
-                        className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-accent focus-visible:ring-2 focus-visible:ring-ring/40"
+                        className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:border-accent focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         مشاهده بیشتر
                       </button>
@@ -248,7 +248,7 @@ function Chip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+        "shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "border-foreground bg-foreground text-background"
           : "border-border text-muted hover:border-border-strong hover:text-foreground",
@@ -314,12 +314,26 @@ function Hero({ events }: { events: DiscoverEvent[] }) {
               key={e.id}
               type="button"
               onClick={() => goTo(i)}
-              aria-label={`اسلاید ${i + 1}`}
-              className={cn(
-                "h-1.5 rounded-full transition-all",
-                i === active ? "w-5 bg-foreground" : "w-1.5 bg-border-strong",
-              )}
-            />
+              aria-label={`اسلاید ${formatNumber(i + 1)}`}
+              /*
+                The dot is 6px tall; the *button* is not.
+                
+                It used to be one and the same, so the tap target for an
+                inactive slide was 6×6 — the smallest thing on the page, on the
+                public events carousel, on a phone. WCAG 2.2 SC 2.5.8 asks for
+                24×24, and a thumb asks for rather more. Grid-centring the
+                visual bar inside a 24px box leaves the design untouched and
+                makes the target sixteen times larger.
+              */
+              className="grid size-6 place-items-center"
+            >
+              <span
+                className={cn(
+                  "h-1.5 rounded-full transition-all",
+                  i === active ? "w-5 bg-foreground" : "w-1.5 bg-border-strong",
+                )}
+              />
+            </button>
           ))}
         </div>
       ) : null}
@@ -359,7 +373,7 @@ function CityHeader({
           onClick={() => setOpen((o) => !o)}
           aria-haspopup="listbox"
           aria-expanded={open}
-          className="flex items-center gap-2 rounded-lg text-start outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="flex items-center gap-2 rounded-lg text-start outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             {city}
@@ -427,7 +441,7 @@ function Carousel({
           <button
             type="button"
             onClick={onViewMore}
-            className="ms-auto text-xs font-medium text-accent underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="ms-auto text-xs font-medium text-accent-text underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
           >
             مشاهده همه
           </button>

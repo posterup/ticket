@@ -1,14 +1,16 @@
 import { cn } from "@/lib/utils";
 
 /** Visual accent for the badge pill, mapped to a semantic design token. */
-export type BadgeTone = "neutral" | "accent" | "success" | "warning" | "danger";
+// Owned by `lib/events/buy-state`, which decides the state this renders.
+import type { BadgeTone } from "@/lib/events/buy-state";
+export type { BadgeTone };
 
 const TONES: Record<BadgeTone, string> = {
   neutral: "border-border bg-subtle text-muted",
-  accent: "border-transparent bg-accent-soft text-accent",
-  success: "border-transparent bg-success/10 text-success",
-  warning: "border-transparent bg-warning/10 text-warning",
-  danger: "border-transparent bg-danger/10 text-danger",
+  accent: "border-transparent bg-accent-soft text-accent-text",
+  success: "border-transparent bg-success/10 text-success-text",
+  warning: "border-transparent bg-warning/10 text-warning-text",
+  danger: "border-transparent bg-danger/10 text-danger-text",
 };
 
 /**
@@ -65,7 +67,7 @@ export function BuyBox({
             <p
               className={cn(
                 "truncate text-base font-bold",
-                original ? "text-accent" : "text-foreground",
+                original ? "text-accent-text" : "text-foreground",
               )}
             >
               {title}

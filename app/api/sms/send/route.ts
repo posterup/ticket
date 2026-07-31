@@ -2,7 +2,7 @@ import { segmentMobiles } from "@/lib/server";
 import { requireWorkspaceAccess } from "@/lib/server/auth/guards";
 import { handler, HttpError, ok, readJson } from "@/lib/server/http";
 import { sendSmsSchema } from "@/lib/server/schemas/sms";
-import { sendBulkSms } from "@/lib/server/sms/smsir";
+import { smsGateway } from "@/lib/server/sms";
 
 /**
  * POST /api/sms/send — send an SMS campaign to a segment via sms.ir.
@@ -17,7 +17,7 @@ export const POST = handler(async (request: Request) => {
   );
   await requireWorkspaceAccess(workspaceId, "campaigns:send");
 
-  const result = await sendBulkSms(
+  const result = await smsGateway().sendBulk(
     await segmentMobiles(workspaceId, segmentId),
     message,
   );

@@ -5,22 +5,20 @@
  * Never hard-code these. Calls the sms.ir v1 bulk-send endpoint at request time.
  */
 
+import {
+  type SendSmsResult,
+  type SmsGateway,
+  combineBatches,
+  inBatches,
+  normalizeMobile,
+  validRecipients,
+} from "./gateway";
+
 const ENDPOINT = "https://api.sms.ir/v1/send/bulk";
 
-export interface SendSmsResult {
-  ok: boolean;
-  sent: number;
-  error?: string;
-}
-
-/** Normalize an Iranian mobile to the `09xxxxxxxxx` form sms.ir expects. */
-export function normalizeMobile(raw: string): string {
-  let d = raw.replace(/[^\d+]/g, "");
-  if (d.startsWith("+98")) d = "0" + d.slice(3);
-  else if (d.startsWith("98") && d.length === 12) d = "0" + d.slice(2);
-  else if (d.startsWith("9") && d.length === 10) d = "0" + d;
-  return d;
-}
+// Re-exported so the pre-existing `normalizeMobile` import path keeps working.
+export { normalizeMobile };
+export type { SendSmsResult };
 
 export async function sendBulkSms(
   mobiles: string[],
@@ -36,42 +34,52 @@ export async function sendBulkSms(
     };
   }
 
-  const recipients = [
-    ...new Set(mobiles.map(normalizeMobile).filter((m) => /^09\d{9}$/.test(m))),
-  ];
+  const recipients = validRecipients(mobiles);
   if (recipients.length === 0) {
     return { ok: false, sent: 0, error: "مخاطب موبایل معتبری یافت نشد." };
   }
 
-  try {
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-API-KEY": apiKey,
-      },
-      body: JSON.stringify({
-        lineNumber: Number(lineNumber),
-        messageText: message,
-        mobiles: recipients,
-      }),
-    });
-    const data = (await res.json().catch(() => null)) as
-      | { status?: number; message?: string }
-      | null;
+  // Batched for the same reason Kavenegar is — see `SMS_BATCH_SIZE`. A segment
+  // has no size limit, an operator request does, and posting the whole list
+  // meant a large campaign failed entirely rather than sending.
+  const results: SendSmsResult[] = [];
+  for (const batch of inBatches(recipients)) {
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-API-KEY": apiKey,
+        },
+        body: JSON.stringify({
+          lineNumber: Number(lineNumber),
+          messageText: message,
+          mobiles: batch,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as
+        | { status?: number; message?: string }
+        | null;
 
-    if (!res.ok || (data && data.status !== 1)) {
-      return {
+      if (!res.ok || (data && data.status !== 1)) {
+        results.push({
+          ok: false,
+          sent: 0,
+          error: data?.message ?? `خطای سرویس پیامک (${res.status}).`,
+        });
+        continue;
+      }
+      results.push({ ok: true, sent: batch.length });
+    } catch {
+      results.push({
         ok: false,
         sent: 0,
-        error: data?.message ?? `خطای سرویس پیامک (${res.status}).`,
-      };
+        error: "ارتباط با سرویس پیامک برقرار نشد.",
+      });
     }
-    return { ok: true, sent: recipients.length };
-  } catch {
-    return { ok: false, sent: 0, error: "ارتباط با سرویس پیامک برقرار نشد." };
   }
+  return combineBatches(results);
 }
 
 /** sms.ir routes one-time codes through the verify/pattern API, not bulk. */
@@ -126,4 +134,16 @@ export async function sendVerifySms(
   } catch {
     return { ok: false, sent: 0, error: "ارتباط با سرویس پیامک برقرار نشد." };
   }
+}
+
+/** The gateway façade over the two functions above. */
+export function createSmsIrGateway(): SmsGateway {
+  return {
+    provider: "smsir",
+    configured: Boolean(
+      process.env.SMSIR_API_KEY && process.env.SMSIR_LINE_NUMBER,
+    ),
+    sendBulk: sendBulkSms,
+    sendVerify: sendVerifySms,
+  };
 }
