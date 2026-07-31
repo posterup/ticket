@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, QrCode, Search, UserCheck, CircleAlert } from "lucide-react";
+import { Check, Search, UserCheck, CircleAlert } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { resolveHolder } from "@/lib/checkin/resolve";
+import { QrScanner } from "./QrScanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -120,11 +122,13 @@ export function CheckinPanel({
     }
   }
 
-  function submitCode() {
-    const value = code.trim().toUpperCase();
-    if (!value) return;
-    // Search across the whole event so a wrong-session ticket is detected.
-    const holder = holders.find((h) => h.code === value);
+  /** Admit whoever this scanned or typed identifier belongs to. */
+  function admit(input: string) {
+    if (!input.trim()) return;
+    // Resolved across the whole event, not just the open سانس, so a ticket for
+    // the wrong showing is reported as such instead of "not found".
+    // `checked` so a party on one order is admitted one seat at a time.
+    const holder = resolveHolder(holders, input, checked);
     if (!holder) {
       setFeedback({ kind: "err", msg: "کدی با این مشخصات یافت نشد." });
     } else if (holder.sessionId !== sessionId) {
@@ -150,6 +154,8 @@ export function CheckinPanel({
     }
     setCode("");
   }
+
+  const submitCode = () => admit(code);
 
   return (
     <div className="flex flex-col gap-6">
@@ -205,12 +211,7 @@ export function CheckinPanel({
         {/* Scan / code entry + progress */}
         <div className="flex flex-col gap-6">
           <div className="rounded-lg border border-border bg-card p-5">
-            <div className="mb-4 grid h-28 place-items-center rounded-md border border-dashed border-border bg-subtle text-center">
-              <div className="flex flex-col items-center gap-1 text-muted">
-                <QrCode className="size-7" aria-hidden />
-                <span className="text-xs">کد بلیت را اسکن یا وارد کنید</span>
-              </div>
-            </div>
+            <QrScanner onScan={admit} />
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -221,7 +222,18 @@ export function CheckinPanel({
               <Input
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="مثلاً PSTR-A001"
+                /*
+                  The real shape, not an invented one.
+                  
+                  This read «مثلاً PSTR-A001». No `PSTR-` prefix exists anywhere
+                  in the product: `trackingCode()` emits eight characters from a
+                  vowel-free alphabet and `checkins.ts` appends `-{seq}`, so a
+                  ticket is `7XN4F8R6-1`. The person reading this hint is at a
+                  door, on an iPhone — where `BarcodeDetector` does not exist and
+                  typing is the *only* way in — being shown a format that cannot
+                  match anything.
+                */
+                placeholder="مثلاً ACDF2346-1"
                 dir="ltr"
                 aria-label="کد بلیت"
               />
@@ -234,10 +246,10 @@ export function CheckinPanel({
                 role="status"
                 className={cn(
                   "mt-3 flex items-center gap-2 text-sm",
-                  feedback.kind === "ok" && "text-success",
-                  feedback.kind === "dup" && "text-warning",
+                  feedback.kind === "ok" && "text-success-text",
+                  feedback.kind === "dup" && "text-warning-text",
                   (feedback.kind === "err" || feedback.kind === "warn") &&
-                    "text-danger",
+                    "text-danger-text",
                 )}
               >
                 {feedback.kind === "ok" ? (
@@ -271,14 +283,14 @@ export function CheckinPanel({
         <div className="flex flex-col gap-3">
           <div className="relative">
             <Search
-              className="pointer-events-none absolute inset-y-0 right-3.5 my-auto size-4 text-faint"
+              className="pointer-events-none absolute inset-y-0 start-3.5 my-auto size-4 text-faint"
               aria-hidden
             />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="جستجوی نام یا کد"
-              className="pr-10"
+              className="ps-10"
               aria-label="جستجوی مهمان"
             />
           </div>
@@ -304,9 +316,9 @@ export function CheckinPanel({
                     onClick={() => void toggle(h)}
                     aria-pressed={isChecked}
                     className={cn(
-                      "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                       isChecked
-                        ? "border-transparent bg-success/10 text-success"
+                        ? "border-transparent bg-success/10 text-success-text"
                         : "border-border text-foreground hover:bg-subtle",
                     )}
                   >

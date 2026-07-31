@@ -65,7 +65,7 @@ export default function MePage() {
             loading={bookmarks.loading}
             error={bookmarks.error}
             onRetry={bookmarks.reload}
-          />
+          variant="list" rows={3} />
         )}
       </main>
       <Footer />

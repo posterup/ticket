@@ -1,8 +1,19 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, Upload, X, ImageIcon, Download, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Upload,
+  X,
+  ImageIcon,
+  Download,
+  Loader2,
+} from "lucide-react";
 
+import { apiFetch, ApiCallError } from "@/lib/client/api";
+import { blend, contrastRatio, grade, ticketInk } from "@/lib/contrast";
+import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -22,6 +33,9 @@ const SAMPLE: TicketSample = {
   category: "وی‌آی‌پی",
   date: "۲۳ مرداد ۱۴۰۵ · ۱۸:۳۰",
   venue: "برج میلاد، تهران",
+  // Shown so the organiser lays the ticket out against the version their
+  // seated buyers receive, rather than a shorter one that fits more easily.
+  seat: "بالکن شرقی · ردیف ب · صندلی ۱۲",
 };
 
 const FIELD_TOGGLES: { key: keyof TicketTemplate; label: string }[] = [
@@ -38,25 +52,98 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = {}) {
-  const [template, setTemplate] = useState<TicketTemplate>({
-    accent: "#2563EB",
-    surface: "light",
-    bgColor: null,
-    bgImage: null,
-    logo: null,
-    showCategory: false,
-    showDate: true,
-    showVenue: true,
-    note: "این بلیت را هنگام ورود ارائه دهید.",
-  });
+const DEFAULT_TEMPLATE: TicketTemplate = {
+  accent: "#2563EB",
+  surface: "light",
+  bgColor: null,
+  bgImage: null,
+  logo: null,
+  showCategory: false,
+  showDate: true,
+  showVenue: true,
+  note: "این بلیت را هنگام ورود ارائه دهید.",
+};
+
+/**
+ * Every field optional on the wire, filled in here.
+ *
+ * A design saved by an older build is missing whatever was added since, and
+ * dropping the whole template because one key is absent would lose an
+ * organiser's work on every deploy.
+ */
+function fromStored(design?: Partial<TicketTemplate> | null): TicketTemplate {
+  return { ...DEFAULT_TEMPLATE, ...(design ?? {}) };
+}
+
+/**
+ * Is this design readable?
+ *
+ * The body text colour comes from `surface`, the background from `bgColor` —
+ * two independent controls that can be set to the same darkness. This is the
+ * only place that pairing is ever evaluated, because the colours do not exist
+ * until an organiser picks them.
+ *
+ * A background *image* is not graded: its contrast varies pixel to pixel and a
+ * single number would be a guess. The preview shows a scrim behind the text for
+ * exactly that case, so the honest answer is to say nothing.
+ */
+function readability(template: TicketTemplate): {
+  ratio?: number;
+  verdict: ReturnType<typeof grade>;
+  skipped: boolean;
+} {
+  if (template.bgImage) return { verdict: "pass", skipped: true };
+
+  const dark = template.surface === "dark";
+  const background = template.bgColor ?? (dark ? "#171717" : "#ffffff");
+
+  /**
+   * Grade the *faintest* text, not the boldest.
+   *
+   * This measured only the headline ink, and so reported «خوانا» for designs
+   * whose field labels had already gone. A `#999999` body scores 6.29:1 on the
+   * headline — a clean pass — while «دسته», «تاریخ» and «مکان» sit at 1.81:1
+   * underneath it. The organiser was told the ticket was fine and shipped it.
+   *
+   * A check that grades the best-case text is not a lenient check, it is a
+   * wrong one: the whole point is to catch what the eye skims past, and the eye
+   * skims past small grey labels. So the weakest rank decides the verdict, and
+   * it comes from the same `ticketInk` the preview renders with.
+   */
+  const ink = template.bgColor
+    ? ticketInk(background).label
+    : dark
+      ? blend("#ffffff", background, 0.5) // matches `text-white/50`
+      : "#71688d"; //                        matches `text-faint`
+
+  const ratio = contrastRatio(ink, background);
+  return { ratio, verdict: grade(ratio), skipped: false };
+}
+
+export function TicketDesigner({
+  sample = SAMPLE,
+  eventId,
+  initial,
+}: {
+  sample?: TicketSample;
+  /** Omitted in the creation wizard, where there is no event to save against. */
+  eventId?: string;
+  initial?: Partial<TicketTemplate> | null;
+} = {}) {
+  const [template, setTemplate] = useState<TicketTemplate>(() =>
+    fromStored(initial),
+  );
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const logoInput = useRef<HTMLInputElement>(null);
   const bgInput = useRef<HTMLInputElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  const legibility = readability(template);
 
   async function handleExport() {
     if (!previewRef.current) return;
@@ -74,7 +161,37 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
   const patch = (p: Partial<TicketTemplate>) => {
     setTemplate((t) => ({ ...t, ...p }));
     setSaved(false);
+    setSaveError(null);
   };
+
+  /**
+   * Persist the template against the event.
+   *
+   * This button used to set a local boolean and render «ذخیره شد» — it told
+   * the organiser their design was saved and then dropped it on reload, and the
+   * buyer never saw any of it. Nothing was stored anywhere.
+   */
+  async function handleSave() {
+    if (!eventId) {
+      setSaveError("این قالب پس از ساخت رویداد قابل ذخیره است.");
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await apiFetch(`/api/events/${eventId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ticketDesign: template }),
+      });
+      setSaved(true);
+    } catch (e) {
+      setSaveError(
+        e instanceof ApiCallError ? e.message : "ذخیره قالب ممکن نشد.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleUpload(
     e: React.ChangeEvent<HTMLInputElement>,
@@ -109,7 +226,7 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
                 aria-label={`رنگ ${c}`}
                 aria-pressed={template.accent === c}
                 className={cn(
-                  "size-9 rounded-full outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring/40",
+                  "size-9 rounded-full outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring",
                   template.accent === c
                     ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
                     : "hover:scale-105",
@@ -143,7 +260,7 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
                 aria-pressed={template.surface === s}
                 onClick={() => patch({ surface: s })}
                 className={cn(
-                  "rounded-md border px-4 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                  "rounded-md border px-4 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                   template.surface === s
                     ? "border-foreground bg-subtle text-foreground"
                     : "border-border text-muted hover:border-border-strong",
@@ -191,7 +308,7 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
               <button
                 type="button"
                 onClick={() => patch({ bgColor: null, bgImage: null })}
-                className="inline-flex items-center gap-1 text-sm text-muted hover:text-danger"
+                className="inline-flex items-center gap-1 text-sm text-muted hover:text-danger-text"
               >
                 <X className="size-4" aria-hidden />
                 حذف پس‌زمینه
@@ -223,7 +340,7 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
               <button
                 type="button"
                 onClick={() => patch({ logo: null })}
-                className="inline-flex items-center gap-1 text-sm text-muted hover:text-danger"
+                className="inline-flex items-center gap-1 text-sm text-muted hover:text-danger-text"
               >
                 <X className="size-4" aria-hidden />
                 حذف لوگو
@@ -231,7 +348,7 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
             ) : null}
           </div>
           {uploadError ? (
-            <p className="text-sm text-danger">{uploadError}</p>
+            <p className="text-sm text-danger-text">{uploadError}</p>
           ) : null}
         </ControlGroup>
 
@@ -260,9 +377,39 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
           </Field>
         </div>
 
-        <div className="p-5">
-          <Button type="button" onClick={() => setSaved(true)}>
-            {saved ? (
+        <div className="flex flex-col gap-2 p-5">
+          {!legibility.skipped && legibility.verdict !== "pass" ? (
+            // Warn, never block. It is the organiser's brand and they may have
+            // a reason; what they must not do is ship an unreadable ticket
+            // without being told.
+            <p
+              role="status"
+              className={cn(
+                "flex items-start gap-1.5 rounded-lg px-3 py-2 text-xs leading-relaxed",
+                legibility.verdict === "fail"
+                  ? "bg-danger/10 text-danger-text"
+                  : "bg-warning/10 text-warning-text",
+              )}
+            >
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              <span>
+                {legibility.verdict === "fail"
+                  ? "متن روی این پس‌زمینه خوانا نیست"
+                  : "متن‌های ریز روی این پس‌زمینه سخت خوانده می‌شوند"}
+                {legibility.ratio
+                  ? ` (نسبت کنتراست ${formatNumber(legibility.ratio, 1)} از ۴٫۵ لازم).`
+                  : "."}{" "}
+                رنگ پس‌زمینه یا حالت روشن/تیره را تغییر دهید.
+              </span>
+            </p>
+          ) : null}
+          <Button type="button" onClick={() => void handleSave()} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="animate-spin" aria-hidden />
+                در حال ذخیره…
+              </>
+            ) : saved ? (
               <>
                 <Check aria-hidden />
                 ذخیره شد
@@ -271,6 +418,16 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
               "ذخیره قالب"
             )}
           </Button>
+          {saveError ? (
+            <p role="alert" className="text-xs text-danger-text">
+              {saveError}
+            </p>
+          ) : null}
+          {saved ? (
+            <p className="text-xs text-muted">
+              خریداران این رویداد بلیت خود را با همین قالب می‌بینند.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -295,7 +452,7 @@ export function TicketDesigner({ sample = SAMPLE }: { sample?: TicketSample } = 
               {exporting ? "در حال ساخت تصویر…" : "دانلود بلیت (PNG)"}
             </Button>
             {exportError ? (
-              <p className="text-sm text-danger">{exportError}</p>
+              <p className="text-sm text-danger-text">{exportError}</p>
             ) : null}
           </div>
         </div>
@@ -338,7 +495,7 @@ function ToggleRow({
         aria-label={label}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
           checked ? "bg-foreground" : "bg-border",
         )}
       >

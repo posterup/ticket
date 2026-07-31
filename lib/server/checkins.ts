@@ -65,7 +65,8 @@ export async function setCheckinByToken(
     where: { qrToken },
     include: {
       checkIn: true,
-      ticketType: { select: { eventId: true } },
+      ticketType: { select: { eventId: true, event: { select: { status: true } } } },
+      session: { select: { cancelled: true } },
     },
   });
 
@@ -84,6 +85,24 @@ export async function setCheckinByToken(
       ok: false,
       reason: "not-valid",
       message: "این بلیت باطل شده است.",
+    };
+  }
+  /**
+   * The show itself was called off.
+   *
+   * The ticket is still `ISSUED` — cancelling a سانس does not touch tickets,
+   * because the refund is what voids them and that happens later, by hand. So
+   * without this the door would admit people to an event that is not running,
+   * which is worse than turning them away with a reason.
+   */
+  if (
+    ticket.session?.cancelled ||
+    ticket.ticketType.event.status === "CANCELLED"
+  ) {
+    return {
+      ok: false,
+      reason: "not-valid",
+      message: "این برنامه لغو شده است.",
     };
   }
 

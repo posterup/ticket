@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, afterAll, beforeAll } from "vitest";
 
 import { POST as CHECKIN } from "@/app/api/checkin/route";
 import { POST as CREATE_ORDER } from "@/app/api/orders/route";
@@ -7,12 +7,18 @@ import type { Order } from "@/types";
 import {
   data,
   describeApi,
+  dropTrackedEvents,
   errorCode,
   parse,
   req,
   signInAsOwner,
   signOut,
+  trackEvent,
+  trackVenue,
 } from "./helpers";
+
+// Remove the throwaway events, venues and orders this suite creates.
+afterAll(dropTrackedEvents);
 
 /**
  * A published free event with one issued ticket per seat — free orders settle
@@ -27,6 +33,7 @@ async function eventWithTickets(quantity = 2) {
   const venue = await db.venue.create({
     data: { name: "تالار", city: "تهران", address: "نشانی", capacity: 50 },
   });
+  trackVenue(venue.id);
   const event = await db.event.create({
     data: {
       workspaceId: workspace.id,
@@ -73,7 +80,7 @@ async function eventWithTickets(quantity = 2) {
   await signInAsOwner();
 
   const tickets = await db.ticket.findMany({ where: { orderId: order.id } });
-  return { eventId: event.id, tickets };
+  return { eventId: trackEvent(event.id), tickets };
 }
 
 beforeAll(async () => {
