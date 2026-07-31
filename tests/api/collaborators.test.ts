@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, afterAll, beforeAll } from "vitest";
 
 import { POST as ADD_COLLAB } from "@/app/api/events/[id]/collaborators/route";
 import { PATCH as RESPOND } from "@/app/api/events/[id]/collaborators/[collabId]/route";
@@ -10,13 +10,19 @@ import {
   ctx,
   data,
   describeApi,
+  dropTrackedEvents,
   errorCode,
   parse,
   req,
   signInAs,
   signInAsOwner,
   signOut,
+  trackEvent,
+  trackVenue,
 } from "./helpers";
+
+// Remove the throwaway events, venues and orders this suite creates.
+afterAll(dropTrackedEvents);
 
 /** ava-events owns the events here; negar-karimi's owner is the outsider. */
 const AVA_OWNER = "09120000001";
@@ -38,6 +44,7 @@ async function freshEvent(): Promise<string> {
   const venue = await db.venue.create({
     data: { name: "تالار", city: "تهران", address: "نشانی", capacity: 50 },
   });
+  trackVenue(venue.id);
   const event = await db.event.create({
     data: {
       workspaceId: workspace.id,
@@ -48,7 +55,7 @@ async function freshEvent(): Promise<string> {
       status: "DRAFT",
     },
   });
-  return event.id;
+  return trackEvent(event.id);
 }
 
 async function invite(eventId: string, overrides: Record<string, unknown> = {}) {
@@ -292,3 +299,69 @@ describeApi("GET /api/me/invites", () => {
     await signInAsOwner();
   });
 });
+
+describeApi("what the public sees of a collaborator list", () => {
+  it("credits an accepted co-host without publishing their phone", async () => {
+    const { db } = await import("@/lib/server/db");
+    const eventId = await freshEvent();
+    const { listAcceptedCollaborators, listCollaborators } = await import(
+      "@/lib/server/collaborators"
+    );
+
+    const row = await db.eventCollaborator.create({
+      data: {
+        eventId,
+        channel: "PHONE",
+        label: "همکار تلفنی",
+        sub: "09121239999",
+        role: "CO_HOST",
+        status: "ACCEPTED",
+      },
+      select: { id: true },
+    });
+
+    try {
+      const publicView = await listAcceptedCollaborators(eventId);
+      const mine = publicView.find((c) => c.label === "همکار تلفنی");
+
+      // Credited…
+      expect(mine).toBeDefined();
+      expect(mine!.role).toBe("co-host");
+      // …but not reachable. The route already restricts non-managers to
+      // accepted collaborators because a *pending* invite carries a raw phone
+      // in `sub`; accepting it does not change what the field holds.
+      expect(mine!.sub).toBe("");
+      expect(JSON.stringify(publicView)).not.toContain("09121239999");
+
+      // The organiser's own view still has it — they invited this person.
+      const owner = await listCollaborators(eventId);
+      expect(owner.find((c) => c.id === row.id)?.sub).toBe("09121239999");
+    } finally {
+      await db.eventCollaborator.deleteMany({ where: { id: row.id } });
+    }
+  });
+
+  it("leaves a workspace handle alone — it is public by nature", async () => {
+    const { db } = await import("@/lib/server/db");
+    const { listAcceptedCollaborators } = await import(
+      "@/lib/server/collaborators"
+    );
+    const eventId = await freshEvent();
+    await db.eventCollaborator.create({
+      data: {
+        eventId,
+        channel: "WORKSPACE",
+        label: "استودیو رویداد آوا",
+        sub: "@ava-events",
+        role: "CO_HOST",
+        status: "ACCEPTED",
+      },
+    });
+
+    const handle = (await listAcceptedCollaborators(eventId)).find(
+      (c) => c.channel === "workspace",
+    );
+    expect(handle?.sub).toBe("@ava-events");
+  });
+});
+

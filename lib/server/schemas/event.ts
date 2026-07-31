@@ -109,6 +109,32 @@ export const createEventSchema = z.object({
 });
 
 /** `PATCH /api/events/:id` — any subset, but at least one field. */
+/**
+ * The «قالب بلیت» design.
+ *
+ * Colours are constrained to hex because they are interpolated straight into a
+ * style attribute; images are capped as data URLs because the whole document
+ * lives in one JSONB column and an unbounded upload would be stored, fetched,
+ * and re-serialised on every read of the event.
+ */
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "رنگ نامعتبر است.");
+const dataUrl = z
+  .string()
+  .max(512_000, "تصویر باید کوچک‌تر از ۵۰۰ کیلوبایت باشد.")
+  .regex(/^data:image\/(png|jpeg|webp|svg\+xml);base64,/, "تصویر نامعتبر است.");
+
+export const ticketDesignSchema = z.object({
+  accent: hexColor.optional(),
+  surface: z.enum(["light", "dark"]).optional(),
+  bgColor: hexColor.nullable().optional(),
+  bgImage: dataUrl.nullable().optional(),
+  logo: dataUrl.nullable().optional(),
+  showCategory: z.boolean().optional(),
+  showDate: z.boolean().optional(),
+  showVenue: z.boolean().optional(),
+  note: z.string().max(160).optional(),
+});
+
 export const eventUpdateSchema = atLeastOneField(
   z.object({
     title: nonEmpty.optional(),
@@ -117,6 +143,7 @@ export const eventUpdateSchema = atLeastOneField(
     visibility: eventVisibility.optional(),
     audienceTags: z.array(z.string()).optional(),
     requiresApproval: z.boolean().optional(),
+    ticketDesign: ticketDesignSchema.optional(),
     slug: nonEmpty.optional(),
     recurrenceSchedule: recurrenceScheduleSchema.optional(),
   }),

@@ -53,9 +53,9 @@ function NavTab({ item, active }: { item: NavItem; active: boolean }) {
       aria-label={item.label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex flex-col items-center gap-1 rounded-lg py-1 text-[0.625rem] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+        "flex flex-col items-center gap-1 rounded-lg py-1 text-[0.625rem] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
         item.accent
-          ? "text-accent hover:brightness-110"
+          ? "text-accent-text hover:brightness-110"
           : active
             ? "text-foreground"
             : "text-faint hover:text-muted",

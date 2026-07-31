@@ -61,7 +61,10 @@ component only re-renders when the blur threshold is crossed.
 - The disabled "view events" CTA is a real `button[disabled]` with
   `aria-disabled` and a descriptive `aria-label`; the decorative illustration is
   `aria-hidden`.
-- Color pairings target WCAG AA contrast in both light and dark themes.
+- Color pairings meet WCAG AA (4.5:1 for text, 3:1 for control boundaries and
+  the focus ring), verified against the tokens rather than by eye. The app is
+  **light-only today** — there is no dark token set, so the earlier claim of
+  "light and dark" was aspirational. See `docs/design-system.md`.
 
 ## Routing and future surfaces
 

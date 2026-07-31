@@ -19,3 +19,4 @@ export * from "./orders";
 export * from "./engagement-user";
 export * from "./users";
 export * from "./finance";
+export * from "./waitlist";

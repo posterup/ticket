@@ -1,0 +1,115 @@
+# Poster (پوستر) — full local stack: Postgres, a one-shot migration job, and
+# the app.
+#
+#   docker compose up --build          start the stack (app on :3000)
+#   docker compose run --rm seed       load the demo fixtures
+#   docker compose down -v             stop and delete the database volume
+#
+# Values below are development defaults. Override them with real environment
+# variables before pointing this at anything that matters.
+#
+# One deliberate exception: DATABASE_URL is composed from the POSTGRES_* values
+# rather than read from the environment. Compose interpolates `${...}` using the
+# project's `.env`, and that file holds the URL for running the app *outside*
+# Docker — `localhost:5434`, which inside a container resolves to the container
+# itself. The stack always talks to its own `db` service; to target an external
+# database, edit the three DATABASE_URL lines below.
+
+name: poster
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-poster}
+      POSTGRES_DB: ${POSTGRES_DB:-poster}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # 5435 on the host, because this project's README already uses 5434 for a
+    # standalone container and 5432 is the usual local default. Nothing outside
+    # the stack needs this — remove the mapping to keep the database private.
+    ports:
+      - "${DB_PORT:-5435}:5432"
+    healthcheck:
+      # Without the explicit user, pg_isready checks as root and reports a
+      # false negative on the official image.
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-poster}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Applies migrations, then exits. `app` waits for this to succeed, so the
+  # schema is always in place before the first request is served.
+  migrate:
+    build:
+      context: .
+      target: migrator
+    image: poster-migrator:latest
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-poster}@db:5432/${POSTGRES_DB:-poster}?schema=public
+
+  # Demo fixtures. Not part of `up` — run it on demand:
+  #   docker compose run --rm seed
+  seed:
+    build:
+      context: .
+      target: migrator
+    image: poster-migrator:latest
+    profiles: ["tools"]
+    restart: "no"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-poster}@db:5432/${POSTGRES_DB:-poster}?schema=public
+    command: ["npx", "prisma", "db", "seed"]
+
+  app:
+    build:
+      context: .
+      target: runner
+      args:
+        # Build-time, not runtime: inlined into the client bundle.
+        NEXT_PUBLIC_CALENDAR_MODE: ${NEXT_PUBLIC_CALENDAR_MODE:-}
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-poster}@db:5432/${POSTGRES_DB:-poster}?schema=public
+
+      # Peppers the one-time-code hashes; sign-in throws without it.
+      # Generate a real one with: openssl rand -base64 32
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret-not-for-production}
+
+      # The container runs NODE_ENV=production, where the app refuses to guess a
+      # payment gateway. "mock" is named explicitly here because a local stack
+      # has no merchant id — it settles orders in-process without taking money,
+      # so change this to `zarinpal` (with ZARINPAL_MERCHANT_ID) for anything
+      # real.
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+      ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-}
+
+      # Absolute origin the payment gateway returns buyers to. Defaults to the
+      # request origin when unset.
+      APP_URL: ${APP_URL:-}
+
+      # Messaging. Unset is fine — those features report "not configured".
+      SMSIR_API_KEY: ${SMSIR_API_KEY:-}
+      SMSIR_LINE_NUMBER: ${SMSIR_LINE_NUMBER:-}
+      SMSIR_OTP_TEMPLATE_ID: ${SMSIR_OTP_TEMPLATE_ID:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  db-data:

@@ -14,7 +14,7 @@ export function Logo({ className }: LogoProps) {
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <svg
         viewBox="0 0 128 128"
-        className="size-8 text-accent"
+        className="size-8 text-accent-text"
         fill="none"
         aria-hidden
       >

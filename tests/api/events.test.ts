@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, beforeAll, afterAll } from "vitest";
 
 import { GET, POST } from "@/app/api/events/route";
 import {
@@ -30,13 +30,43 @@ const validEvent = {
   tags: ["تست"],
 };
 
+/**
+ * Every event this suite makes, so `afterAll` can take them away again.
+ *
+ * They were never cleaned up: each run left «رویداد آزمایشی» and its venue
+ * behind, twenty-five of them had accumulated, and one carried a cancelled
+ * سانس from the patch test. Harmless individually and unbounded in aggregate —
+ * they inflate every "how many public events" assertion and slow every query
+ * that scans the table.
+ */
+const madeEvents: string[] = [];
+
 /** Create an event and return it, failing the test if creation errored. */
 async function createEvent(overrides: Record<string, unknown> = {}) {
   const res = await POST(req("POST", "/api/events", { ...validEvent, ...overrides }));
   const parsed = await parse<Event>(res);
   expect(parsed.status).toBe(201);
-  return data(parsed);
+  const event = data(parsed);
+  madeEvents.push(event.id);
+  return event;
 }
+
+afterAll(async () => {
+  if (!process.env.DATABASE_URL || !madeEvents.length) return;
+  const { db } = await import("@/lib/server/db");
+  const venues = await db.event.findMany({
+    where: { id: { in: madeEvents } },
+    select: { venueId: true },
+  });
+  await db.ticketType.deleteMany({ where: { eventId: { in: madeEvents } } });
+  await db.eventSession.deleteMany({ where: { eventId: { in: madeEvents } } });
+  await db.event.deleteMany({ where: { id: { in: madeEvents } } });
+  // The venue is created alongside the event and is just as orphaned.
+  await db.venue.deleteMany({
+    where: { id: { in: venues.map((v) => v.venueId) }, events: { none: {} } },
+  });
+  madeEvents.length = 0;
+});
 
 describeApi("GET /api/events", () => {
   it("returns the seeded events", async () => {

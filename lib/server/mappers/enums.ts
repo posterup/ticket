@@ -21,6 +21,8 @@ import type {
   EventVisibility,
   GuestRsvp,
   RegistrationStatus,
+  SeatKind,
+  SectionKind,
   SessionAvailability,
   TicketCategory,
   TicketStatus,
@@ -150,3 +152,18 @@ export const COLLAB_ROLE_TO_DB: Record<EventCollabRole, P.EventCollabRole> = {
   checkin: P.EventCollabRole.CHECKIN,
 };
 export const COLLAB_ROLE_FROM_DB = invert(COLLAB_ROLE_TO_DB);
+
+export const SECTION_KIND_TO_DB: Record<SectionKind, P.SectionKind> = {
+  seated: P.SectionKind.SEATED,
+  standing: P.SectionKind.STANDING,
+};
+export const SECTION_KIND_FROM_DB = invert(SECTION_KIND_TO_DB);
+
+export const SEAT_KIND_TO_DB: Record<SeatKind, P.SeatKind> = {
+  standard: P.SeatKind.STANDARD,
+  wheelchair: P.SeatKind.WHEELCHAIR,
+  companion: P.SeatKind.COMPANION,
+  obstructed: P.SeatKind.OBSTRUCTED,
+  house: P.SeatKind.HOUSE,
+};
+export const SEAT_KIND_FROM_DB = invert(SEAT_KIND_TO_DB);

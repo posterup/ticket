@@ -37,8 +37,16 @@ export type ErrorCode =
   | "RATE_LIMITED"
   | "CONFLICT"
   | "SOLD_OUT"
+  /** The discount code's «ظرفیت استفاده» is spoken for, settled or pending. */
+  | "DISCOUNT_EXHAUSTED"
   | "SALES_CLOSED"
   | "PAYMENT_FAILED"
+  /** A specific seat was claimed by someone else first. */
+  | "SEAT_TAKEN"
+  /** The caller's seat hold lapsed before they finished checking out. */
+  | "HOLD_EXPIRED"
+  /** Too many seats held at once — the anti-inventory-denial cap. */
+  | "HOLD_LIMIT"
   | "INTERNAL";
 
 /**
@@ -165,4 +173,20 @@ export function handler<A extends unknown[], T>(
 /** Shorthand for the `404` every `:id` handler needs. */
 export function notFound(message: string): HttpError {
   return new HttpError(404, "NOT_FOUND", message);
+}
+
+/**
+ * The caller's IP, as far as it can be known.
+ *
+ * `x-forwarded-for` is a list appended to by each proxy, so the first entry is
+ * the client. It is spoofable by anyone talking to the origin directly, which
+ * is why nothing here treats it as *authentication* — it is a blunt instrument
+ * for rate limiting, and the OTP flow has used it that way since it shipped.
+ */
+export function clientIp(request: Request): string | undefined {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip")?.trim() ??
+    undefined
+  );
 }

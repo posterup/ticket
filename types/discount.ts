@@ -20,8 +20,16 @@ export interface DiscountCode {
   value: number;
   /** Maximum total redemptions, or `null` for unlimited. */
   maxRedemptions: number | null;
-  /** Redemptions used so far. */
+  /** Redemptions settled so far — one per paid order. */
   redemptions: number;
+  /**
+   * Redemptions claimed by pending, unexpired orders.
+   *
+   * The cap is `redemptions + reserved <= maxRedemptions`. Checking only
+   * `redemptions` — which does not move until payment — let every buyer who
+   * arrived before the first one paid through the same gate.
+   */
+  reserved: number;
   /** Expiry instant, or `null` when the code never expires. */
   expiresAt: IsoDateTime | null;
   active: boolean;

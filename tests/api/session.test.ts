@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, beforeAll, afterAll } from "vitest";
 
 import { GET as ME } from "@/app/api/auth/me/route";
 import { POST as LOGOUT } from "@/app/api/auth/logout/route";
@@ -11,16 +11,41 @@ import {
   ctx,
   data,
   describeApi,
+  dropTrackedEvents,
   errorCode,
   parse,
   req,
   signInAs,
   signOut,
+  trackEvent,
+  trackVenue,
 } from "./helpers";
+
+// Remove the throwaway events, venues and orders this suite creates.
+afterAll(dropTrackedEvents);
 
 /** Fresh accounts per run, so accumulated workspaces never skew assertions. */
 const VISITOR = "09171112233";
 const ORGANIZER = "09171114455";
+
+/**
+ * Registration makes a real workspace, and nothing removed it: fifty-five
+ * «Fresh Studio» workspaces had accumulated, one per run, each with a member
+ * row. They inflate every workspace count and every slug-collision search —
+ * which is, ironically, exactly what one of these tests measures.
+ */
+afterAll(async () => {
+  if (!process.env.DATABASE_URL) return;
+  const { db } = await import("@/lib/server/db");
+  const made = await db.workspace.findMany({
+    where: { slug: { startsWith: "fresh-studio" } },
+    select: { id: true },
+  });
+  const ids = made.map((w) => w.id);
+  if (!ids.length) return;
+  await db.workspaceMember.deleteMany({ where: { workspaceId: { in: ids } } });
+  await db.workspace.deleteMany({ where: { id: { in: ids } } });
+});
 
 beforeAll(async () => {
   if (!process.env.DATABASE_URL) return;
@@ -161,6 +186,7 @@ describeApi("POST /api/orders/:id/cancel", () => {
     const venue = await db.venue.create({
       data: { name: "تالار", city: "تهران", address: "نشانی", capacity: 50 },
     });
+  trackVenue(venue.id);
     const event = await db.event.create({
       data: {
         workspaceId: workspace.id,
@@ -171,6 +197,7 @@ describeApi("POST /api/orders/:id/cancel", () => {
         status: "PUBLISHED",
       },
     });
+    trackEvent(event.id);
     const type = await db.ticketType.create({
       data: {
         eventId: event.id,
@@ -220,7 +247,7 @@ describeApi("POST /api/orders/:id/cancel", () => {
 
     const parsed = await parse<Order>(
       await CANCEL_ORDER(
-        req("POST", "/?phone=09129876543"),
+        req("POST", "/", { phone: "09129876543" }),
         ctx({ id: order.id }),
       ),
     );
@@ -232,7 +259,7 @@ describeApi("POST /api/orders/:id/cancel", () => {
     const { order } = await placeOrder("09129876543");
 
     const parsed = await parse<Order>(
-      await CANCEL_ORDER(req("POST", "/?phone=09120000000"), ctx({ id: order.id })),
+      await CANCEL_ORDER(req("POST", "/", { phone: "09120000000" }), ctx({ id: order.id })),
     );
     expect(parsed.status).toBe(403);
     expect(errorCode(parsed)).toBe("FORBIDDEN");

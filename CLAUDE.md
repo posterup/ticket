@@ -33,6 +33,12 @@ dashboard and API. Product rationale: `docs/product-vision.md`.
   component variants
 - **Leaflet** / **react-leaflet** (maps), **react-multi-date-picker** (Jalali
   dates), **html-to-image** (ticket PNG export)
+- **qrcode** — ticket QR codes. Imported **lazily and client-side only**
+  (`components/tickets/TicketQr.tsx`): a ticket must render at a venue door with
+  no signal, so the code is drawn from the token already in hand rather than
+  fetched. Only the module matrix comes from the library; the SVG is built as
+  React elements, so no `dangerouslySetInnerHTML`. Door scanning uses the
+  browser's native `BarcodeDetector` — no decoder is shipped.
 
 ## Commands
 
@@ -47,6 +53,8 @@ Node **22.x** (see `package.json` `engines`).
 | Lint | `npm run lint` |
 | Tests (Vitest) | `npm test` |
 | Type-check only | `npx tsc --noEmit` |
+| Full stack in Docker (→ http://localhost:3000) | `docker compose up --build` |
+| Seed the Docker database | `docker compose run --rm seed` |
 
 Note: after certain builds a stale `.next` cache can produce false prerender
 errors — `rm -rf .next` before trusting a failing `npm run build`.
@@ -155,7 +163,8 @@ Full endpoint table and request/response samples: `docs/backend-architecture.md`
 - **Motion** is restrained: shared Framer Motion variants in `lib/motion.ts`;
   honor `prefers-reduced-motion`; no bounce or attention-seeking movement.
 - **Accessibility:** semantic landmarks, a visible focus ring on `--ring` for
-  every interactive element, WCAG AA contrast in light + dark, and ARIA only to
+  every interactive element, WCAG AA contrast (verified — see
+  `docs/design-system.md`), and ARIA only to
   fill gaps native semantics cannot.
 
 ## Git workflow
@@ -173,6 +182,7 @@ before merging.
 | `docs/information-architecture.md` | Surfaces, route tree, ticket-creation wizard spec |
 | `docs/frontend-architecture.md` | Frontend conventions, directory layout, motion, a11y |
 | `docs/backend-architecture.md` | Data layer, domain model, API endpoints + samples |
+| `docs/venue-architecture.md` | Seat maps: layout templates, progressive rendering, seat holds, the admin designer |
 | `DESIGN.md` | Authoritative brand & design spec (raw palette, principles) |
 | `docs/design-system.md` | Implemented tokens (CSS vars → Tailwind), primitive specs |
 | `docs/roadmap.md` | Phased delivery plan |

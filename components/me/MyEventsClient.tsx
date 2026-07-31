@@ -152,7 +152,7 @@ function Group({
                 <span className="flex items-center gap-1 truncate">
                   {e.org.name}
                   {e.org.verified ? (
-                    <BadgeCheck className="size-3.5 shrink-0 text-accent" aria-label="تأییدشده" />
+                    <BadgeCheck className="size-3.5 shrink-0 text-accent-text" aria-label="تأییدشده" />
                   ) : null}
                 </span>
               </span>

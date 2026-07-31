@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, beforeAll, afterAll } from "vitest";
 
 import {
   GET as LIST_GUESTS,
@@ -158,6 +158,25 @@ describeApi("guests", () => {
   });
 });
 
+/**
+ * Collaborator invites are added to a *seeded* event, so nothing else removes
+ * them: two per run accumulated on that event's collaborator list.
+ */
+const madeCollaborators: string[] = [];
+
+afterAll(async function dropMadeCollaborators() {
+  if (!process.env.DATABASE_URL || !madeCollaborators.length) return;
+  const { db } = await import("@/lib/server/db");
+  // By id. Filtering on label or workspace cannot work: the seeded
+  // collaborator is «استودیو رویداد آوا» on the same event, indistinguishable
+  // from the ones these tests add — an earlier attempt deleted it and the seed
+  // fixture test caught the damage.
+  await db.eventCollaborator.deleteMany({
+    where: { id: { in: madeCollaborators } },
+  });
+  madeCollaborators.length = 0;
+});
+
 describeApi("collaborators", () => {
   it("adds a pending request and lists it", async () => {
     const collab = data(
@@ -173,6 +192,7 @@ describeApi("collaborators", () => {
         ),
       ),
     );
+    madeCollaborators.push(collab.id);
     expect(collab.status).toBe("pending");
     expect(collab.workspaceSlug).toBe("ava-events");
 
@@ -193,6 +213,7 @@ describeApi("collaborators", () => {
         ),
       ),
     );
+    madeCollaborators.push(collab.id);
     expect(collab.sub).toBe("");
   });
 
@@ -215,6 +236,7 @@ describeApi("collaborators", () => {
         ),
       ),
     );
+    madeCollaborators.push(collab.id);
 
     const removed = await parse<{ id: string }>(
       await REMOVE_COLLAB(req("DELETE", "/"), ctx({ id: SEED_EVENT, collabId: collab.id })),

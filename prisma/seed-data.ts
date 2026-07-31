@@ -28,6 +28,7 @@ export interface EventEngagement {
 
 /** Ownership lives in {@link EVENT_WORKSPACE}, not on the fixture itself. */
 export const events: Omit<Event, "workspaceId">[] = [
+
   {
     id: "3f1a6c2e-0020-4a10-9b21-1a2b3c4d5e20",
     title: "کارگاه رایگان معرفی هوش مصنوعی",
@@ -530,9 +531,93 @@ export const events: Omit<Event, "workspaceId">[] = [
     createdAt: "2026-07-22T09:00:00.000Z",
     updatedAt: "2026-07-22T09:00:00.000Z",
   },
+  /**
+   * Mixed pricing — a free tier beside a paid one.
+   *
+   * Appended because every seeded event was uniformly free or uniformly paid,
+   * and the buy box asked `Math.min(...prices) === 0` while the dashboard asked
+   * `tickets.every(t => t.price === 0)`. Two opposite questions that agree on
+   * every homogeneous event and disagree only here, so nothing on screen could
+   * ever show the disagreement: the public page badged a paid event «رایگان».
+   */
+  {
+    id: "3f1a6c2e-0022-4a10-9b21-1a2b3c4d5e22",
+    title: "سمینار تحلیل داده با بلیت دانشجویی",
+    description:
+      "یک روز کارگاه فشردهٔ تحلیل داده؛ بلیت عادی با هزینه و بلیت دانشجویی رایگان با ارائهٔ کارت دانشجویی.",
+    status: "published",
+    mode: "one-time",
+    venue: {
+      id: "b1000000-0000-4000-8000-000000000022",
+      name: "پژوهشکدهٔ علوم داده",
+      city: "تهران",
+      address: "تهران، خیابان کارگر شمالی، پژوهشکدهٔ علوم داده",
+      capacity: 150,
+    },
+    sessions: [
+      {
+        id: "c1000000-0000-4000-8000-000000000022",
+        eventId: "3f1a6c2e-0022-4a10-9b21-1a2b3c4d5e22",
+        startAt: "2026-08-19T08:30:00.000Z",
+        endAt: "2026-08-19T14:30:00.000Z",
+        availability: "available",
+      },
+    ],
+    tags: ["داده", "آموزش", "دانشجویی"],
+    categories: ["آموزش", "فناوری"],
+    visibility: "public",
+    audienceTags: [],
+    requiresApproval: false,
+    createdAt: "2026-07-28T10:00:00.000Z",
+    updatedAt: "2026-07-28T10:00:00.000Z",
+  },
+  /**
+   * Restricted to a CRM segment.
+   *
+   * `audienceTags` matches «مشتری وفادار», which `attendees[0]` carries, and the
+   * event sits in the home workspace because the gate joins on `workspaceId` —
+   * a segment in one tenant must not open a door in another.
+   *
+   * Also appended after the fact: with no `audience` event in the seed, the
+   * purchase-side gate could be missing entirely and every page still looked
+   * right. It was missing, and an event restricted to invited contacts was
+   * buyable by anyone holding its id.
+   */
+  {
+    id: "3f1a6c2e-0023-4a10-9b21-1a2b3c4d5e23",
+    title: "شب اختصاصی مشتریان وفادار",
+    description:
+      "برنامه‌ای فقط برای مخاطبان دعوت‌شدهٔ باشگاه مشتریان؛ ظرفیت محدود و بدون فروش عمومی.",
+    status: "published",
+    mode: "one-time",
+    venue: {
+      id: "b1000000-0000-4000-8000-000000000023",
+      name: "سالن خصوصی آوا",
+      city: "تهران",
+      address: "تهران، خیابان ولیعصر، سالن خصوصی آوا",
+      capacity: 80,
+    },
+    sessions: [
+      {
+        id: "c1000000-0000-4000-8000-000000000023",
+        eventId: "3f1a6c2e-0023-4a10-9b21-1a2b3c4d5e23",
+        startAt: "2026-08-26T17:00:00.000Z",
+        endAt: "2026-08-26T20:00:00.000Z",
+        availability: "available",
+      },
+    ],
+    tags: ["اختصاصی", "باشگاه مشتریان"],
+    categories: ["هنر"],
+    visibility: "audience",
+    audienceTags: ["مشتری وفادار"],
+    requiresApproval: false,
+    createdAt: "2026-07-28T11:00:00.000Z",
+    updatedAt: "2026-07-28T11:00:00.000Z",
+  },
 ];
 
 export const ticketTypes: TicketType[] = [
+
   {
     id: "d1000000-0000-4000-8000-000000000020",
     eventId: "3f1a6c2e-0020-4a10-9b21-1a2b3c4d5e20",
@@ -731,6 +816,40 @@ export const ticketTypes: TicketType[] = [
     category: "general",
     description: "شامل یک نوشیدنی و دسترسی به همهٔ بازی‌ها.",
   },
+  // The mixed-price pair: one free, one not. See event 0022.
+  {
+    id: "d1000000-0000-4000-8000-000000000022",
+    eventId: "3f1a6c2e-0022-4a10-9b21-1a2b3c4d5e22",
+    name: "بلیت عادی",
+    price: 1_400_000,
+    capacity: 120,
+    salesStartAt: "2026-07-28T00:00:00.000Z",
+    salesEndAt: "2026-08-19T08:00:00.000Z",
+    category: "general",
+    description: "دسترسی کامل به کارگاه و ناهار.",
+  },
+  {
+    id: "d1000000-0000-4000-8000-000000000122",
+    eventId: "3f1a6c2e-0022-4a10-9b21-1a2b3c4d5e22",
+    name: "بلیت دانشجویی",
+    price: 0,
+    capacity: 30,
+    salesStartAt: "2026-07-28T00:00:00.000Z",
+    salesEndAt: "2026-08-19T08:00:00.000Z",
+    category: "student",
+    description: "رایگان با ارائهٔ کارت دانشجویی معتبر در ورودی.",
+  },
+  {
+    id: "d1000000-0000-4000-8000-000000000023",
+    eventId: "3f1a6c2e-0023-4a10-9b21-1a2b3c4d5e23",
+    name: "بلیت مهمان ویژه",
+    price: 900_000,
+    capacity: 80,
+    salesStartAt: "2026-07-28T00:00:00.000Z",
+    salesEndAt: "2026-08-26T16:00:00.000Z",
+    category: "vip",
+    description: "فقط برای مخاطبان دعوت‌شده.",
+  },
 ];
 
 export const attendees: Attendee[] = [
@@ -880,6 +999,8 @@ export const workspaces: Workspace[] = [
 
 export const EVENT_WORKSPACE: Record<string, string[]> = {
   "ava-events": [
+    "3f1a6c2e-0022-4a10-9b21-1a2b3c4d5e22",
+    "3f1a6c2e-0023-4a10-9b21-1a2b3c4d5e23",
     "3f1a6c2e-0015-4a10-9b21-1a2b3c4d5e15",
     "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01",
     "3f1a6c2e-0003-4a10-9b21-1a2b3c4d5e03",
@@ -913,6 +1034,7 @@ export const discounts: DiscountCode[] = [
     value: 10,
     maxRedemptions: 100,
     redemptions: 23,
+    reserved: 0,
     expiresAt: null,
     active: true,
     createdAt: "2026-06-15T09:00:00.000Z",
@@ -925,6 +1047,7 @@ export const discounts: DiscountCode[] = [
     value: 500_000,
     maxRedemptions: 200,
     redemptions: 148,
+    reserved: 0,
     expiresAt: "2026-08-01T20:30:00.000Z",
     active: true,
     createdAt: "2026-06-16T10:30:00.000Z",
@@ -937,6 +1060,7 @@ export const discounts: DiscountCode[] = [
     value: 20,
     maxRedemptions: 50,
     redemptions: 50,
+    reserved: 0,
     expiresAt: null,
     active: true,
     createdAt: "2026-06-18T12:00:00.000Z",
