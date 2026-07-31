@@ -16,7 +16,22 @@ export const createOrderSchema = z.object({
         quantity: z.number().int().min(1).max(20),
       }),
     )
-    .min(1),
+    // Assigned seating derives its own lines from the seats, so `items` may be
+    // empty when `seats` is present. `createOrder` rejects a request with
+    // neither.
+    .default([]),
+  /**
+   * Assigned seating. The seats decide the ticket type and the price, so this
+   * carries neither — only which seats, by section-local index.
+   */
+  seats: z
+    .array(
+      z.object({
+        section: nonEmpty,
+        seats: z.array(z.number().int().min(0)).min(1).max(10),
+      }),
+    )
+    .optional(),
   buyerName: nonEmpty.max(120),
   buyerPhone: z
     .string()

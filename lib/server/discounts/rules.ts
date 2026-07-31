@@ -37,12 +37,15 @@ export function checkDiscountEligibility({
   rawCode,
   discount,
   eventId,
+  sessionId,
   subtotal,
   now = Date.now(),
 }: {
   rawCode: string;
   discount: DiscountCode | undefined;
   eventId: string;
+  /** The showing being bought, when the order names one. */
+  sessionId?: string;
   subtotal: Money;
   now?: number;
 }): DiscountValidation {
@@ -58,12 +61,37 @@ export function checkDiscountEligibility({
   if (discount.eventId !== null && discount.eventId !== eventId) {
     return { ok: false, reason: "این کد برای این رویداد قابل استفاده نیست." };
   }
+  /**
+   * Session scope.
+   *
+   * The dashboard lets an organiser pin a code to one سانس, stores it, and
+   * shows it back as «یک سانس» — and nothing ever checked it, so a code meant
+   * for a quiet Tuesday was accepted on the sold-out Friday.
+   *
+   * A scoped code with no session on the order is refused rather than allowed:
+   * the organiser said "this showing", and an order that names no showing is
+   * not it.
+   */
+  if (discount.sessionId != null && discount.sessionId !== sessionId) {
+    return { ok: false, reason: "این کد برای این سانس قابل استفاده نیست." };
+  }
   if (discount.expiresAt && new Date(discount.expiresAt).getTime() < now) {
     return { ok: false, reason: "مهلت استفاده از این کد به پایان رسیده است." };
   }
+  /**
+   * Capacity, counting the orders that have claimed the code but not yet paid.
+   *
+   * `redemptions` alone only moves at settlement, and the gap between placing
+   * an order and paying for it is a gateway redirect plus however long a human
+   * takes — so every buyer arriving in that window read the same stale count
+   * and was let through. A code capped at one was redeemed by all of them.
+   *
+   * `reserved` is released when an order expires or is cancelled, so an
+   * abandoned checkout does not retire the code.
+   */
   if (
     discount.maxRedemptions !== null &&
-    discount.redemptions >= discount.maxRedemptions
+    discount.redemptions + discount.reserved >= discount.maxRedemptions
   ) {
     return { ok: false, reason: "ظرفیت استفاده از این کد تکمیل شده است." };
   }

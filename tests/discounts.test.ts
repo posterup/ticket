@@ -19,6 +19,7 @@ function code(overrides: Partial<DiscountCode>): DiscountCode {
     value: 10,
     maxRedemptions: null,
     redemptions: 0,
+    reserved: 0,
     expiresAt: null,
     active: true,
     createdAt: "2026-01-01T00:00:00.000Z",

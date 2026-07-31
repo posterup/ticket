@@ -8,8 +8,15 @@ type Context = { params: Promise<{ id: string }> };
 
 /** Where the gateway sends the buyer back. */
 function callbackUrl(request: Request, orderId: string): string {
-  const base =
-    process.env.APP_URL ?? new URL(request.url).origin;
+/**
+ * `||`, not `??`.
+ *
+ * An unset variable and an empty one are the same thing here, and container
+ * runtimes routinely pass the latter — `docker compose` turns an absent
+ * `${APP_URL:-}` into `APP_URL=""`. With `??` that empty string wins, the base
+ * becomes "", and the callback URL is relative, which `new URL()` rejects.
+ */
+  const base = process.env.APP_URL || new URL(request.url).origin;
   return `${base}/api/payments/callback?order=${orderId}`;
 }
 
@@ -19,6 +26,27 @@ function callbackUrl(request: Request, orderId: string): string {
  * Not a redirect: the client navigates, so it can handle a failure inline
  * rather than landing on an error page.
  */
+/**
+ * The buyer's phone, from the request body.
+ *
+ * Not the query string, which is where both of these used to read it. A phone
+ * number in a URL is written to the server's access log, kept in the browser's
+ * history, and sent to third parties in `Referer` — and it is the credential
+ * that stands in for a session on a guest order, so it is exactly the thing
+ * that must not end up there.
+ *
+ * A missing or unparseable body is not an error: a signed-in buyer proves
+ * ownership with their session and sends nothing.
+ */
+async function provenPhone(request: Request): Promise<string | null> {
+  try {
+    const body = (await request.json()) as { phone?: unknown };
+    return typeof body?.phone === "string" ? body.phone : null;
+  } catch {
+    return null;
+  }
+}
+
 export const POST = handler(async (request: Request, { params }: Context) => {
   const { id } = await params;
   const order = await getOrderById(id);
@@ -32,7 +60,7 @@ export const POST = handler(async (request: Request, { params }: Context) => {
     where: { id },
     select: { userId: true },
   });
-  const phone = new URL(request.url).searchParams.get("phone");
+  const phone = await provenPhone(request);
   if (!(user && row?.userId === user.id) && phone !== order.buyerPhone) {
     throw new HttpError(403, "FORBIDDEN", "به این سفارش دسترسی ندارید.");
   }

@@ -1,4 +1,4 @@
-import { getOrderByCode } from "@/lib/server";
+import { getOrderByCode, ticketsForOrderCode } from "@/lib/server";
 import { getCurrentUser } from "@/lib/server/auth/guards";
 import { db } from "@/lib/server/db";
 import { handler, notFound, ok } from "@/lib/server/http";
@@ -27,5 +27,13 @@ export const GET = handler(async (_r: Request, { params }: Context) => {
       }))?.userId === user.id
     : false;
 
-  return ok(owned ? order : { ...order, buyerPhone: "" });
+  // Issued tickets travel with the order so a guest — who has no account and
+  // therefore no /me/tickets — can still reach their entry codes. Empty until
+  // the order is paid.
+  const tickets = await ticketsForOrderCode(code);
+
+  return ok({
+    ...(owned ? order : { ...order, buyerPhone: "" }),
+    tickets,
+  });
 });
