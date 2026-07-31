@@ -30,6 +30,7 @@ export default function FinancePage() {
   return (
     <div className="flex flex-col gap-8">
       <WalletPanel
+        slug={workspace!.slug}
         balance={data.balance}
         fee={WITHDRAW_FEE}
         accounts={data.bankAccounts}
@@ -66,7 +67,7 @@ export default function FinancePage() {
                     <td
                       className={cn(
                         "px-5 py-3",
-                        t.status === "refunded" ? "text-danger" : "text-success",
+                        t.status === "refunded" ? "text-danger-text" : "text-success-text",
                       )}
                     >
                       {t.status === "refunded" ? "بازگشت وجه" : "پرداخت‌شده"}

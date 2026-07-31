@@ -45,7 +45,7 @@ export default function PagesDirectory() {
             ))}
           </div>
         ) : (
-          <AsyncState loading={loading} error={error} onRetry={reload} />
+          <AsyncState loading={loading} error={error} onRetry={reload} variant="cards" rows={6} />
         )}
       </main>
       <Footer />
@@ -81,7 +81,7 @@ function WorkspaceCard({
             <span className="truncate">{w.name}</span>
             {w.verified ? (
               <BadgeCheck
-                className="size-4 shrink-0 text-accent"
+                className="size-4 shrink-0 text-accent-text"
                 aria-label="تأییدشده"
               />
             ) : null}

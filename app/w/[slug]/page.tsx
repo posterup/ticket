@@ -38,7 +38,7 @@ export default function WorkspacePage({
       <div className="flex min-h-[100dvh] flex-col">
         <PublicHeader />
         <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
-          <AsyncState loading={loading} error={error} onRetry={reload} />
+          <AsyncState loading={loading} error={error} onRetry={reload} variant="page" rows={1} />
         </main>
         <Footer />
       </div>
@@ -75,7 +75,7 @@ export default function WorkspacePage({
             <h1 className="flex items-center gap-1.5 text-2xl font-bold tracking-tight text-foreground">
               <span className="truncate">{workspace.name}</span>
               {workspace.verified ? (
-                <BadgeCheck className="size-5 shrink-0 text-accent" aria-label="تأییدشده" />
+                <BadgeCheck className="size-5 shrink-0 text-accent-text" aria-label="تأییدشده" />
               ) : null}
             </h1>
             {workspace.bio ? (

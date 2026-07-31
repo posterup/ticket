@@ -6,7 +6,7 @@ import { ChevronRight } from "lucide-react";
 
 import { useApi } from "@/lib/client/api";
 import { AsyncState } from "@/components/ui/async-state";
-import { formatJalaliDate, formatTime } from "@/lib/format";
+import { formatJalaliDate, formatTime, venueParts } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 import { EditEventForm } from "@/components/dashboard/EditEventForm";
@@ -15,10 +15,13 @@ import { EventLinkForm } from "@/components/dashboard/EventLinkForm";
 import { EventCollaborators } from "@/components/dashboard/EventCollaborators";
 import { SessionsManager } from "@/components/dashboard/SessionsManager";
 import { EventTickets } from "@/components/dashboard/EventTickets";
+import { EventSeatMap } from "@/components/dashboard/EventSeatMap";
 import { EventAccessSettings } from "@/components/dashboard/EventAccessSettings";
 import { RecurrenceEditor } from "@/components/dashboard/RecurrenceEditor";
 import { AttendanceManager } from "@/components/dashboard/AttendanceManager";
 import { ApprovalList } from "@/components/dashboard/ApprovalList";
+import { EventWaitlist } from "@/components/dashboard/EventWaitlist";
+import { EventRefunds } from "@/components/dashboard/EventRefunds";
 import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
 import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
@@ -68,12 +71,16 @@ function buildScheduleDraft(event: Event): ScheduleDraft {
   }
   // Legacy recurring events: derive the schedule from concrete sessions.
   const dates = [
-    ...new Set(event.sessions.map((s) => s.startAt.slice(0, 10))),
+    // The venue's day, not UTC's: a سانس at 00:30 Tehran is the *previous*
+    // date in UTC, and slicing it here moved the whole schedule back a day.
+    ...new Set(event.sessions.map((s) => venueParts(s.startAt).date)),
   ].sort();
   const seen = new Map<string, { id: string; startTime: string; endTime: string }>();
   for (const s of event.sessions) {
-    const startTime = s.startAt.slice(11, 16);
-    const endTime = s.endAt.slice(11, 16);
+    // This draft is what `applySchedule` writes back. Slicing UTC here and
+    // saving venue-local there shifted every سانس by the offset on each save.
+    const startTime = venueParts(s.startAt).time;
+    const endTime = venueParts(s.endAt).time;
     const key = `${startTime}-${endTime}`;
     if (!seen.has(key)) {
       seen.set(key, { id: `slot-${seen.size + 1}`, startTime, endTime });
@@ -257,6 +264,29 @@ export default function EventDetailPage({ params }: Params) {
                 },
               ]
             : []),
+          // Same shape as approvals: only shown when the organiser turned the
+          // feature on, so the console stays as short as the event is simple.
+          ...(event.waitlist
+            ? [
+                {
+                  id: "waitlist",
+                  label: "فهرست انتظار",
+                  content: <EventWaitlist eventId={event.id} />,
+                },
+              ]
+            : []),
+          // Only for events that took money. A free event has nothing to
+          // refund, and a paid one that has sold nothing shows an empty state
+          // rather than a tab that appears and disappears as orders land.
+          ...(isFree
+            ? []
+            : [
+                {
+                  id: "refunds",
+                  label: "بازپرداخت",
+                  content: <EventRefunds eventId={event.id} />,
+                },
+              ]),
           // Free events have no tickets to price/design and nothing to
           // discount, so both tabs are hidden entirely.
           ...(isFree
@@ -272,6 +302,13 @@ export default function EventDetailPage({ params }: Params) {
                         tickets={tickets}
                         sessions={sessionOptions}
                       />
+                      {/* Seat maps price themselves off the ticket types above,
+                          so this belongs after them, not on its own tab. */}
+                      <EventSeatMap
+                        eventId={event.id}
+                        sessions={event.sessions}
+                        tickets={tickets}
+                      />
                       <section className="flex flex-col gap-4 border-t border-border pt-6">
                         <div>
                           <h2 className="text-sm font-semibold text-foreground">
@@ -282,7 +319,11 @@ export default function EventDetailPage({ params }: Params) {
                             پیش‌نمایش را ببینید.
                           </p>
                         </div>
-                        <TicketDesigner sample={ticketSample} />
+                        <TicketDesigner
+                          sample={ticketSample}
+                          eventId={event.id}
+                          initial={event.ticketDesign}
+                        />
                       </section>
                     </div>
                   ),

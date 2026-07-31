@@ -20,10 +20,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fcfcfd" },
-    { media: "(prefers-color-scheme: dark)", color: "#1c1e26" },
-  ],
+  /*
+    One value, because there is one theme. The dark entry that used to sit here
+    tinted the browser chrome dark on a dark-mode phone while the page stayed
+    light — a seam, not a dark mode. Restore it alongside real dark tokens.
+  */
+  themeColor: "#fdfcff",
 };
 
 export default function RootLayout({

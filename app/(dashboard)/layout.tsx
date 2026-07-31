@@ -38,7 +38,11 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (!error) return;
-    if (error.code === "UNAUTHENTICATED") router.replace("/login?next=/dashboard");
+    // `UNAUTHENTICATED` is handled in `apiFetch`, which clears the dead cookie
+    // before navigating. Doing it here too was the bug: `router.replace` left
+    // the cookie in place, so `middleware.ts` — which can only test for its
+    // presence — read the visitor as signed in and bounced them off `/login`
+    // right back to the dashboard.
     if (error.code === "NOT_A_MANAGER") router.replace("/me");
   }, [error, router]);
 
@@ -64,7 +68,7 @@ export default function DashboardLayout({
               <Link
                 href="/"
                 aria-label="پوستر، صفحه اصلی"
-                className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Logo />
               </Link>

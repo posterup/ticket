@@ -15,6 +15,8 @@ import type { Event, TicketType } from "@/types";
 interface PageData {
   event: Event;
   tickets: TicketType[];
+  /** Present when signed in; seeds the buyer fields. */
+  viewer?: { fullName: string; phone: string };
 }
 
 export default function CheckoutPage({
@@ -22,10 +24,10 @@ export default function CheckoutPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ticket?: string }>;
+  searchParams: Promise<{ ticket?: string; session?: string }>;
 }) {
   const { id } = use(params);
-  const { ticket } = use(searchParams);
+  const { ticket, session } = use(searchParams);
   const { data, error, loading, reload } = useApi<PageData>(
     `/api/events/${id}/page-data`,
   );
@@ -41,7 +43,7 @@ export default function CheckoutPage({
             empty={Boolean(data && data.tickets.length === 0)}
             emptyLabel="بلیتی برای این رویداد تعریف نشده است."
             onRetry={reload}
-          />
+          variant="page" rows={1} />
         </main>
         <Footer />
       </div>
@@ -61,12 +63,15 @@ export default function CheckoutPage({
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <PublicHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6 sm:py-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6 sm:py-12">
         <CheckoutForm
           eventId={data.event.id}
           eventTitle={data.event.title}
           tickets={tickets}
           initialTicketId={initialTicketId}
+          sessions={data.event.sessions}
+          initialSessionId={session}
+          viewer={data.viewer}
         />
       </main>
       <Footer />

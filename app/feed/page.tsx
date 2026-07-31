@@ -70,7 +70,7 @@ export default function FeedPage() {
             loading={feed.loading}
             error={feed.error}
             onRetry={feed.reload}
-          />
+          variant="cards" rows={6} />
         )}
       </main>
       <Footer />

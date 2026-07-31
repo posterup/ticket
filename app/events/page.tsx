@@ -25,7 +25,7 @@ export default function PublicEventsPage() {
         {data ? (
           <EventsExplorer events={data} defaultCity={defaultCity} />
         ) : (
-          <AsyncState loading={loading} error={error} onRetry={reload} />
+          <AsyncState loading={loading} error={error} onRetry={reload} variant="cards" rows={6} />
         )}
       </main>
       <Footer />
