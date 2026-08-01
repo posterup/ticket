@@ -6,10 +6,16 @@ import { defineConfig } from "prisma/config";
 /**
  * Prisma 7 keeps connection URLs out of `schema.prisma`.
  *
- * With a driver adapter there is no separate `directUrl`: migrations and the
- * runtime both use `DATABASE_URL`. If the provider hands out a pooled and a
- * direct URL, point this at the direct one and give the pooled string to the
- * adapter in `lib/server/db.ts`.
+ * With a driver adapter there is no separate `directUrl`, so this is where the
+ * pooled/direct split is made: **migrations take the direct URL**, while
+ * `lib/server/db.ts` gives the pooled one to the adapter.
+ *
+ * That split is not cosmetic. A migration through PgBouncer in transaction mode
+ * loses the session state DDL depends on — advisory locks, `SET`s, prepared
+ * statements — and fails or, worse, half-applies. `DATABASE_URL_UNPOOLED` is
+ * the name Neon and the Vercel integration both set for the direct string;
+ * falling back to `DATABASE_URL` keeps a plain local Postgres working, where
+ * there is only one URL and no pooler in front of it.
  *
  * The URL is read with `??` rather than Prisma's `env()` helper, which throws
  * when the variable is missing. `prisma generate` runs on `postinstall` and
@@ -20,7 +26,7 @@ import { defineConfig } from "prisma/config";
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: process.env.DATABASE_URL ?? "",
+    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? "",
   },
   migrations: {
     seed: "tsx prisma/seed.ts",
