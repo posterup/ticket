@@ -19,6 +19,8 @@ export interface DiscoverEvent {
   sortKey: string;
   price: string | null;
   going: number;
+  /** Cover image URL, or null for the generated gradient. */
+  poster: string | null;
   tags: string[];
   categories: string[];
   org: { slug: string; name: string; avatar: string; verified: boolean } | null;
@@ -291,7 +293,7 @@ function Hero({ events }: { events: DiscoverEvent[] }) {
             href={`/events/${e.id}`}
             className="relative w-full shrink-0 snap-center overflow-hidden rounded-2xl border border-border"
           >
-            <EventCover seed={e.id} tags={e.tags} className="h-52 w-full sm:h-72" />
+            <EventCover seed={e.id} poster={e.poster} tags={e.tags} className="h-52 w-full sm:h-72" />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-foreground/20 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
               <h2 className="text-lg font-bold text-background sm:text-2xl">

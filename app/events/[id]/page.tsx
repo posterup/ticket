@@ -106,6 +106,7 @@ export default function PublicEventDetail({ params }: Params) {
             {/* 1. Poster */}
             <EventCover
               seed={event.id}
+              poster={event.poster}
               tags={event.tags}
               className="aspect-[16/9] rounded-2xl"
             />

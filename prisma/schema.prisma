@@ -236,6 +236,13 @@ model Event {
   requiresApproval Boolean         @default(false)
   /// TicketTemplate — how the issued ticket looks. Read and written whole by
   /// the designer, never queried into, so JSON rather than eight columns.
+  /// Cover image, as a Blob URL. Null falls back to the generated gradient.
+  ///
+  /// The create wizard has always had a poster field and it went nowhere: the
+  /// draft carried it for the preview and dropped it on submit, so every event
+  /// on the site rendered `EventCover`'s gradient no matter what the organiser
+  /// uploaded.
+  poster           String?
   ticketDesign     Json?
   waitlist         Boolean         @default(false)
   slug             String?         @unique

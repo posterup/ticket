@@ -28,6 +28,7 @@ export default function FeedPage() {
       id: e.id,
       title: e.title,
       modeLabel: d?.modeLabel ?? null,
+      poster: d?.poster ?? null,
       venue: `${e.venue.name}، ${e.venue.city}`,
       dateLabel: d?.dateLabel ?? "",
       price: d?.price ?? null,

@@ -22,6 +22,8 @@ export interface MeEvent {
   venueName: string;
   dateLabel: string;
   price: string | null;
+  /** Cover image URL, or null for the generated gradient. */
+  poster: string | null;
   tags: string[];
   org: { name: string; avatar: string; verified: boolean } | null;
 }
@@ -142,7 +144,7 @@ function Group({
             href={`/events/${e.id}`}
             className="flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-border-strong"
           >
-            <EventCover seed={e.id} tags={e.tags} className="aspect-video" />
+            <EventCover seed={e.id} poster={e.poster} tags={e.tags} className="aspect-video" />
             <div className="flex flex-1 flex-col p-5">
             {e.org ? (
               <span className="mb-3 flex items-center gap-2 text-xs text-muted">

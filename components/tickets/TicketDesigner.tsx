@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { apiFetch, ApiCallError } from "@/lib/client/api";
+import { uploadImage } from "@/lib/client/upload";
 import { blend, contrastRatio, grade, ticketInk } from "@/lib/contrast";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -42,15 +43,6 @@ const FIELD_TOGGLES: { key: keyof TicketTemplate; label: string }[] = [
   { key: "showDate", label: "نمایش تاریخ" },
   { key: "showVenue", label: "نمایش مکان" },
 ];
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
 
 const DEFAULT_TEMPLATE: TicketTemplate = {
   accent: "#2563EB",
@@ -137,6 +129,8 @@ export function TicketDesigner({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // Which field is mid-upload, so its control can say so.
+  const [uploading, setUploading] = useState<"logo" | "bgImage" | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const logoInput = useRef<HTMLInputElement>(null);
@@ -200,16 +194,26 @@ export function TicketDesigner({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setUploadError("فقط فایل تصویری مجاز است.");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setUploadError("حجم تصویر باید کمتر از ۲ مگابایت باشد.");
-      return;
-    }
     setUploadError(null);
-    patch({ [key]: await readFileAsDataUrl(file) } as Partial<TicketTemplate>);
+    setUploading(key);
+    try {
+      /**
+       * To Blob, not into the record.
+       *
+       * These were base64'd into `Event.ticketDesign`, so a logo and a
+       * background lived inside the JSONB column — read, parsed and
+       * re-serialised on every fetch of the event, and carried in the SSR
+       * payload of the public page. What is stored now is a URL.
+       */
+      const url = await uploadImage(file, "ticket-art");
+      patch({ [key]: url } as Partial<TicketTemplate>);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "بارگذاری تصویر ناموفق بود.",
+      );
+    } finally {
+      setUploading(null);
+    }
   }
 
   return (
@@ -292,15 +296,27 @@ export function TicketDesigner({
               </span>
             </label>
 
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-subtle">
-              <ImageIcon className="size-4 text-muted" aria-hidden />
-              تصویر پس‌زمینه
+            <label
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground",
+                uploading === "bgImage"
+                  ? "cursor-wait opacity-60"
+                  : "cursor-pointer hover:bg-subtle",
+              )}
+            >
+              {uploading === "bgImage" ? (
+                <Loader2 className="size-4 animate-spin text-muted" aria-hidden />
+              ) : (
+                <ImageIcon className="size-4 text-muted" aria-hidden />
+              )}
+              {uploading === "bgImage" ? "در حال بارگذاری…" : "تصویر پس‌زمینه"}
               <input
                 ref={bgInput}
                 type="file"
                 accept="image/*"
                 className="sr-only"
                 onChange={(e) => handleUpload(e, "bgImage")}
+                disabled={uploading !== null}
               />
             </label>
 
@@ -334,6 +350,7 @@ export function TicketDesigner({
                 accept="image/*"
                 className="sr-only"
                 onChange={(e) => handleUpload(e, "logo")}
+                disabled={uploading !== null}
               />
             </label>
             {template.logo ? (

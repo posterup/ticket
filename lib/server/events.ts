@@ -205,6 +205,7 @@ export async function createEvent(
       visibility: EVENT_VISIBILITY_TO_DB[input.visibility ?? "public"],
       audienceTags: input.audienceTags ?? [],
       requiresApproval: input.requiresApproval ?? false,
+      poster: input.poster ?? null,
       sessions: {
         create: input.sessions.map((s) => ({
           startAt: new Date(s.startAt),
@@ -234,7 +235,16 @@ export type EventUpdate = Partial<
     | "recurrenceSchedule"
     | "ticketDesign"
   >
->;
+> & {
+  /**
+   * `null` clears the cover; `undefined` leaves it alone.
+   *
+   * `Pick<Event, "poster">` cannot say this — the domain type has `poster?:
+   * string`, because an event either has a cover or does not, and "explicitly
+   * remove it" is a thing only an *update* can mean.
+   */
+  poster?: string | null;
+};
 
 /** ScheduleDraft equivalent of a stored {@link RecurrenceSchedule}. */
 function toScheduleDraft(spec: RecurrenceSchedule): ScheduleDraft {
@@ -343,6 +353,7 @@ export async function updateEvent(
         : undefined,
       audienceTags: patch.audienceTags,
       requiresApproval: patch.requiresApproval,
+      poster: patch.poster,
       slug: patch.slug,
       // Replaced whole, never merged: the designer always sends the complete
       // template, and a partial merge would make "clear the logo" impossible

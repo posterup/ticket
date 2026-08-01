@@ -139,6 +139,7 @@ export function toEvent(
     slug: opt(row.slug),
     // JSONB comes back as Prisma's JsonValue; the column only ever holds what
     // the zod schema let in, so this asserts rather than re-parsing per read.
+    poster: opt(row.poster),
     ticketDesign: (row.ticketDesign as TicketDesign | null) ?? undefined,
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt),

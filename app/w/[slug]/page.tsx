@@ -57,6 +57,7 @@ export default function WorkspacePage({
         ? "آنلاین"
         : [e.venue.name, e.venue.city].filter(Boolean).join("، "),
       tags: e.tags,
+      poster: e.poster ?? null,
     };
   });
 

@@ -34,6 +34,7 @@ export default function MePage() {
         dateLabel: d?.dateLabel ?? "",
         price: d?.price ?? null,
         tags: event.tags,
+        poster: event.poster ?? null,
         org: d?.org
           ? { name: d.org.name, avatar: d.org.avatar, verified: d.org.verified }
           : null,

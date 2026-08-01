@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { uploadImage } from "@/lib/client/upload";
 import { ImagePlus, Film, X, Plus } from "lucide-react";
 
 import type { MediaItem } from "@/lib/create/types";
@@ -30,15 +31,23 @@ export function MediaSection({
   onGalleryChange: (items: MediaItem[]) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   async function handlePoster(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) return setError("پوستر باید تصویر باشد.");
-    if (file.size > MAX_IMAGE) return setError("حجم پوستر باید کمتر از ۲ مگابایت باشد.");
     setError(null);
-    onPosterChange(await readAsDataUrl(file));
+    setUploading(true);
+    try {
+      // The poster is the one image a stranger sees first, and it used to be
+      // base64 in the draft — which never reached the server at all.
+      onPosterChange(await uploadImage(file, "poster"));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "بارگذاری ناموفق بود.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleGallery(e: React.ChangeEvent<HTMLInputElement>) {
@@ -90,8 +99,12 @@ export function MediaSection({
         ) : (
           <label className="flex aspect-video w-full max-w-sm cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border text-muted transition-colors hover:border-border-strong hover:text-foreground">
             <ImagePlus className="size-6" aria-hidden />
-            <span className="text-sm font-medium">بارگذاری پوستر</span>
-            <span className="text-xs text-faint">تصویر افقی، کمتر از ۲ مگابایت</span>
+            <span className="text-sm font-medium">
+              {uploading ? "در حال بارگذاری…" : "بارگذاری پوستر"}
+            </span>
+            <span className="text-xs text-faint">
+              تصویر افقی، کمتر از ۴ مگابایت
+            </span>
             <input type="file" accept="image/*" className="sr-only" onChange={handlePoster} />
           </label>
         )}

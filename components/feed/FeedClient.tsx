@@ -14,6 +14,8 @@ export interface FeedEvent {
   venue: string;
   dateLabel: string;
   price: string | null;
+  /** Cover image URL, or null for the generated gradient. */
+  poster: string | null;
   tags: string[];
   wsSlug: string;
   wsName: string;
@@ -73,6 +75,7 @@ export function FeedClient({
           <Link href={`/events/${e.id}`} className="mt-4 block">
             <EventCover
               seed={e.id}
+              poster={e.poster}
               tags={e.tags}
               className="mb-4 aspect-[16/7] rounded-lg"
             />

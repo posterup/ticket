@@ -153,6 +153,8 @@ export interface Event {
   audienceTags?: string[];
   /** When true (link events), registrations need organiser approval. */
   requiresApproval?: boolean;
+  /** Cover image URL, or absent for the generated gradient. */
+  poster?: string;
   /** When true, a sold-out event offers a waitlist instead of closing sales. */
   waitlist?: boolean;
   /** Custom public URL slug for the event page; falls back to `id`. */
@@ -205,4 +207,6 @@ export interface CreateEventInput {
   audienceTags?: string[];
   /** Registration needs organiser approval (invite-only). */
   requiresApproval?: boolean;
+  /** Cover image URL from Blob; `null` clears it on update. */
+  poster?: string | null;
 }

@@ -324,6 +324,9 @@ export function EventComposer({
         tags: draft.category ? [draft.category] : [],
         visibility: draft.visibility,
         requiresApproval: draft.requiresApproval,
+        // The wizard has always collected a poster and never sent it, so every
+        // event fell back to the generated gradient however it was designed.
+        poster: draft.poster,
         audienceTags:
           draft.visibility === "audience" ? draft.audienceTags : [],
         status: "published",

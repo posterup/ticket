@@ -47,6 +47,7 @@ export const GET = handler(async () => {
       id: event.id,
       title: event.title,
       modeLabel: modeLabel(event.mode),
+      poster: event.poster ?? null,
       city: event.venue.city,
       venueName: event.venue.name,
       dateLabel: first ? formatJalaliDate(first.startAt) : "",
