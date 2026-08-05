@@ -300,6 +300,22 @@ body::before {
   }
 }
 
+/*
+  Desktop is gated (components/DesktopGate.tsx). The overlay covers the viewport,
+  but the document behind it still scrolls, so a wheel gesture moves a page
+  nobody can see — and on a short gate that reads as the overlay itself being
+  broken.
+
+  Keyed off `:has()` rather than a plain `@media` block so the lock is tied to
+  the gate actually being in the tree: exclude a route from the gate and the
+  scroll comes back on its own, with no second place to remember.
+*/
+@media (min-width: 1024px) {
+  body:has([data-desktop-gate]) {
+    overflow: hidden;
+  }
+}
+
 /* Shimmer skeleton for loading states. */
 .shimmer {
   position: relative;

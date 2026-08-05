@@ -6,6 +6,8 @@ import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 
 import { AppShell } from "@/components/AppShell";
+import { DesktopGate } from "@/components/DesktopGate";
+import { SessionProvider } from "@/lib/client/session";
 
 export const metadata: Metadata = {
   title: "پوستر | پلتفرم برگزاری و بلیت‌فروشی تجربه و رویداد",
@@ -36,7 +38,15 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body>
-        <AppShell>{children}</AppShell>
+        {/* Above `AppShell`, because the header a page draws for itself needs
+            the same answer the shell does — one fetch, one moment. */}
+        <SessionProvider>
+          <AppShell>{children}</AppShell>
+        </SessionProvider>
+        {/* Last child, so it paints over everything without needing to know
+            what any page below it stacks. Invisible under `lg` — see the
+            component for why this is CSS and not a width listener. */}
+        <DesktopGate />
       </body>
     </html>
   );
