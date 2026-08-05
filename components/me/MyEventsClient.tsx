@@ -9,12 +9,14 @@ import {
   Users,
   BadgeCheck,
   LayoutDashboard,
+  Store,
 } from "lucide-react";
 
 import type { RsvpState } from "@/lib/rsvp";
 import { formatNumber } from "@/lib/format";
 import { EventCover } from "@/components/events/EventCover";
 import { MyTicketsSection } from "@/components/me/MyTicketsSection";
+import { useSession } from "@/lib/client/session";
 
 export interface MeEvent {
   id: string;
@@ -37,6 +39,10 @@ export function MyEventsClient({
   events: (MeEvent & { state: RsvpState })[];
   followCount: number;
 }) {
+  // Belonging to any workspace, in any role, is what opens the dashboard.
+  const { memberships } = useSession();
+  const isOrganiser = memberships.length > 0;
+
   const pick = (state: RsvpState) => events.filter((e) => e.state === state);
 
   const going = pick("going");
@@ -64,20 +70,38 @@ export function MyEventsClient({
             </span>
           </span>
         </Link>
+        {/*
+          The dashboard, or the door to it.
+
+          This was «داشبورد برگزارکننده» for everyone, and for the majority of
+          signed-in people it led to a route that answered `NOT_A_MANAGER` and
+          bounced them straight back to this page. A link that returns you to
+          where you tapped it teaches the reader the product is broken.
+
+          Membership decides which of the two it is, because owning a workspace
+          is what makes an organiser — there is no role to grant. So a visitor
+          without one is not shown a locked door, they are shown how to open it.
+        */}
         <Link
-          href="/dashboard/events"
+          href={isOrganiser ? "/dashboard/events" : "/dashboard/workspaces/new"}
           className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-border-strong"
         >
           <span className="flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-md bg-subtle text-foreground">
-              <LayoutDashboard className="size-5" aria-hidden />
+              {isOrganiser ? (
+                <LayoutDashboard className="size-5" aria-hidden />
+              ) : (
+                <Store className="size-5" aria-hidden />
+              )}
             </span>
             <span>
               <span className="block text-sm font-medium text-foreground">
-                داشبورد برگزارکننده
+                {isOrganiser ? "داشبورد برگزارکننده" : "برگزارکننده شوید"}
               </span>
               <span className="block text-xs text-muted">
-                رویدادها، بلیت‌ها و ابزار مدیریت
+                {isOrganiser
+                  ? "رویدادها، بلیت‌ها و ابزار مدیریت"
+                  : "فضای کاری بسازید و اولین رویدادتان را منتشر کنید"}
               </span>
             </span>
           </span>

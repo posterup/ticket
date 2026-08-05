@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { useApi } from "@/lib/client/api";
@@ -34,17 +34,39 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { data, error, loading, reload } = useApi<Shell>("/api/me/workspaces");
+
+  /**
+   * The one dashboard route a non-manager is allowed to reach.
+   *
+   * Creating a workspace is what makes someone an organiser — there is no role
+   * to flip — and the page that does it lived inside this layout, which turned
+   * `NOT_A_MANAGER` into a redirect to `/me`. So the only door into being an
+   * organiser was locked behind being one already, and the sole way through was
+   * `/signup`, which a person who signed in through `/login` has no route to.
+   */
+  const isOnboarding = pathname === "/dashboard/workspaces/new";
 
   useEffect(() => {
     if (!error) return;
+    if (isOnboarding) return;
     // `UNAUTHENTICATED` is handled in `apiFetch`, which clears the dead cookie
     // before navigating. Doing it here too was the bug: `router.replace` left
     // the cookie in place, so `middleware.ts` — which can only test for its
     // presence — read the visitor as signed in and bounced them off `/login`
     // right back to the dashboard.
     if (error.code === "NOT_A_MANAGER") router.replace("/me");
-  }, [error, router]);
+  }, [error, router, isOnboarding]);
+
+  /*
+    Bare, because there is no workspace yet to put in the chrome: no sidebar to
+    switch between, no active workspace for the provider to hold. The page is
+    self-contained and needs neither.
+  */
+  if (error?.code === "NOT_A_MANAGER" && isOnboarding) {
+    return <div className="min-h-[100dvh]">{children}</div>;
+  }
 
   if (!data) {
     return (
