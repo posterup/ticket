@@ -178,21 +178,41 @@ export async function requestOtp(
 
   const code = phoneFallbackCode(phone) ?? String(randomInt(100_000, 1_000_000));
 
-  // Requesting a new code invalidates any outstanding one for this number.
-  await db.$transaction([
-    db.otpCode.updateMany({
-      where: { phone, consumedAt: null },
-      data: { consumedAt: new Date() },
-    }),
-    db.otpCode.create({
+  /**
+   * Issue the new code, then invalidate every outstanding one *except* it.
+   *
+   * This was an array `$transaction([updateMany, create])`, relying on the
+   * batch running in array order so that "invalidate anything unconsumed"
+   * could not reach a row that did not exist yet. Under the `@prisma/adapter-pg`
+   * driver adapter it did reach it: every issued code came back with
+   * `consumedAt` already set — stamped ~100ms *before* its own `createdAt`,
+   * which is the `new Date()` the updateMany carried, evaluated in JS before
+   * the statements ran. The code was dead the moment it was created, so verify
+   * found nothing unconsumed and reported «کد منقضی شده است» instantly. Sign-in
+   * was impossible for everyone.
+   *
+   * Two changes, either of which alone would fix it, kept together because the
+   * cost is nothing and the failure was silent:
+   *
+   *  - an interactive transaction, which is sequential by construction rather
+   *    than by assumption about batch semantics, and
+   *  - `id: { not: issued.id }`, so the new row is excluded by identity. No
+   *    ordering guarantee is required for correctness any more.
+   */
+  await db.$transaction(async (tx) => {
+    const issued = await tx.otpCode.create({
       data: {
         phone,
         codeHash: hashCode(code),
         expiresAt: new Date(Date.now() + OTP_TTL_SEC * 1000),
         ip: ctx.ip,
       },
-    }),
-  ]);
+    });
+    await tx.otpCode.updateMany({
+      where: { phone, consumedAt: null, id: { not: issued.id } },
+      data: { consumedAt: new Date() },
+    });
+  });
 
   // Whichever operator is selected. Both need an approved template for codes,
   // so "has credentials" is not the same as "can send an OTP".
