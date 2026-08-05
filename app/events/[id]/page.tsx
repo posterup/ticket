@@ -329,6 +329,11 @@ function BuyCard({
         </span>
       );
       break;
+    case "none":
+      // A free event is a listing. `BuyBox` renders whatever node it is given,
+      // so nothing here means the box carries its sentence and no control.
+      node = null;
+      break;
   }
 
   return (

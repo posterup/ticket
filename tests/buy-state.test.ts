@@ -151,9 +151,27 @@ describe("the states that were already there", () => {
     expect(state.action.type).toBe("approval");
   });
 
-  it("still calls a free event free", () => {
+  /**
+   * A free event is a listing, not a purchase.
+   *
+   * It used to route to checkout for a «دریافت بلیت» that created an order,
+   * settled it at zero and issued a QR code. Poster does not sell these: it
+   * says what is happening and where, and the visitor turns up. So the state
+   * still reads «رایگان», and offers nothing to press.
+   */
+  it("calls a free event free and offers nothing to buy", () => {
     const state = resolveBuyState(event(), [ticket({ price: 0 })]);
-    expect(state.action.label).toBe("دریافت بلیت");
+    expect(state.badge?.label).toBe("رایگان");
+    expect(state.title).toBe("ورود آزاد");
+    expect(state.action.type).toBe("none");
+    // Nothing to press means nothing to label.
+    expect("label" in state.action).toBe(false);
+  });
+
+  it("still sends a fully paid event to checkout", () => {
+    // The `none` branch must not swallow the ordinary on-sale path.
+    const state = resolveBuyState(event(), [ticket({ price: 250_000 })]);
+    expect(state.action.type).toBe("buy");
   });
 
   /**
@@ -231,11 +249,90 @@ describe("the checkout total is honest about what it knows", () => {
   });
 
   it("blocks submission while the amount is unknown", () => {
-    expect(src).toMatch(/disabled=\{submitting \|\| !priceKnown\}/);
+    expect(src).toMatch(/disabled=\{submitting \|\| !priceKnown \|\| !hasBasket\}/);
   });
 
   it("shimmers the amount rather than printing a guess", () => {
     expect(src).toMatch(/priceKnown \? \(/);
     expect(src).toContain("<Skeleton");
+  });
+
+  /**
+   * The empty basket is a separate lie from the unknown price.
+   *
+   * `seats.every(...)` is vacuously true on `[]`, so an untouched seated
+   * checkout had a *known* total of zero: both money rows rendered «رایگان» —
+   * `formatToman(0)` says so by design — and the button read «دریافت بلیت» on
+   * a paid concert. `priceKnown` cannot catch it, because there is no unknown
+   * price to wait for when nothing is selected.
+   */
+  it("knows the difference between free and nothing selected", () => {
+    expect(src).toMatch(/const hasBasket = assigned/);
+    expect(src).toMatch(/seats\.length > 0 \|\| standing !== null/);
+  });
+
+  it("renders «—» rather than «رایگان» for an empty basket", () => {
+    // Both rows: the subtotal and the payable total.
+    expect(src).toMatch(/hasBasket \? formatToman\(subtotal\) : "—"/);
+    expect(src).toMatch(/!hasBasket \? \(\s*<dd[^>]*>—<\/dd>/);
+  });
+
+  it("names the missing step on the button instead of quoting a price", () => {
+    expect(src).toContain("ابتدا صندلی انتخاب کنید");
+    expect(src).toContain("ابتدا تعداد را مشخص کنید");
+  });
+});
+
+/**
+ * Checkout has to say what is being bought, and hand over the code before the
+ * gateway rather than after it.
+ *
+ * Source-level for the same reason as above: these are facts about the
+ * component, not about any one render.
+ */
+describe("checkout keeps the buyer oriented", () => {
+  const src = readFileSync(
+    join(process.cwd(), "components/checkout/CheckoutForm.tsx"),
+    "utf8",
+  );
+
+  it("names the event, the showing and the venue on the form itself", () => {
+    // Not only inside the post-submit success card, which is where the title
+    // used to be spent.
+    expect(src).toMatch(/<h1[^>]*>\s*\{eventTitle\}/);
+    expect(src).toMatch(/formatJalaliDate\(session\.startAt\)/);
+    expect(src).toMatch(/eventVenue,/);
+  });
+
+  it("offers a way back to the event", () => {
+    expect(src).toContain("بازگشت به رویداد");
+  });
+
+  it("shows the tracking code before leaving for the gateway", () => {
+    // The redirect moved behind a paint precisely so this can be seen.
+    expect(src).toMatch(/requestAnimationFrame/);
+    expect(src).toMatch(/\{handoff\.code\}/);
+    expect(src).not.toMatch(
+      /window\.location\.assign\(payJson\.data\.redirectUrl/,
+    );
+  });
+
+  it("remembers a started payment so Back does not duplicate it", () => {
+    expect(src).toMatch(/PENDING_KEY/);
+    expect(src).toContain("سفارش در انتظار پرداخت دارید");
+    expect(src).toMatch(/sessionStorage\.setItem\(\s*PENDING_KEY/);
+  });
+
+  it("shows the hold countdown next to the pay button", () => {
+    expect(src).toMatch(/useHoldTimer\(holdExpiresAt\)/);
+    expect(src).toMatch(/holdVisible/);
+  });
+
+  it("no longer promises the seats are held until payment completes", () => {
+    // They are not: the seat hold lapses after twenty minutes, and then the
+    // order does after fifteen more. Matching the tail of the old sentence
+    // rather than «تا پایان پرداخت», which the comment above the replacement
+    // still quotes on purpose.
+    expect(src).not.toContain("برای کس دیگری قابل انتخاب نیستند");
   });
 });

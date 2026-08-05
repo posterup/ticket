@@ -7,6 +7,7 @@
  * delegates the decision here.
  */
 
+import { MIN_AMOUNT_TOMAN } from "@/lib/server/payments/zarinpal-codes";
 import type { DiscountCode, DiscountValidation, Money } from "@/types";
 
 /** Codes are stored and compared upper-case and trimmed. */
@@ -14,7 +15,28 @@ export function normalizeCode(raw: string): string {
   return raw.trim().toUpperCase();
 }
 
-/** The Toman amount a valid code removes from `subtotal` (never below zero). */
+/**
+ * The Toman amount a valid code removes from `subtotal`.
+ *
+ * **A discount never takes an order to zero.** The clamp used to be
+ * `Math.min(raw, subtotal)`, so a `percent` code of 100 — or any fixed-amount
+ * code worth at least the basket — landed on exactly nothing to pay. That is
+ * not a discount, it is a giveaway issued by whoever typed the code, and the
+ * order then skipped the gateway entirely and settled itself (`createOrder`
+ * treats `total === 0` as already paid).
+ *
+ * The floor is the gateway's own: Zarinpal rejects anything under
+ * {@link MIN_AMOUNT_TOMAN}, so leaving less than that payable would produce an
+ * order that cannot be paid — a worse outcome than a slightly smaller discount.
+ *
+ * A subtotal already below the floor cannot be helped by clamping; the discount
+ * comes out as zero and the gateway refuses the order on its own terms rather
+ * than this inventing a second rule about it.
+ *
+ * Free tickets do not come through here at all: a free event has no checkout,
+ * and a mixed event's free tier reaches `total === 0` by having no price, not
+ * by being discounted.
+ */
 export function computeDiscountAmount(
   discount: DiscountCode,
   subtotal: Money,
@@ -23,7 +45,8 @@ export function computeDiscountAmount(
     discount.kind === "percent"
       ? Math.floor((subtotal * discount.value) / 100)
       : discount.value;
-  return Math.max(0, Math.min(raw, subtotal));
+  const mostItMayRemove = subtotal - MIN_AMOUNT_TOMAN;
+  return Math.max(0, Math.min(raw, mostItMayRemove));
 }
 
 /**
