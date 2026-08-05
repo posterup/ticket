@@ -35,6 +35,8 @@ function messageOf(json: unknown, fallback: string): string {
  */
 export function PhoneOtpForm({ onVerified, submitLabel = "ورود" }: Props) {
   const [step, setStep] = useState<"phone" | "code">("phone");
+  /** How to get the code, when no SMS was sent (see `OTP_PHONE_FALLBACK`). */
+  const [hint, setHint] = useState<string>();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -72,6 +74,7 @@ export function PhoneOtpForm({ onVerified, submitLabel = "ورود" }: Props) {
       // Outside production the gateway is optional and the code comes back in
       // the response, so development needs no SMS credentials.
       if (json.data?.devCode) setCode(json.data.devCode);
+      setHint(json.data?.hint);
     } catch {
       setError("ارتباط برقرار نشد. دوباره تلاش کنید.");
     } finally {
@@ -113,7 +116,7 @@ export function PhoneOtpForm({ onVerified, submitLabel = "ورود" }: Props) {
       <Field
         id="phone"
         label="شماره موبایل"
-        hint={step === "code" ? undefined : "کد ورود برایتان پیامک می‌شود."}
+        hint={step === "code" ? undefined : hint ?? "کد ورود برایتان پیامک می‌شود."}
       >
         <Input
           id="phone"
@@ -127,7 +130,7 @@ export function PhoneOtpForm({ onVerified, submitLabel = "ورود" }: Props) {
       </Field>
 
       {step === "code" ? (
-        <Field id="code" label="کد تأیید" error={error}>
+        <Field id="code" label="کد تأیید" error={error} hint={hint}>
           <Input
             id="code"
             ref={codeRef}

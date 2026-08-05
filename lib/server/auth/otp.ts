@@ -17,6 +17,37 @@ import { normalizeMobile, smsGateway } from "../sms";
 
 export const OTP_TTL_SEC = 120;
 export const OTP_RESEND_SEC = 60;
+
+/** Digits in a code, whether random or derived. */
+const OTP_LENGTH = 6;
+
+/**
+ * Sign-in with no SMS operator: the code is the tail of the caller's own number.
+ *
+ * **This is not a second factor.** Anyone who knows a phone number can sign in
+ * as its owner, because the code is a function of the number and nothing else.
+ * It exists so a pre-launch environment with no messaging contract is usable at
+ * all, and it is gated behind its own variable so that it cannot arrive in a
+ * launched product by inheritance — turning it on is a sentence someone has to
+ * type, and `OTP_PHONE_FALLBACK` is a grep away from being found again.
+ *
+ * The flag alone is not enough: this only applies when no operator is
+ * configured. Once Kavenegar or sms.ir has credentials and an approved
+ * template, real codes are sent and this is dead regardless of the variable —
+ * so a launch that adds messaging closes the hole even if nobody remembers to
+ * remove the flag.
+ *
+ * Everything else about the code is unchanged, and deliberately so: it is
+ * still hashed at rest, still expires in {@link OTP_TTL_SEC}, still single-use,
+ * still rate-limited per phone and per IP. The predictability is the only
+ * property given up, rather than the whole mechanism being bypassed.
+ */
+function phoneFallbackCode(phone: string): string | undefined {
+  if (process.env.OTP_PHONE_FALLBACK !== "1") return undefined;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < OTP_LENGTH) return undefined;
+  return digits.slice(-OTP_LENGTH);
+}
 const MAX_ATTEMPTS = 5;
 
 const PER_PHONE_HOURLY = 5;
@@ -30,6 +61,15 @@ export type OtpRequestResult =
       resendAfterSec: number;
       /** Present only outside production, so development needs no SMS gateway. */
       devCode?: string;
+      /**
+       * How to obtain the code, when it did not arrive by SMS.
+       *
+       * Set by the `OTP_PHONE_FALLBACK` mode, where no message is sent and the
+       * code is derived from the caller's own number. Rendered under the code
+       * field, because otherwise the reader waits for a text that is never
+       * coming.
+       */
+      hint?: string;
     }
   | {
       ok: false;
@@ -124,7 +164,7 @@ export async function requestOtp(
     };
   }
 
-  const code = String(randomInt(100_000, 1_000_000));
+  const code = phoneFallbackCode(phone) ?? String(randomInt(100_000, 1_000_000));
 
   // Requesting a new code invalidates any outstanding one for this number.
   await db.$transaction([
@@ -156,6 +196,26 @@ export async function requestOtp(
   };
 
   if (!configured) {
+    /**
+     * No operator, but the deployment has opted into the phone-tail code.
+     *
+     * Answered as a success with a hint rather than silently: the reader has to
+     * be told what to type, and the code is derivable from the number they just
+     * entered, so saying it out loud costs nothing that the scheme has not
+     * already given away. The warning is logged on every issue so the operator
+     * of a live site cannot fail to notice which mode it is in.
+     */
+    if (phoneFallbackCode(phone)) {
+      console.warn(
+        `[otp] INSECURE MODE — code is the last ${OTP_LENGTH} digits of the caller's own number. ` +
+          `Set OTP_PHONE_FALLBACK=0 and configure an SMS operator before launch.`,
+      );
+      return {
+        ...base,
+        hint: `کد ورود، ${OTP_LENGTH} رقم آخر شمارهٔ خودتان است.`,
+      };
+    }
+
     if (process.env.NODE_ENV === "production") {
       return {
         ok: false,

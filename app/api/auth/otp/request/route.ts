@@ -28,5 +28,8 @@ export const POST = handler(async (request: Request) => {
     resendAfterSec: result.resendAfterSec,
     // Only outside production, so development needs no SMS credentials.
     ...(result.devCode ? { devCode: result.devCode } : {}),
+    // How to obtain the code when no SMS was sent. Says nothing the caller
+    // could not already derive from the number they just typed.
+    ...(result.hint ? { hint: result.hint } : {}),
   });
 });
