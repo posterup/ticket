@@ -58,12 +58,15 @@ export async function createWorkspace(input: {
   userId: string;
   name: string;
   type: WorkspaceType;
+  /** Optional public blurb. The column existed; nothing ever wrote to it. */
+  bio?: string;
 }): Promise<Workspace> {
   const row = await db.workspace.create({
     data: {
       slug: await uniqueSlug(slugify(input.name)),
       name: input.name,
       type: WORKSPACE_TYPE_TO_DB[input.type],
+      ...(input.bio ? { bio: input.bio } : {}),
       avatar: initials(input.name) || "؟",
       members: { create: { userId: input.userId, role: "OWNER" } },
     },
