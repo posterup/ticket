@@ -18,6 +18,18 @@ const MAIN_ROUTES = new Set([
   "/dashboard/profile", // profile
   "/dashboard/notifications", // notifications
   "/tickets/create", // create
+  /*
+    The attendee tabs, which had no top-level routes of their own.
+
+    Every one of these fell to the second-level branch below — a back button and
+    no navigation — so the wallet was structurally a sub-page of a dashboard its
+    reader could not open. `AppBottomNav` now serves attendees their own four
+    destinations, and these are those destinations: a tab bar whose tabs are all
+    second-level is a tab bar that hides itself the moment it is used.
+  */
+  "/me", // me
+  "/me/tickets", // my tickets
+  "/feed", // following
 ]);
 
 /**
