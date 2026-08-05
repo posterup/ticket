@@ -103,7 +103,7 @@ export function MediaSection({
               {uploading ? "در حال بارگذاری…" : "بارگذاری پوستر"}
             </span>
             <span className="text-xs text-faint">
-              تصویر افقی، کمتر از ۴ مگابایت
+              تصویر افقی — به‌طور خودکار کوچک می‌شود
             </span>
             <input type="file" accept="image/*" className="sr-only" onChange={handlePoster} />
           </label>

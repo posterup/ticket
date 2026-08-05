@@ -12,7 +12,11 @@ import { describe, it, expect } from "vitest";
 
 import {
   IMAGE_TYPES,
+  MAX_DIMENSION,
   MAX_IMAGE_BYTES,
+  UPLOAD_PREFIX,
+  type UploadKind,
+  fitWithin,
   isStoredImage,
   isUploadKind,
   rejectImage,
@@ -87,6 +91,38 @@ describe("rejectImage", () => {
 
   it("answers in Persian, because the answer is shown to a person", () => {
     expect(rejectImage({ type: "application/pdf", size: 1 })).toMatch(/[؀-ۿ]/);
+  });
+});
+
+describe("fitWithin", () => {
+  it("leaves an image that already fits completely alone", () => {
+    // The caller reads this as "skip the re-encode", so an off-by-one here
+    // would round-trip every small logo through a lossy codec for nothing.
+    expect(fitWithin(800, 600, 1600)).toEqual({ width: 800, height: 600 });
+    expect(fitWithin(1600, 1600, 1600)).toEqual({ width: 1600, height: 1600 });
+  });
+
+  it("scales the longest edge to the cap and keeps the ratio", () => {
+    expect(fitWithin(4000, 3000, 1600)).toEqual({ width: 1600, height: 1200 });
+    // Portrait: the *height* is the long edge, and it is the one that lands on
+    // the cap. Capping width instead would leave a 4000px-tall image.
+    expect(fitWithin(3000, 4000, 1600)).toEqual({ width: 1200, height: 1600 });
+  });
+
+  it("never produces a zero edge", () => {
+    // A 4000×3 banner scales its height to 0.0012. Rounding that to 0 gives a
+    // canvas of zero area and therefore a blank image, not a thin one.
+    const { width, height } = fitWithin(4000, 3, 1600);
+    expect(width).toBe(1600);
+    expect(height).toBe(1);
+  });
+
+  it("caps each kind at the size it is actually rendered at", () => {
+    // Guards against a kind being added without a limit, which would be
+    // `undefined` and make every dimension NaN.
+    for (const kind of Object.keys(UPLOAD_PREFIX) as UploadKind[]) {
+      expect(MAX_DIMENSION[kind]).toBeGreaterThan(0);
+    }
   });
 });
 
