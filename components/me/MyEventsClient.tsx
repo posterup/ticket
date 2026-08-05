@@ -14,6 +14,7 @@ import {
 import type { RsvpState } from "@/lib/rsvp";
 import { formatNumber } from "@/lib/format";
 import { EventCover } from "@/components/events/EventCover";
+import { MyTicketsSection } from "@/components/me/MyTicketsSection";
 
 export interface MeEvent {
   id: string;
@@ -40,7 +41,6 @@ export function MyEventsClient({
 
   const going = pick("going");
   const interested = pick("interested");
-  const empty = going.length === 0 && interested.length === 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -84,39 +84,31 @@ export function MyEventsClient({
         </Link>
       </div>
 
-      {empty ? (
-        <div className="rounded-lg border border-dashed border-border p-10 text-center">
-          <p className="text-sm font-medium text-foreground">
-            هنوز رویدادی را نشان نکرده‌اید.
-          </p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
-            روی رویدادها «می‌روم» یا «علاقه‌مندم» را بزنید تا اینجا جمع شوند.
-          </p>
-          <Link
-            href="/events"
-            className="mt-4 inline-block text-sm font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            کشف رویدادها
-          </Link>
-        </div>
-      ) : (
-        <>
-          {going.length > 0 ? (
-            <Group
-              title="می‌روم"
-              icon={<Check className="size-4 text-foreground" aria-hidden />}
-              events={going}
-            />
-          ) : null}
-          {interested.length > 0 ? (
-            <Group
-              title="علاقه‌مندم"
-              icon={<Star className="size-4 text-foreground" aria-hidden />}
-              events={interested}
-            />
-          ) : null}
-        </>
-      )}
+      {/*
+        The tickets a buyer holds, ahead of the events they merely marked.
+        This slot used to be an empty box explaining how bookmarking works —
+        instructions for a feature nobody opens this page wanting, standing
+        where the thing they paid for should be. When there are no bookmarks
+        the section below simply renders nothing; the tickets area carries the
+        page on its own, and it has an empty state of its own that says
+        something.
+      */}
+      <MyTicketsSection />
+
+      {going.length > 0 ? (
+        <Group
+          title="می‌روم"
+          icon={<Check className="size-4 text-foreground" aria-hidden />}
+          events={going}
+        />
+      ) : null}
+      {interested.length > 0 ? (
+        <Group
+          title="علاقه‌مندم"
+          icon={<Star className="size-4 text-foreground" aria-hidden />}
+          events={interested}
+        />
+      ) : null}
     </div>
   );
 }
