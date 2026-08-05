@@ -52,7 +52,7 @@ export function FeaturedEvents() {
               href={`/events/${event.id}`}
               className="flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-border-strong"
             >
-              <EventCover seed={event.id} tags={event.tags} className="aspect-video" />
+              <EventCover seed={event.id} poster={event.poster} tags={event.tags} className="aspect-video" />
               <div className="flex flex-1 flex-col p-5">
               {organizer ? (
                 <span className="mb-3 flex items-center gap-2 text-xs text-muted">
@@ -63,7 +63,7 @@ export function FeaturedEvents() {
                     {organizer.name}
                     {organizer.verified ? (
                       <BadgeCheck
-                        className="size-3.5 shrink-0 text-accent"
+                        className="size-3.5 shrink-0 text-accent-text"
                         aria-label="تأییدشده"
                       />
                     ) : null}

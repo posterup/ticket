@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, afterAll, beforeAll } from "vitest";
 
 import { POST as CREATE_ORDER } from "@/app/api/orders/route";
 import { GET as MY_TICKETS } from "@/app/api/me/tickets/route";
@@ -8,12 +8,37 @@ import type { IssuedTicket, Order } from "@/types";
 import {
   data,
   describeApi,
+  dropTrackedEvents,
   errorCode,
   parse,
   req,
   signInAs,
   signOut,
+  trackEvent,
+  trackVenue,
 } from "./helpers";
+
+// Remove the throwaway events, venues and orders this suite creates.
+afterAll(async () => {
+  await dropTrackedEvents();
+  if (!process.env.DATABASE_URL) return;
+  // A few cases order against the *seeded* concert rather than a throwaway
+  // event, so the tracked-event teardown never sees them.
+  const { db } = await import("@/lib/server/db");
+  const { restoreInventory } = await import("./helpers");
+  const strays = await db.order.findMany({
+    where: { buyerPhone: "09121234567" },
+    select: { id: true },
+  });
+  const ids = strays.map((o) => o.id);
+  if (!ids.length) return;
+  await restoreInventory(ids);
+  await db.ticket.deleteMany({ where: { orderId: { in: ids } } });
+  await db.orderItem.deleteMany({ where: { orderId: { in: ids } } });
+  await db.payment.deleteMany({ where: { orderId: { in: ids } } });
+  await db.order.deleteMany({ where: { id: { in: ids } } });
+  await db.attendee.deleteMany({ where: { phone: "09121234567" } });
+});
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 
@@ -28,6 +53,7 @@ async function makeEvent(opts: {
   const venue = await db.venue.create({
     data: { name: "تالار", city: "تهران", address: "نشانی", capacity: 100 },
   });
+  trackVenue(venue.id);
   const event = await db.event.create({
     data: {
       workspaceId: workspace.id,
@@ -55,7 +81,7 @@ async function makeEvent(opts: {
       category: "GENERAL",
     },
   });
-  return { eventId: event.id, ticketTypeId: type.id };
+  return { eventId: trackEvent(event.id), ticketTypeId: type.id };
 }
 
 function orderBody(

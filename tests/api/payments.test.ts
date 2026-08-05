@@ -1,11 +1,25 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, afterAll, beforeAll } from "vitest";
 
 import { POST as CREATE_ORDER } from "@/app/api/orders/route";
 import { POST as PAY } from "@/app/api/orders/[id]/pay/route";
 import { GET as CALLBACK } from "@/app/api/payments/callback/route";
 import type { Order } from "@/types";
 
-import { ctx, data, describeApi, errorCode, parse, req, signOut } from "./helpers";
+import {
+  ctx,
+  data,
+  describeApi,
+  dropTrackedEvents,
+  errorCode,
+  parse,
+  req,
+  signOut,
+  trackEvent,
+  trackVenue,
+} from "./helpers";
+
+// Remove the throwaway events, venues and orders this suite creates.
+afterAll(dropTrackedEvents);
 
 const BUYER_PHONE = "09121234567";
 
@@ -16,6 +30,7 @@ async function paidEvent(capacity = 5) {
   const venue = await db.venue.create({
     data: { name: "تالار", city: "تهران", address: "نشانی", capacity: 100 },
   });
+  trackVenue(venue.id);
   const event = await db.event.create({
     data: {
       workspaceId: workspace.id,
@@ -37,7 +52,7 @@ async function paidEvent(capacity = 5) {
       category: "GENERAL",
     },
   });
-  return { eventId: event.id, ticketTypeId: type.id };
+  return { eventId: trackEvent(event.id), ticketTypeId: type.id };
 }
 
 async function placeOrder(quantity = 1): Promise<Order> {
@@ -72,7 +87,7 @@ describeApi("POST /api/orders/:id/pay", () => {
   it("returns somewhere to send the buyer", async () => {
     const order = await placeOrder();
     const parsed = await parse<{ redirectUrl: string; authority: string }>(
-      await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })),
+      await PAY(req("POST", "/", { phone: BUYER_PHONE }), ctx({ id: order.id })),
     );
     expect(parsed.status).toBe(200);
 
@@ -95,13 +110,13 @@ describeApi("POST /api/orders/:id/pay", () => {
     expect(errorCode(parsed)).toBe("FORBIDDEN");
 
     const wrongPhone = await parse(
-      await PAY(req("POST", "/?phone=09120000000"), ctx({ id: order.id })),
+      await PAY(req("POST", "/", { phone: "09120000000" }), ctx({ id: order.id })),
     );
     expect(wrongPhone.status).toBe(403);
   });
 
   it("404s an unknown order", async () => {
-    const parsed = await parse(await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: "nope" })));
+    const parsed = await parse(await PAY(req("POST", "/", { phone: BUYER_PHONE }), ctx({ id: "nope" })));
     expect(parsed.status).toBe(404);
   });
 
@@ -110,7 +125,7 @@ describeApi("POST /api/orders/:id/pay", () => {
     const { markOrderPaid } = await import("@/lib/server/orders");
     await markOrderPaid(order.id, { provider: "mock" });
 
-    const parsed = await parse(await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })));
+    const parsed = await parse(await PAY(req("POST", "/", { phone: BUYER_PHONE }), ctx({ id: order.id })));
     expect(parsed.status).toBe(409);
     expect(errorCode(parsed)).toBe("CONFLICT");
   });
@@ -123,7 +138,7 @@ describeApi("POST /api/orders/:id/pay", () => {
       data: { expiresAt: new Date(Date.now() - 1000) },
     });
 
-    const parsed = await parse(await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })));
+    const parsed = await parse(await PAY(req("POST", "/", { phone: BUYER_PHONE }), ctx({ id: order.id })));
     expect(parsed.status).toBe(409);
   });
 });
@@ -133,7 +148,7 @@ describeApi("GET /api/payments/callback", () => {
     const order = await placeOrder(2);
     const { redirectUrl } = data(
       await parse<{ redirectUrl: string }>(
-        await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })),
+        await PAY(req("POST", "/", { phone: BUYER_PHONE }), ctx({ id: order.id })),
       ),
     );
 
@@ -159,7 +174,7 @@ describeApi("GET /api/payments/callback", () => {
     const order = await placeOrder(2);
     const { redirectUrl } = data(
       await parse<{ redirectUrl: string }>(
-        await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })),
+        await PAY(req("POST", "/", { phone: BUYER_PHONE }), ctx({ id: order.id })),
       ),
     );
 
@@ -175,7 +190,7 @@ describeApi("GET /api/payments/callback", () => {
     const order = await placeOrder(2);
     const { redirectUrl } = data(
       await parse<{ redirectUrl: string }>(
-        await PAY(req("POST", `/?phone=${BUYER_PHONE}`), ctx({ id: order.id })),
+        await PAY(req("POST", "/", { phone: BUYER_PHONE }), ctx({ id: order.id })),
       ),
     );
     // Zarinpal signals an abandoned or rejected payment with Status=NOK.
@@ -205,7 +220,7 @@ describeApi("GET /api/payments/callback", () => {
         // `?fail=1` makes the mock refuse at verify time, which is the case
         // where the buyer did return but the money did not.
         await PAY(
-          req("POST", `/?fail=1&phone=${BUYER_PHONE}`),
+          req("POST", "/?fail=1", { phone: BUYER_PHONE }),
           ctx({ id: order.id }),
         ),
       ),

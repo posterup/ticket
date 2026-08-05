@@ -14,7 +14,9 @@ import { SESSION_COOKIE } from "@/lib/session-cookie";
  */
 // Personal surfaces: they show the viewer their own data, so an anonymous
 // visitor gets the sign-in page rather than a convincingly empty one.
-const PROTECTED = ["/dashboard", "/me", "/feed", "/tickets/create"];
+// `/admin` is internal staff only; the edge check is cookie presence, and
+// `requirePlatformAdmin()` on every /api/admin route is what actually gates it.
+const PROTECTED = ["/dashboard", "/me", "/feed", "/tickets/create", "/admin"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export function middleware(request: NextRequest) {
@@ -46,6 +48,8 @@ export const config = {
     "/feed",
     "/feed/:path*",
     "/tickets/create/:path*",
+    "/admin",
+    "/admin/:path*",
     "/login",
     "/signup",
   ],

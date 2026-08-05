@@ -46,7 +46,7 @@ export function MobileNavDrawer() {
         onClick={() => setOpen(true)}
         aria-label="باز کردن منو"
         aria-expanded={open}
-        className="grid size-10 shrink-0 place-items-center rounded-md border border-border text-foreground outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40 lg:hidden"
+        className="grid size-10 shrink-0 place-items-center rounded-md border border-border text-foreground outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
       >
         <Menu className="size-5" aria-hidden />
       </button>
@@ -75,7 +75,7 @@ export function MobileNavDrawer() {
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="بستن منو"
-                  className="grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+                  className="grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-subtle hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <X className="size-5" aria-hidden />
                 </button>

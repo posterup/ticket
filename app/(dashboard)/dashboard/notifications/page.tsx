@@ -1,10 +1,18 @@
-import type { Metadata } from "next";
+"use client";
+
 import { Bell } from "lucide-react";
 
-export const metadata: Metadata = { title: "اعلان‌ها | پوستر" };
+import { PendingInvites } from "@/components/dashboard/PendingInvites";
 
+/**
+ * What needs the organiser's attention.
+ *
+ * Collaboration invites are the only thing that genuinely waits on a decision
+ * today, so they are the page rather than one card on it. The previous version
+ * was a hardcoded empty state that reported «اعلانی ندارید» even when an
+ * invitation was sitting unanswered.
+ */
 export default function NotificationsPage() {
-
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
       <div>
@@ -12,19 +20,18 @@ export default function NotificationsPage() {
           اعلان‌ها
         </h1>
         <p className="mt-1 text-sm text-muted">
-          به‌روزرسانی رویدادها، فروش بلیت و فعالیت مخاطبان.
+          دعوت‌های همکاری و کارهایی که منتظر پاسخ شما هستند.
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border p-10 text-center">
-        <span className="grid size-12 place-items-center rounded-full bg-subtle text-muted">
-          <Bell className="size-6" aria-hidden />
+      <PendingInvites />
+
+      <div className="flex items-start gap-2 rounded-lg bg-subtle px-3 py-2 text-xs text-muted">
+        <Bell className="mt-0.5 size-3.5 shrink-0 text-faint" aria-hidden />
+        <span>
+          اعلان فروش بلیت و فعالیت مخاطبان هنوز فعال نیست؛ فعلاً از پیامک و
+          داشبورد رویداد پیگیری کنید.
         </span>
-        <p className="text-sm font-medium text-foreground">اعلانی ندارید</p>
-        <p className="max-w-xs text-sm text-muted">
-          وقتی رویدادی بلیت بفروشد یا مخاطبی فعالیتی داشته باشد، این‌جا مطلع
-          می‌شوید.
-        </p>
       </div>
     </div>
   );

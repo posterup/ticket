@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Tag, Plus, Check, Percent, Coins, Infinity as InfinityIcon } from "lucide-react";
+import { Tag, Plus, Percent, Coins, Infinity as InfinityIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -162,7 +162,7 @@ export function EventDiscounts({ eventId, sessions, discounts }: Props) {
                   aria-pressed={kind === k.value}
                   onClick={() => setKind(k.value)}
                   className={cn(
-                    "inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                    "inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                     kind === k.value
                       ? "border-foreground bg-subtle text-foreground"
                       : "border-border text-muted hover:border-border-strong",

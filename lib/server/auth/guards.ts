@@ -105,6 +105,23 @@ export async function requireManager(): Promise<{
   return { user, memberships };
 }
 
+/**
+ * Internal staff only — the venue designer and anything else under `/admin`.
+ *
+ * Venues are not customer-authored: our operations team designs each one once
+ * and organisers reuse the template. `User.platformAdmin` is not settable
+ * through any API, so this cannot be escalated into.
+ *
+ * @throws HttpError 401, or 403 `FORBIDDEN`.
+ */
+export async function requirePlatformAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!user.platformAdmin) {
+    throw new HttpError(403, "FORBIDDEN", "این بخش ویژه تیم پوستر است.");
+  }
+  return user;
+}
+
 /** @throws HttpError 401 / 403. */
 export async function requireWorkspaceAccess(
   workspaceId: string,
@@ -127,6 +144,42 @@ function isPubliclyVisible(event: Event): boolean {
     event.status === "published" &&
     (event.visibility === "public" || event.visibility === "link")
   );
+}
+
+/**
+ * Whether a signed-in viewer is in an `audience` event's target segment.
+ *
+ * The organiser picks CRM tags; a viewer qualifies when the workspace's contact
+ * list holds their phone against at least one of those tags. Until now the tags
+ * were stored and never read, so choosing «مخاطبان هدف» quietly published the
+ * event to nobody — the control promised targeting and delivered privacy.
+ *
+ * Matched on phone rather than `Attendee.userId`, because that link is only set
+ * when a contact happens to already have an account. The phone is what an
+ * organiser actually imports, and it is unique per user.
+ *
+ * Fails closed on an empty tag list: "audience, targeting nothing" is a
+ * misconfiguration, and guessing that it means "everyone" would be the one
+ * mistake with real consequences.
+ */
+async function inTargetAudience(
+  event: Event,
+  user: SessionUser,
+): Promise<boolean> {
+  if (event.status !== "published" || event.visibility !== "audience") {
+    return false;
+  }
+  if (!event.audienceTags?.length) return false;
+
+  const match = await db.attendee.findFirst({
+    where: {
+      workspaceId: event.workspaceId,
+      phone: user.phone,
+      tags: { some: { tag: { label: { in: event.audienceTags } } } },
+    },
+    select: { id: true },
+  });
+  return match !== null;
 }
 
 /**
@@ -177,7 +230,9 @@ export async function resolveEventGrant(
     collaboratorRole: collaborator
       ? (COLLAB_ROLE_FROM_DB[collaborator.role] as EventCollabRole)
       : null,
-    publiclyVisible: isPubliclyVisible(event),
+    // A targeted viewer reads the event exactly as a public one would.
+    publiclyVisible:
+      isPubliclyVisible(event) || (await inTargetAudience(event, user)),
   });
   return { ...base, ...grant };
 }

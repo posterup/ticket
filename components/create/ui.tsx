@@ -29,7 +29,7 @@ export function Stepper({
               aria-current={active ? "step" : undefined}
               disabled={i > current}
               className={cn(
-                "flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-start outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                "flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-start outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 i > current ? "cursor-default" : "cursor-pointer",
               )}
             >
@@ -162,7 +162,7 @@ export function Toggle({
         aria-label={label}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
           checked ? "bg-foreground" : "bg-border",
         )}
       >

@@ -30,7 +30,9 @@ export const GET = handler(async (_r: Request, { params }: Context) => {
   // discount codes to the public. This is the manage-event page.
   const { grant } = await requireEventAccess(id, "event:edit");
 
-  const event = await getEventById(id);
+  // Revealed: this endpoint already requires `event:edit`, and the venue form
+  // below it has to render the address it is about to change.
+  const event = await getEventById(id, { reveal: true });
   if (!event) throw notFound("رویداد یافت نشد.");
 
   const sessions = event.sessions.map((s) => ({

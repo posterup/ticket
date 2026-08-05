@@ -39,6 +39,14 @@ export const GET = handler(async (_r: Request, { params }: Context) => {
     organizer,
     collaborators,
     signedIn: viewer !== null,
+    /**
+     * The viewer's own contact details, so checkout and the join/waitlist
+     * forms can prefill instead of asking a signed-in customer to retype what
+     * we already know. Their own data only — never another user's.
+     */
+    viewer: viewer
+      ? { fullName: viewer.fullName ?? "", phone: viewer.phone }
+      : undefined,
     viewerState: viewer
       ? await getViewerState(viewer.id, event.id)
       : { bookmark: null, notify: false },

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeftRight, Check, ChevronLeft, Plus } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import type { Workspace } from "@/types";
 
 // Shared with WorkspaceSwitcher so the active workspace stays in sync app-wide.
@@ -74,7 +73,7 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
           onClick={() => setOpen((o) => !o)}
           aria-haspopup="menu"
           aria-expanded={open}
-          className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-subtle px-3 py-2.5 text-start outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-subtle px-3 py-2.5 text-start outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeftRight className="size-4 shrink-0 text-muted" aria-hidden />
           <span className="flex-1 text-sm font-medium text-foreground">

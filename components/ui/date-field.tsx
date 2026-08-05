@@ -55,8 +55,8 @@ export function DateField({ id, value, onChange, invalid }: DateFieldProps) {
           aria-invalid={invalid}
           className={cn(
             "flex h-12 w-full items-center justify-between gap-2 rounded-md border bg-card px-3.5 text-start text-sm outline-none transition-colors",
-            "hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15",
-            invalid ? "border-danger" : "border-border",
+            "hover:border-foreground/50 focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15",
+            invalid ? "border-danger" : "border-field-border",
           )}
         >
           <span className={displayValue ? "text-foreground" : "text-faint"}>

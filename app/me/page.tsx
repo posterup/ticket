@@ -5,6 +5,7 @@ import { AsyncState } from "@/components/ui/async-state";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { MyEventsClient, type MeEvent } from "@/components/me/MyEventsClient";
+import { MeSkeleton } from "@/components/skeletons/MeSkeleton";
 import type { DiscoverEvent } from "@/components/events/EventsExplorer";
 import type { RsvpState } from "@/lib/rsvp";
 import type { Event, Workspace } from "@/types";
@@ -34,6 +35,7 @@ export default function MePage() {
         dateLabel: d?.dateLabel ?? "",
         price: d?.price ?? null,
         tags: event.tags,
+        poster: event.poster ?? null,
         org: d?.org
           ? { name: d.org.name, avatar: d.org.avatar, verified: d.org.verified }
           : null,
@@ -65,6 +67,7 @@ export default function MePage() {
             loading={bookmarks.loading}
             error={bookmarks.error}
             onRetry={bookmarks.reload}
+            placeholder={<MeSkeleton />}
           />
         )}
       </main>

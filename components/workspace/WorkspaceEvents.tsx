@@ -14,6 +14,8 @@ export interface WsEvent {
   dateLabel: string;
   place: string;
   tags: string[];
+  /** Cover image URL, or null for the generated gradient. */
+  poster: string | null;
 }
 
 function monthLabel(iso: string): string {
@@ -96,6 +98,7 @@ function EventRow({ e }: { e: WsEvent }) {
     >
         <EventCover
           seed={e.id}
+          poster={e.poster}
           tags={e.tags}
           className="size-20 shrink-0 rounded-lg sm:size-24"
         />

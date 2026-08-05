@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, beforeAll, afterAll } from "vitest";
 
 import { GET, POST } from "@/app/api/discounts/route";
 import { POST as VALIDATE } from "@/app/api/discounts/validate/route";
@@ -8,6 +8,8 @@ import { data, errorCode, parse, req , describeApi , signInAsOwner } from "./hel
 
 const SEED_EVENT = "3f1a6c2e-0001-4a10-9b21-1a2b3c4d5e01";
 const OTHER_EVENT = "3f1a6c2e-0002-4a10-9b21-1a2b3c4d5e02";
+/** A second event in the *same* workspace as the seeded codes. */
+const SIBLING_EVENT = "3f1a6c2e-0015-4a10-9b21-1a2b3c4d5e15";
 
 /** Codes these tests create; cleared up front so reruns start clean. */
 const CREATED_CODES = ["LOWER1", "DUPE1", "PCT101", "FIXED1", "ZERO1", "TESTCODE"];
@@ -61,8 +63,22 @@ describeApi("GET /api/discounts", () => {
     await back();
   });
 
-  it("scoping by event keeps org-wide codes", async () => {
-    // OTHER_EVENT belongs to negar-karimi, so read it as that owner.
+  it("scoping by event keeps the workspace's own org-wide codes", async () => {
+    // A sibling event in the *same* workspace as the codes. This used to read
+    // OTHER_EVENT — which the comment above says belongs to negar-karimi — and
+    // expect to see WELCOME10, a code owned by a different workspace. It was
+    // asserting a cross-tenant leak.
+    const codes = data(
+      await parse<DiscountCode[]>(
+        await GET(req("GET", `/api/discounts?eventId=${SIBLING_EVENT}`)),
+      ),
+    );
+    // WELCOME10 is org-wide (eventId null); EARLY belongs to the concert.
+    expect(codes.map((c) => c.code)).toContain("WELCOME10");
+    expect(codes.map((c) => c.code)).not.toContain("EARLY");
+  });
+
+  it("hides one workspace's org-wide codes from another", async () => {
     const { signInAs } = await import("./helpers");
     await signInAs("09120000002");
     const codes = data(
@@ -71,10 +87,25 @@ describeApi("GET /api/discounts", () => {
       ),
     );
     await signInAsOwner();
-    // WELCOME10 is org-wide (eventId null); EARLY belongs to the concert.
-    expect(codes.map((c) => c.code)).toContain("WELCOME10");
-    expect(codes.map((c) => c.code)).not.toContain("EARLY");
+    // Code strings are usable secrets; redemption counts are competitive
+    // intelligence. Neither belongs to a rival organiser.
+    expect(codes.map((c) => c.code)).not.toContain("WELCOME10");
   });
+});
+
+/**
+ * The POST cases create real codes and never removed them: DUPE1, FIXED1 and
+ * LOWER1 had accumulated in the database, showing up in every listing and in
+ * any query that counts codes.
+ */
+afterAll(async () => {
+  if (!process.env.DATABASE_URL) return;
+  const { db } = await import("@/lib/server/db");
+  const made = ["DUPE1", "FIXED1", "LOWER1", "ZERO1", "NEW10"];
+  await db.discountRedemption.deleteMany({
+    where: { discountCode: { code: { in: made } } },
+  });
+  await db.discountCode.deleteMany({ where: { code: { in: made } } });
 });
 
 describeApi("POST /api/discounts", () => {
@@ -148,12 +179,17 @@ describeApi("POST /api/discounts", () => {
 });
 
 describeApi("POST /api/discounts/validate", () => {
-  it("applies an org-wide code to any event", async () => {
+  it("applies an org-wide code to any event of its own workspace", async () => {
+    // Was "…to any event", asserted against OTHER_EVENT — which the comment
+    // above says belongs to negar-karimi, a *different* workspace from
+    // WELCOME10's owner. The test encoded a real bug as intended behaviour:
+    // codes are unique per workspace and the schema is explicit that a null
+    // eventId scopes to "every event of the workspace".
     const parsed = await parse<DiscountValidation>(
       await VALIDATE(
         req("POST", "/", {
           code: "WELCOME10",
-          eventId: OTHER_EVENT,
+          eventId: SEED_EVENT,
           subtotal: 1_000_000,
         }),
       ),
@@ -166,12 +202,28 @@ describeApi("POST /api/discounts/validate", () => {
     }
   });
 
+  it("refuses an org-wide code against another workspace's event", async () => {
+    // A 50%-off code issued by one organiser must not discount another
+    // organiser's tickets — funded by them, and burning the issuer's
+    // redemption count to do it.
+    const parsed = await parse<DiscountValidation>(
+      await VALIDATE(
+        req("POST", "/", {
+          code: "WELCOME10",
+          eventId: OTHER_EVENT,
+          subtotal: 1_000_000,
+        }),
+      ),
+    );
+    expect(data(parsed).ok).toBe(false);
+  });
+
   it("trims and upper-cases the submitted code", async () => {
     const parsed = await parse<DiscountValidation>(
       await VALIDATE(
         req("POST", "/", {
           code: "  welcome10 ",
-          eventId: OTHER_EVENT,
+          eventId: SEED_EVENT,
           subtotal: 1_000_000,
         }),
       ),

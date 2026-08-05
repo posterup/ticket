@@ -110,6 +110,11 @@ export interface EventSession {
   cancelled?: boolean;
   /** Organizer-set capacity/sales state for this سانس. Defaults to `available`. */
   availability?: SessionAvailability;
+  /**
+   * Pinned seat map, when this showing sells assigned seating. Absent means
+   * open seating, sold on TicketType capacity alone.
+   */
+  layoutVersionId?: string;
 }
 
 /**
@@ -148,12 +153,42 @@ export interface Event {
   audienceTags?: string[];
   /** When true (link events), registrations need organiser approval. */
   requiresApproval?: boolean;
+  /** Cover image URL, or absent for the generated gradient. */
+  poster?: string;
   /** When true, a sold-out event offers a waitlist instead of closing sales. */
   waitlist?: boolean;
   /** Custom public URL slug for the event page; falls back to `id`. */
   slug?: string;
+  /**
+   * How the issued ticket looks — the organiser's «قالب بلیت».
+   *
+   * Deliberately `TicketDesign` here and not the component's `TicketTemplate`:
+   * `types/` must not import from `components/`, and this is the wire contract
+   * the designer and the buyer's ticket both agree on.
+   */
+  ticketDesign?: TicketDesign;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
+}
+
+/**
+ * The look of an issued ticket.
+ *
+ * Every field optional: a design saved by an older build must still render, and
+ * the renderer falls back per-field rather than discarding the whole thing.
+ */
+export interface TicketDesign {
+  accent?: string;
+  surface?: "light" | "dark";
+  bgColor?: string | null;
+  /** Data URL. */
+  bgImage?: string | null;
+  /** Data URL. */
+  logo?: string | null;
+  showCategory?: boolean;
+  showDate?: boolean;
+  showVenue?: boolean;
+  note?: string;
 }
 
 /** Payload accepted by `createEvent`; server fills ids and timestamps. */
@@ -172,4 +207,6 @@ export interface CreateEventInput {
   audienceTags?: string[];
   /** Registration needs organiser approval (invite-only). */
   requiresApproval?: boolean;
+  /** Cover image URL from Blob; `null` clears it on update. */
+  poster?: string | null;
 }

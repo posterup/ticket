@@ -26,7 +26,7 @@ export function Sidebar() {
         <Link
           href="/"
           aria-label="پوستر، صفحه اصلی"
-          className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Logo />
         </Link>

@@ -1,6 +1,7 @@
 /** Request schemas for the event, venue and session endpoints. */
 
 import { z } from "zod";
+import { isStoredImage } from "@/lib/uploads";
 
 import {
   atLeastOneField,
@@ -38,6 +39,23 @@ const scheduleSlot = z
  * or malformed `endDate` falls back to `startDate`, and malformed `exceptions`
  * degrade to an empty list rather than failing the whole request.
  */
+/**
+ * An image the product itself stored — a Blob URL, or a legacy data URL.
+ *
+ * Uploads go to Blob now, so what arrives is a reference rather than the bytes.
+ * A reference has to be *checked*: an unvalidated URL field accepts a pointer at
+ * any host on the internet, and this one is rendered in other people's browsers
+ * and printed onto tickets. `isStoredImage` allows exactly our Blob host.
+ *
+ * Data URLs stay valid because rows written before this still contain them, and
+ * `512_000` keeps the old ceiling for those — a Blob URL is a couple of hundred
+ * bytes and never approaches it.
+ */
+const storedImage = z
+  .string()
+  .max(512_000, "تصویر باید کوچک‌تر از ۵۰۰ کیلوبایت باشد.")
+  .refine(isStoredImage, "آدرس تصویر نامعتبر است.");
+
 export const recurrenceScheduleSchema = z
   .object({
     startDate: calendarDate,
@@ -106,9 +124,32 @@ export const createEventSchema = z.object({
   visibility: eventVisibility.optional(),
   audienceTags: z.array(z.string()).optional(),
   requiresApproval: z.boolean().optional(),
+  poster: storedImage.nullable().optional(),
 });
 
 /** `PATCH /api/events/:id` — any subset, but at least one field. */
+/**
+ * The «قالب بلیت» design.
+ *
+ * Colours are constrained to hex because they are interpolated straight into a
+ * style attribute; images are capped as data URLs because the whole document
+ * lives in one JSONB column and an unbounded upload would be stored, fetched,
+ * and re-serialised on every read of the event.
+ */
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "رنگ نامعتبر است.");
+
+export const ticketDesignSchema = z.object({
+  accent: hexColor.optional(),
+  surface: z.enum(["light", "dark"]).optional(),
+  bgColor: hexColor.nullable().optional(),
+  bgImage: storedImage.nullable().optional(),
+  logo: storedImage.nullable().optional(),
+  showCategory: z.boolean().optional(),
+  showDate: z.boolean().optional(),
+  showVenue: z.boolean().optional(),
+  note: z.string().max(160).optional(),
+});
+
 export const eventUpdateSchema = atLeastOneField(
   z.object({
     title: nonEmpty.optional(),
@@ -117,6 +158,8 @@ export const eventUpdateSchema = atLeastOneField(
     visibility: eventVisibility.optional(),
     audienceTags: z.array(z.string()).optional(),
     requiresApproval: z.boolean().optional(),
+    poster: storedImage.nullable().optional(),
+    ticketDesign: ticketDesignSchema.optional(),
     slug: nonEmpty.optional(),
     recurrenceSchedule: recurrenceScheduleSchema.optional(),
   }),

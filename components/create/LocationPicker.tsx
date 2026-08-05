@@ -1,14 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
+
+import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin } from "lucide-react";
 
 // Leaflet touches `window`, so the map is client-only (no SSR).
 const LocationMap = dynamic(() => import("@/components/create/LocationMap"), {
   ssr: false,
+  // The map's own footprint, so the form does not jump when Leaflet lands.
   loading: () => (
-    <div className="grid h-64 w-full place-items-center rounded-lg border border-border bg-subtle text-sm text-muted">
-      در حال بارگذاری نقشه…
+    <div role="status" aria-busy="true" aria-label="در حال بارگذاری نقشه">
+      <Skeleton className="h-64 w-full rounded-lg" />
     </div>
   ),
 });

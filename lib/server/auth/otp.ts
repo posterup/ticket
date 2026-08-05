@@ -13,7 +13,7 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 
 import { db } from "../db";
-import { normalizeMobile, sendVerifySms } from "../sms/smsir";
+import { normalizeMobile, smsGateway } from "../sms";
 
 export const OTP_TTL_SEC = 120;
 export const OTP_RESEND_SEC = 60;
@@ -142,9 +142,13 @@ export async function requestOtp(
     }),
   ]);
 
-  const configured = Boolean(
-    process.env.SMSIR_API_KEY && process.env.SMSIR_OTP_TEMPLATE_ID,
-  );
+  // Whichever operator is selected. Both need an approved template for codes,
+  // so "has credentials" is not the same as "can send an OTP".
+  const gateway = smsGateway();
+  const configured =
+    gateway.provider === "kavenegar"
+      ? Boolean(process.env.KAVENEGAR_API_KEY && process.env.KAVENEGAR_OTP_TEMPLATE)
+      : Boolean(process.env.SMSIR_API_KEY && process.env.SMSIR_OTP_TEMPLATE_ID);
   const base = {
     ok: true as const,
     expiresInSec: OTP_TTL_SEC,
@@ -165,7 +169,7 @@ export async function requestOtp(
     return { ...base, devCode: code };
   }
 
-  const sent = await sendVerifySms(phone, code);
+  const sent = await gateway.sendVerify(phone, code);
   if (!sent.ok) {
     return {
       ok: false,

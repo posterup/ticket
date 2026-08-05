@@ -47,6 +47,7 @@ import {
   TICKET_CATEGORY_TO_DB,
   WORKSPACE_TYPE_TO_DB,
 } from "../lib/server/mappers/enums";
+import { seedVenueLayouts } from "./seed-venues";
 
 /**
  * Prisma's `InputJsonValue` requires an index signature, which the domain
@@ -360,6 +361,8 @@ async function main(): Promise<void> {
     });
   }
 
+  await seedVenueLayouts(db);
+
   const counts = {
     users: await db.user.count(),
     workspaces: await db.workspace.count(),
@@ -375,6 +378,8 @@ async function main(): Promise<void> {
     collaborators: await db.eventCollaborator.count(),
     discounts: await db.discountCode.count(),
     campaigns: await db.campaign.count(),
+    venueSections: await db.venueSection.count(),
+    venueSeats: await db.venueSeat.count(),
   };
   console.table(counts);
 }

@@ -14,9 +14,17 @@ import type {
   Venue,
 } from "@/types";
 import { expandSchedule, type ScheduleDraft } from "@/lib/create/types";
+import { phoneVariants } from "@/lib/server/sms";
+import { venueIso } from "@/lib/format";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 
+import type { Prisma } from "@/generated/client";
 import { db } from "./db";
+import {
+  notifyEventCancelled,
+  notifySessionCancelled,
+} from "./notifications/show-cancelled";
+import { notifyEventPublished } from "./notifications/waiting";
 import { toEvent, toSession, toVenue, type EventRow } from "./mappers";
 import {
   EVENT_MODE_TO_DB,
@@ -46,16 +54,61 @@ export async function listEvents(): Promise<Event[]> {
 }
 
 /**
- * Events any visitor may see: published, and not restricted to a link or an
- * audience. This is what the public API returns — {@link listEvents} includes
- * drafts and is for callers that have already proven access.
+ * Events a visitor may see in discovery.
+ *
+ * Public events for everyone. When a signed-in viewer is supplied, events
+ * targeted at a CRM segment they belong to are folded in as well — otherwise
+ * targeting only works for someone who was already sent a link, which is not
+ * targeting at all.
+ *
+ * `link`-only events stay out by design: the whole point of that setting is
+ * that the URL is the key.
+ *
+ * {@link listEvents} includes drafts and is for callers that have already
+ * proven access.
  */
-export async function listPublicEvents(): Promise<Event[]> {
+export async function listPublicEvents(viewer?: {
+  id: string;
+  phone: string;
+}): Promise<Event[]> {
+  const notRecurring = CALENDAR_MODE_ENABLED
+    ? {}
+    : { mode: { not: "RECURRING" as const } };
+
+  // Which segments this viewer belongs to, per workspace. One query rather
+  // than a correlated check per event.
+  const memberOf = viewer
+    ? await db.attendee.findMany({
+        // Not `phone: viewer.phone`. Attendee rows keep whatever format they
+        // were created with, so an exact match hid targeted events from the
+        // very people they were aimed at.
+        where: { phone: { in: phoneVariants(viewer.phone) } },
+        select: {
+          workspaceId: true,
+          tags: { select: { tag: { select: { label: true } } } },
+        },
+      })
+    : [];
+
+  const targeted = memberOf
+    .map((a) => ({
+      workspaceId: a.workspaceId,
+      labels: a.tags.map((t) => t.tag.label),
+    }))
+    .filter((a) => a.labels.length > 0);
+
   const rows = await db.event.findMany({
     where: {
       status: "PUBLISHED",
-      visibility: "PUBLIC",
-      ...(CALENDAR_MODE_ENABLED ? {} : { mode: { not: "RECURRING" as const } }),
+      ...notRecurring,
+      OR: [
+        { visibility: "PUBLIC" },
+        ...targeted.map((a) => ({
+          visibility: "AUDIENCE" as const,
+          workspaceId: a.workspaceId,
+          audienceTags: { hasSome: a.labels },
+        })),
+      ],
     },
     include: INCLUDE,
     orderBy: { createdAt: "desc" },
@@ -82,9 +135,12 @@ export async function listEventsByWorkspaceId(
 }
 
 /** Return a single event by id, or `undefined` when not found. */
-export async function getEventById(id: string): Promise<Event | undefined> {
+export async function getEventById(
+  id: string,
+  options: { reveal?: boolean } = {},
+): Promise<Event | undefined> {
   const row = await db.event.findUnique({ where: { id }, include: INCLUDE });
-  return row ? toEvent(row as EventRow) : undefined;
+  return row ? toEvent(row as EventRow, options) : undefined;
 }
 
 /** Return a single event by its custom slug, or `undefined`. */
@@ -149,6 +205,7 @@ export async function createEvent(
       visibility: EVENT_VISIBILITY_TO_DB[input.visibility ?? "public"],
       audienceTags: input.audienceTags ?? [],
       requiresApproval: input.requiresApproval ?? false,
+      poster: input.poster ?? null,
       sessions: {
         create: input.sessions.map((s) => ({
           startAt: new Date(s.startAt),
@@ -176,8 +233,18 @@ export type EventUpdate = Partial<
     | "requiresApproval"
     | "slug"
     | "recurrenceSchedule"
+    | "ticketDesign"
   >
->;
+> & {
+  /**
+   * `null` clears the cover; `undefined` leaves it alone.
+   *
+   * `Pick<Event, "poster">` cannot say this — the domain type has `poster?:
+   * string`, because an event either has a cover or does not, and "explicitly
+   * remove it" is a thing only an *update* can mean.
+   */
+  poster?: string | null;
+};
 
 /** ScheduleDraft equivalent of a stored {@link RecurrenceSchedule}. */
 function toScheduleDraft(spec: RecurrenceSchedule): ScheduleDraft {
@@ -217,9 +284,15 @@ async function applySchedule(
   const existing = await db.eventSession.findMany({ where: { eventId } });
   const byStart = new Map(existing.map((s) => [s.startAt.toISOString(), s]));
 
+  // `venueIso`, not a `Z` — these are wall-clock times at the venue. Appending
+  // `Z` put every regenerated سانس three and a half hours late, and because the
+  // match below keys on `startAt`, none of them lined up with the rows the
+  // wizard had written: the transaction deleted every existing سانس and made
+  // new ones, discarding availability, the cancelled flag, and any order
+  // pointing at them.
   const wanted = expandSchedule(toScheduleDraft(spec)).map((s) => ({
-    startAt: new Date(`${s.date}T${s.startTime}:00.000Z`),
-    endAt: new Date(`${s.date}T${s.endTime || s.startTime}:00.000Z`),
+    startAt: new Date(venueIso(s.date, s.startTime)),
+    endAt: new Date(venueIso(s.date, s.endTime || s.startTime)),
   }));
   const wantedKeys = new Set(wanted.map((s) => s.startAt.toISOString()));
 
@@ -254,6 +327,17 @@ export async function updateEvent(
   const exists = await db.event.findUnique({ where: { id }, select: { id: true } });
   if (!exists) return undefined;
 
+  const before = await db.event.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  const newlyCancelled =
+    patch.status === "cancelled" && before?.status !== "CANCELLED";
+  // «خبرم کن» subscribers are waiting for exactly this moment. Only the
+  // transition counts: re-saving a published event must not message them again.
+  const newlyPublished =
+    patch.status === "published" && before?.status !== "PUBLISHED";
+
   if (patch.recurrenceSchedule !== undefined) {
     await applySchedule(id, patch.recurrenceSchedule);
   }
@@ -269,7 +353,14 @@ export async function updateEvent(
         : undefined,
       audienceTags: patch.audienceTags,
       requiresApproval: patch.requiresApproval,
+      poster: patch.poster,
       slug: patch.slug,
+      // Replaced whole, never merged: the designer always sends the complete
+      // template, and a partial merge would make "clear the logo" impossible
+      // to express. Cast because Prisma's InputJsonValue does not accept an
+      // interface with optional properties, only an index-signature object —
+      // the value is zod-validated at the route before it reaches here.
+      ticketDesign: patch.ticketDesign as Prisma.InputJsonValue | undefined,
       ...(patch.recurrenceSchedule !== undefined
         ? {
             recurrenceSchedule: patch.recurrenceSchedule as object,
@@ -284,6 +375,9 @@ export async function updateEvent(
         : {}),
     },
   });
+
+  if (newlyCancelled) void notifyEventCancelled(id);
+  if (newlyPublished) void notifyEventPublished(id);
 
   return getEventById(id);
 }
@@ -334,7 +428,8 @@ export async function updateVenue(
 
   const row = await db.venue.update({ where: { id: event.venueId }, data: patch });
   await db.event.update({ where: { id: eventId }, data: { updatedAt: new Date() } });
-  return toVenue(row);
+  // The organiser is editing it; they may see what they are editing.
+  return toVenue(row, { reveal: true });
 }
 
 /** Fields an organizer may edit on a single سانس (session). */
@@ -354,6 +449,11 @@ export async function updateSession(
   const session = await db.eventSession.findUnique({ where: { id: sessionId } });
   if (!session || session.eventId !== eventId) return undefined;
 
+  // Captured before the write: only a *transition* into cancelled may notify.
+  // Re-saving an already-cancelled سانس is what a form does on every submit,
+  // and it must not text everyone a second time.
+  const newlyCancelled = patch.cancelled === true && !session.cancelled;
+
   const row = await db.eventSession.update({
     where: { id: sessionId },
     data: {
@@ -366,6 +466,11 @@ export async function updateSession(
     },
   });
   await db.event.update({ where: { id: eventId }, data: { updatedAt: new Date() } });
+
+  // Not awaited: an organiser cancelling a show should not sit watching a
+  // spinner while a thousand messages go out, and the notifier never throws.
+  if (newlyCancelled) void notifySessionCancelled(eventId, sessionId);
+
   return toSession(row);
 }
 

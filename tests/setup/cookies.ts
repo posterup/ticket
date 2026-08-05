@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { afterAll, vi } from "vitest";
 
 /**
  * A cookie store for tests.
@@ -24,3 +24,18 @@ vi.mock("next/headers", () => ({
   }),
   headers: async () => new Headers(),
 }));
+
+/**
+ * Every session a file minted, removed when it finishes.
+ *
+ * `signInAs` writes a real `Session` row and most suites never sign out, so the
+ * table grew by roughly eighty rows per full run — unnoticed, because `Session`
+ * was not among the tables the drift check watched. This runs per test file,
+ * which is the only scope that reliably sees the same module instance as the
+ * helpers that did the minting.
+ */
+afterAll(async () => {
+  if (!process.env.DATABASE_URL) return;
+  const { dropMintedSessions } = await import("../api/helpers");
+  await dropMintedSessions();
+});

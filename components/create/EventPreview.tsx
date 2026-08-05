@@ -10,7 +10,7 @@ import {
   EyeOff,
 } from "lucide-react";
 
-import { formatJalaliDate, formatTime, formatToman, formatNumber } from "@/lib/format";
+import { formatClock, formatJalaliDate, formatNumber, formatTime, formatToman } from "@/lib/format";
 import { LOCATION_LABELS, VISIBILITY_LABELS } from "@/lib/create/labels";
 import type { CreateDraft, SessionDraft, TicketTypeDraft } from "@/lib/create/types";
 
@@ -31,9 +31,10 @@ function priceLabel(t: TicketTypeDraft): string {
 
 function timeRange(s: SessionDraft): string {
   if (!s.startTime) return "";
-  const start = `1970-01-01T${s.startTime}:00.000Z`;
-  const end = s.endTime ? `1970-01-01T${s.endTime}:00.000Z` : "";
-  return end ? `${formatTime(start)} تا ${formatTime(end)}` : formatTime(start);
+  // The typed clock time, not an instant. Routing it through a 1970 date made
+  // the preview render an 18:00 session as ۲۱:۳۰.
+  const start = formatClock(s.startTime);
+  return s.endTime ? `${start} تا ${formatClock(s.endTime)}` : start;
 }
 
 /** Live preview of the event as an attendee will see it. */

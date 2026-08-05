@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { Ticket, Plus, Pencil, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { formatJalaliDate, formatToman, formatNumber } from "@/lib/format";
+import {
+  formatJalaliDate,
+  formatToman,
+  formatNumber,
+  venueIso,
+} from "@/lib/format";
 import { TicketEditor, type SessionOption } from "@/components/create/TicketEditor";
 import { emptyTicket, type TicketTypeDraft } from "@/lib/create/types";
 import type { TicketType } from "@/types";
@@ -23,9 +28,12 @@ function ticketPrice(t: TicketTypeDraft): number {
   return Math.max(0, Math.floor(Number(t.price) || 0));
 }
 
-function iso(date: string, time: string): string {
-  return `${date}T${time}:00.000Z`;
-}
+/**
+ * Sales windows are venue wall-clock too. A window typed to close at 23:59 on
+ * the day of the show was closing at 03:29 the following morning — generous by
+ * accident, and the same class of error in the other direction as the wizard's.
+ */
+const iso = venueIso;
 
 /**
  * The persisted fields a draft resolves to — the single draft→ticket mapping
@@ -230,7 +238,7 @@ function EditTicketForm({
         onChange={(p) => setDraft((d) => ({ ...d, ...p }))}
         onRemove={() => {}}
       />
-      {error ? <p className="text-xs text-danger">{error}</p> : null}
+      {error ? <p className="text-xs text-danger-text">{error}</p> : null}
       <div className="flex items-center gap-2">
         <Button type="button" size="sm" onClick={save} disabled={saving}>
           <Check aria-hidden />
@@ -301,7 +309,7 @@ function AddTicketForm({
         onChange={(p) => setDraft((d) => ({ ...d, ...p }))}
         onRemove={() => {}}
       />
-      {error ? <p className="text-xs text-danger">{error}</p> : null}
+      {error ? <p className="text-xs text-danger-text">{error}</p> : null}
       <div className="flex items-center gap-2">
         <Button type="button" size="sm" onClick={save} disabled={saving}>
           <Check aria-hidden />

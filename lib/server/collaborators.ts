@@ -7,6 +7,7 @@ import type {
 } from "@/types";
 
 import { db } from "./db";
+import { notifyCollaboratorInvited } from "./notifications/waiting";
 import { toCollaborator } from "./mappers";
 import { COLLABORATOR_CHANNEL_TO_DB, COLLAB_ROLE_TO_DB } from "./mappers/enums";
 import { normalizeMobile } from "./sms/smsir";
@@ -30,7 +31,23 @@ export async function listAcceptedCollaborators(
     where: { eventId, status: "ACCEPTED" },
     orderBy: { createdAt: "desc" },
   });
-  return rows.map(toCollaborator);
+
+  /**
+   * The public view: co-hosts, without their contact details.
+   *
+   * `sub` is whatever identifies the invitee on their channel — a workspace
+   * handle like `@ava-events`, which is public by nature, or a **phone
+   * number**, which never is. The route restricts non-managers to accepted
+   * collaborators precisely because a pending invite carries a raw phone in
+   * this field; accepting the invite does not change what the field holds.
+   * Verified against the running server: an accepted phone co-host published
+   * their mobile number to anonymous callers.
+   *
+   * Being credited as a co-host is public. Being reachable is not.
+   */
+  return rows.map(toCollaborator).map((c) =>
+    c.channel === "phone" ? { ...c, sub: "" } : c,
+  );
 }
 
 export interface AddCollaboratorInput {
@@ -69,6 +86,10 @@ export async function addCollaborator(
       inviteeWorkspaceId: invitee?.id,
     },
   });
+  // Not awaited: the organiser's page should not wait on an SMS operator, and
+  // the notifier never throws.
+  void notifyCollaboratorInvited(row.id);
+
   return toCollaborator(row);
 }
 

@@ -95,7 +95,7 @@ export function ContactsTable({ contacts }: { contacts: Contact[] }) {
                 aria-pressed={active}
                 onClick={() => toggleTag(tag)}
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
+                  "rounded-full border px-3 py-1.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                   active
                     ? "border-foreground bg-foreground text-background"
                     : "border-border bg-card text-muted hover:border-border-strong hover:text-foreground",
@@ -112,7 +112,7 @@ export function ContactsTable({ contacts }: { contacts: Contact[] }) {
                 setQuery("");
                 setActiveTags([]);
               }}
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs text-muted outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs text-muted outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             >
               <X className="size-3.5" aria-hidden />
               پاک‌کردن

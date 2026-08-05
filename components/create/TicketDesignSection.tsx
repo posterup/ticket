@@ -1,6 +1,7 @@
 "use client";
 
 import { Upload, X, RotateCcw } from "lucide-react";
+import { uploadImage } from "@/lib/client/upload";
 
 import { cn } from "@/lib/utils";
 import { Field } from "@/components/ui/field";
@@ -14,15 +15,6 @@ import {
 import { defaultTicketDesign } from "@/lib/create/types";
 
 const ACCENTS = ["#111111", "#2563EB", "#15803D", "#7C3AED", "#BE123C", "#B45309"];
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
 
 /**
  * Optional ticket-appearance designer inside the composer (step 3). A subset of
@@ -48,7 +40,7 @@ export function TicketDesignSection({
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !file.type.startsWith("image/") || file.size > 2 * 1024 * 1024) return;
-    patch({ logo: await readFileAsDataUrl(file) });
+    patch({ logo: await uploadImage(file, "ticket-art") });
   }
 
   return (
@@ -72,7 +64,7 @@ export function TicketDesignSection({
                     aria-label={`رنگ ${c}`}
                     aria-pressed={t.accent === c}
                     className={cn(
-                      "size-8 rounded-full outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring/40",
+                      "size-8 rounded-full outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring",
                       t.accent === c
                         ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
                         : "hover:scale-105",
@@ -103,7 +95,7 @@ export function TicketDesignSection({
                     aria-pressed={t.surface === s}
                     onClick={() => patch({ surface: s })}
                     className={cn(
-                      "rounded-md border px-4 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                      "rounded-md border px-4 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                       t.surface === s
                         ? "border-foreground bg-subtle text-foreground"
                         : "border-border text-muted hover:border-border-strong",
@@ -127,7 +119,7 @@ export function TicketDesignSection({
                   <button
                     type="button"
                     onClick={() => patch({ logo: null })}
-                    className="inline-flex items-center gap-1 text-sm text-muted hover:text-danger"
+                    className="inline-flex items-center gap-1 text-sm text-muted hover:text-danger-text"
                   >
                     <X className="size-4" aria-hidden />
                     حذف

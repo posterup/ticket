@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, beforeAll, afterAll } from "vitest";
 
 import { GET, POST } from "@/app/api/tickets/route";
 import { PATCH } from "@/app/api/tickets/[id]/route";
@@ -28,8 +28,25 @@ async function createTicket(overrides: Record<string, unknown> = {}) {
     await POST(req("POST", "/api/tickets", { ...validTicket, ...overrides })),
   );
   expect(parsed.status).toBe(201);
-  return data(parsed);
+  const type = data(parsed);
+  madeTypes.push(type.id);
+  return type;
 }
+
+/**
+ * The POST cases create real ticket types on a *seeded* event, so the shared
+ * event teardown never sees them: five accumulated per run, inflating every
+ * capacity and price-from figure derived from that event.
+ */
+const madeTypes: string[] = [];
+
+afterAll(async () => {
+  if (!process.env.DATABASE_URL || !madeTypes.length) return;
+  const { db } = await import("@/lib/server/db");
+  await db.orderItem.deleteMany({ where: { ticketTypeId: { in: madeTypes } } });
+  await db.ticketType.deleteMany({ where: { id: { in: madeTypes } } });
+  madeTypes.length = 0;
+});
 
 describeApi("GET /api/tickets", () => {
   it("requires an eventId", async () => {
@@ -75,6 +92,7 @@ describeApi("GET /api/tickets", () => {
     const parsed = await parse<TicketType>(
       await POST(req("POST", "/api/tickets", validTicket)),
     );
+    if (!("error" in parsed.body)) madeTypes.push(parsed.body.data.id);
     expect(parsed.status).toBe(401);
     await signInAsOwner();
   });

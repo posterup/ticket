@@ -1,6 +1,6 @@
 "use client";
 
-import { useApi } from "@/lib/client/api";
+import { useSession } from "@/lib/client/session";
 import { AppChrome } from "@/components/AppChrome";
 
 /**
@@ -15,10 +15,11 @@ export function AppShell({
 }: {
   children: React.ReactNode;
 }) {
-  // Resolved here rather than passed from the root layout, so the layout can
-  // stay a server component while everything below it renders on the client.
-  const { data } = useApi<{ user: unknown | null }>("/api/auth/me");
-  const loggedIn = Boolean(data?.user);
+  // From the shared provider rather than its own fetch, so this and
+  // `PublicHeader` cannot disagree about who is signed in — see
+  // `lib/client/session.tsx`.
+  const { user } = useSession();
+  const loggedIn = Boolean(user);
 
   // Until it resolves, render the logged-out chrome: it is the smaller shell,
   // so the page does not jump when a signed-in visitor's session arrives.

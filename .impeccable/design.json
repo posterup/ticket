@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-05T12:00:00Z",
+  "title": "Design System: پوستر (Poster)",
+  "extensions": {
+    "colorMeta": {
+      "marquee-pink": {
+        "role": "primary",
+        "displayName": "Marquee Pink",
+        "canonical": "#e10e7c",
+        "tonalRamp": ["#2b0117", "#4d0329", "#71053c", "#960751", "#bb0967", "#e10e7c", "#f45aa5", "#ffc2de"]
+      },
+      "marquee-pink-ink": {
+        "role": "primary",
+        "displayName": "Marquee Pink Ink",
+        "canonical": "#cf0c73",
+        "tonalRamp": ["#270115", "#460326", "#660536", "#870747", "#a80959", "#cf0c73", "#ee4d9b", "#ffbcda"]
+      },
+      "blush-wash": {
+        "role": "primary",
+        "displayName": "Blush Wash",
+        "canonical": "#ffe6f4",
+        "tonalRamp": ["#3d1e2f", "#5c2d46", "#7d3d5f", "#9f5079", "#c37a9c", "#e0adc5", "#ffe6f4", "#fff5fa"]
+      },
+      "cool-paper": {
+        "role": "neutral",
+        "displayName": "Cool Paper",
+        "canonical": "#fdfcff",
+        "tonalRamp": ["#141320", "#282639", "#3e3b54", "#565271", "#8079a0", "#aba5c6", "#ded9ee", "#fdfcff"]
+      },
+      "violet-ink": {
+        "role": "neutral",
+        "displayName": "Violet Ink",
+        "canonical": "#14101f",
+        "tonalRamp": ["#14101f", "#241e38", "#372e53", "#4c4070", "#63558e", "#8579ab", "#b0a7ca", "#ded9ee"]
+      },
+      "dusk-gray": {
+        "role": "neutral",
+        "displayName": "Dusk Gray",
+        "canonical": "#5b5470",
+        "tonalRamp": ["#171423", "#26213a", "#373051", "#49406a", "#5b5470", "#8981a0", "#b6b0c8", "#e4e1ed"]
+      },
+      "lilac-gray": {
+        "role": "neutral",
+        "displayName": "Lilac Gray",
+        "canonical": "#71688d",
+        "tonalRamp": ["#1a1727", "#2b263e", "#3e3757", "#524971", "#675c8c", "#71688d", "#a49cba", "#d5d0e3"]
+      },
+      "lavender-wash": {
+        "role": "neutral",
+        "displayName": "Lavender Wash",
+        "canonical": "#f4f1fb",
+        "tonalRamp": ["#1b1826", "#2d283c", "#413a54", "#57506e", "#7e769a", "#a9a3c0", "#d6d1e6", "#f4f1fb"]
+      },
+      "lilac-rule": {
+        "role": "neutral",
+        "displayName": "Lilac Rule",
+        "canonical": "#e8e3f2",
+        "tonalRamp": ["#1a1725", "#2b2639", "#3f384f", "#544c67", "#7b7292", "#a69eba", "#e8e3f2", "#f7f5fb"]
+      },
+      "lilac-rule-strong": {
+        "role": "neutral",
+        "displayName": "Lilac Rule Strong",
+        "canonical": "#d3cce6",
+        "tonalRamp": ["#181524", "#282237", "#3b334c", "#4f4664", "#746a8e", "#9f96b7", "#d3cce6", "#eeeaf5"]
+      },
+      "glass": {
+        "role": "neutral",
+        "displayName": "Glass",
+        "canonical": "rgba(255, 255, 255, 0.72)",
+        "tonalRamp": []
+      },
+      "field-paper": {
+        "role": "neutral",
+        "displayName": "Field Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": []
+      },
+      "field-rule": {
+        "role": "neutral",
+        "displayName": "Field Rule",
+        "canonical": "#9e89c8",
+        "tonalRamp": ["#1d1630", "#2f2549", "#443764", "#5a4a80", "#7364a4", "#9e89c8", "#c5b8de", "#e8e1f3"]
+      },
+      "deep-green": {
+        "role": "tertiary",
+        "displayName": "Deep Green",
+        "canonical": "#08845a",
+        "tonalRamp": ["#021a12", "#03301f", "#04482e", "#06603e", "#08844e", "#08845a", "#3fbf8d", "#a8e9cd"]
+      },
+      "deep-green-ink": {
+        "role": "tertiary",
+        "displayName": "Deep Green Ink",
+        "canonical": "#077550",
+        "tonalRamp": ["#02170f", "#032b1c", "#044029", "#055636", "#066b45", "#077550", "#37b183", "#a2e5c8"]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Amber",
+        "canonical": "#a76607",
+        "tonalRamp": ["#231502", "#3c2404", "#573406", "#734508", "#8f560a", "#a76607", "#e5a03d", "#ffdaa6"]
+      },
+      "amber-ink": {
+        "role": "tertiary",
+        "displayName": "Amber Ink",
+        "canonical": "#935a06",
+        "tonalRamp": ["#1f1202", "#351f03", "#4c2d05", "#653c07", "#7e4b08", "#935a06", "#d99436", "#ffd7a0"]
+      },
+      "signal-red": {
+        "role": "tertiary",
+        "displayName": "Signal Red",
+        "canonical": "#e02328",
+        "tonalRamp": ["#2c0405", "#4d080a", "#6f0c0f", "#921015", "#b6161b", "#e02328", "#f26e71", "#ffc7c8"]
+      },
+      "signal-red-ink": {
+        "role": "tertiary",
+        "displayName": "Signal Red Ink",
+        "canonical": "#c51f23",
+        "tonalRamp": ["#270405", "#440709", "#620b0d", "#810f12", "#a31417", "#c51f23", "#e96064", "#ffc0c2"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The largest page-level statement — the city name on discovery. Rare." },
+      "headline": { "displayName": "Headline", "purpose": "Page titles: the event name at checkout, an error screen heading." },
+      "title": { "displayName": "Title", "purpose": "Section headings inside cards. Small on purpose; weight separates it, not size." },
+      "body": { "displayName": "Body", "purpose": "Descriptions and explanations, at relaxed leading for Persian." },
+      "label": { "displayName": "Label", "purpose": "Metadata, captions, hints, timestamps." }
+    },
+    "shadows": [
+      { "name": "accent-glow-rest", "value": "0 0 24px -4px var(--accent)", "purpose": "Under a primary button at rest. The signature depth cue." },
+      { "name": "accent-glow-hover", "value": "0 0 32px -2px var(--accent)", "purpose": "The same light, brighter and wider, on primary hover." },
+      { "name": "accent-glow-invite", "value": "0 0 18px -6px var(--accent)", "purpose": "Secondary control on hover — hints at the accent without adopting it." },
+      { "name": "glow-token", "value": "0 0 24px -6px var(--accent)", "purpose": "The shared --glow custom property." },
+      { "name": "ambient-sm", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "Quiet structural lift on secondary controls." },
+      { "name": "ambient-lg", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Genuinely floating surfaces: buy box, dropdowns, seat panel." }
+    ],
+    "motion": [
+      { "name": "ease-out-premium", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Entrance easing for every revealed element (lib/motion.ts EASE_OUT)." },
+      { "name": "duration-state", "value": "200ms", "purpose": "Default for hover, colour and shadow transitions on controls." },
+      { "name": "duration-entrance", "value": "600ms", "purpose": "Fade-up of a revealed item." },
+      { "name": "stagger-children", "value": "90ms", "purpose": "Gap between siblings in a staggered reveal." },
+      { "name": "reduced-motion", "value": "honored", "purpose": "useReducedMotion gates entrances; animate-spin pairs with motion-reduce:animate-none." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "desktop-gate", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one accent-filled control on a screen. Lights up rather than lifts.",
+      "html": "<button class=\"ds-btn-primary\">پرداخت</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2.75rem; padding: 0 1.25rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #ffffff; background: #e10e7c; border: none; border-radius: 0.75rem; box-shadow: 0 0 24px -4px #e10e7c; cursor: pointer; transition: transform 200ms, background-color 200ms, box-shadow 200ms, color 200ms; } .ds-btn-primary:hover { filter: brightness(1.1); box-shadow: 0 0 32px -2px #e10e7c; } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #fdfcff, 0 0 0 4px #e10e7c; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Glass fill on a hairline rule; hover borrows the accent without adopting it.",
+      "html": "<button class=\"ds-btn-secondary\">بازگشت به رویداد</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2.75rem; padding: 0 1.25rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #14101f; background: rgba(255,255,255,0.72); border: 1px solid #e8e3f2; border-radius: 0.75rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); cursor: pointer; transition: transform 200ms, border-color 200ms, box-shadow 200ms; } .ds-btn-secondary:hover { border-color: #e10e7c; box-shadow: 0 0 18px -6px #e10e7c; } .ds-btn-secondary:active { transform: translateY(1px); } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 2px #fdfcff, 0 0 0 4px #e10e7c; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Text-only nav and tertiary action; fills with the subtle wash on hover.",
+      "html": "<button class=\"ds-btn-ghost\">رویدادها</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2.25rem; padding: 0 1rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #14101f; background: transparent; border: none; border-radius: 0.75rem; cursor: pointer; transition: background-color 200ms, transform 200ms; } .ds-btn-ghost:hover { background: #f4f1fb; } .ds-btn-ghost:active { transform: translateY(1px); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px #fdfcff, 0 0 0 4px #e10e7c; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Translucent glass over the page glow, hairline rule, no resting shadow.",
+      "html": "<div class=\"ds-card\" dir=\"rtl\"><h3 class=\"ds-card-title\">خلاصه سفارش</h3><p class=\"ds-card-body\">۲ صندلی انتخاب شده است.</p></div>",
+      "css": ".ds-card { background: rgba(255,255,255,0.72); border: 1px solid #e8e3f2; border-radius: 1.25rem; padding: 1.25rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; } .ds-card-title { margin: 0 0 0.75rem; font-size: 0.875rem; font-weight: 700; color: #14101f; } .ds-card-body { margin: 0; font-size: 0.875rem; line-height: 1.75; color: #5b5470; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Opaque white on a deliberately stronger border, so an editable region reads as editable.",
+      "html": "<input class=\"ds-input\" dir=\"rtl\" placeholder=\"نام کامل\" />",
+      "css": ".ds-input { width: 100%; height: 2.75rem; padding: 0 0.875rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; font-size: 1rem; color: #14101f; background: #ffffff; border: 1px solid #9e89c8; border-radius: 0.75rem; outline: none; transition: border-color 200ms, box-shadow 200ms; } .ds-input::placeholder { color: #7b7196; } .ds-input:hover { border-color: #d3cce6; } .ds-input:focus-visible { border-color: #14101f; box-shadow: 0 0 0 2px rgba(225, 14, 124, 0.15); }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The discovery search bar — fully round, glass fill, wider hit area.",
+      "html": "<input class=\"ds-input-search\" dir=\"rtl\" placeholder=\"جست‌وجوی رویداد، برگزارکننده یا مکان…\" />",
+      "css": ".ds-input-search { width: 100%; height: 3rem; padding: 0 1rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; color: #14101f; background: rgba(255,255,255,0.72); border: 1px solid #e8e3f2; border-radius: 9999px; outline: none; transition: border-color 200ms, box-shadow 200ms; } .ds-input-search::placeholder { color: #71688d; } .ds-input-search:hover { border-color: #d3cce6; } .ds-input-search:focus-visible { border-color: #14101f; box-shadow: 0 0 0 2px rgba(225, 14, 124, 0.15); }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Unselected filter. Selected state inverts to ink rather than filling with accent.",
+      "html": "<button class=\"ds-chip\">هنر</button><button class=\"ds-chip ds-chip-selected\">همه</button>",
+      "css": ".ds-chip { flex-shrink: 0; padding: 0.375rem 1rem; margin-inline-end: 0.5rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #5b5470; background: transparent; border: 1px solid #e8e3f2; border-radius: 9999px; cursor: pointer; transition: color 200ms, border-color 200ms, background-color 200ms; } .ds-chip:hover { color: #14101f; border-color: #d3cce6; } .ds-chip:focus-visible { outline: none; box-shadow: 0 0 0 2px #e10e7c; } .ds-chip-selected { color: #fdfcff; background: #14101f; border-color: #14101f; } .ds-chip-selected:hover { color: #fdfcff; }"
+    },
+    {
+      "name": "Accent Badge",
+      "kind": "chip",
+      "refersTo": "badge-accent",
+      "description": "The buy-box state tab — accent as a surface, never as body text.",
+      "html": "<span class=\"ds-badge-accent\">فروش ویژه</span>",
+      "css": ".ds-badge-accent { display: inline-flex; align-items: center; padding: 0.125rem 0.625rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; color: #cf0c73; background: #ffe6f4; border: 1px solid transparent; border-radius: 9999px; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }"
+    },
+    {
+      "name": "Hold Countdown",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Signature: the seat-hold clock. Neutral above two minutes, urgent below, tabular so digits never reflow.",
+      "html": "<p class=\"ds-countdown\" dir=\"rtl\"><span>نگه‌داری صندلی</span><span class=\"ds-countdown-value\">۱۴:۲۲</span></p><p class=\"ds-countdown ds-countdown-warning\" dir=\"rtl\"><span>نگه‌داری صندلی</span><span class=\"ds-countdown-value\">۰۱:۰۸</span></p>",
+      "css": ".ds-countdown { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin: 0 0 0.5rem; padding: 0.5rem 0.75rem; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #5b5470; background: #f4f1fb; border-radius: 0.75rem; } .ds-countdown-value { font-variant-numeric: tabular-nums; } .ds-countdown-warning { color: #c51f23; background: rgba(224, 35, 40, 0.1); }"
+    },
+    {
+      "name": "Public Header",
+      "kind": "nav",
+      "refersTo": "card",
+      "description": "Glass bar with a hairline base rule; ghost links; account slot holds its width while the session resolves.",
+      "html": "<header class=\"ds-header\" dir=\"rtl\"><span class=\"ds-header-logo\">پوستر</span><nav class=\"ds-header-nav\"><a class=\"ds-header-link\" href=\"#\">رویدادها</a><a class=\"ds-header-link\" href=\"#\">برگزارکنندگان</a><a class=\"ds-header-link\" href=\"#\">من</a></nav></header>",
+      "css": ".ds-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 4.5rem; padding: 0 1rem; background: rgba(255,255,255,0.72); border-bottom: 1px solid #e8e3f2; font-family: 'Vazirmatn Variable', ui-sans-serif, system-ui, sans-serif; } .ds-header-logo { font-size: 1.125rem; font-weight: 700; color: #14101f; } .ds-header-nav { display: flex; align-items: center; gap: 0.25rem; } .ds-header-link { padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; color: #14101f; text-decoration: none; border-radius: 0.75rem; transition: background-color 200ms; } .ds-header-link:hover { background: #f4f1fb; } .ds-header-link:focus-visible { outline: none; box-shadow: 0 0 0 2px #e10e7c; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Paper and Neon",
+    "overview": "Two materials and no third. Every surface is cool violet-tinted paper — #fdfcff backgrounds, rgba(255,255,255,0.72) glass laid over a faint glow, lilac hairline rules — and against that calm there is exactly one light source: a hot pink that actually glows. The paper does the work of holding information. The neon does the work of telling you where to press.\n\nThe restraint is what makes it read as professional rather than as an entertainment site. Nothing here shouts except the one thing that is supposed to. Hierarchy comes from weight, size and space; colour is reserved for meaning — accent for action, and three semantic hues that appear only when something succeeded, needs attention, or failed.\n\nTwo audiences, one brand. The organiser surfaces spend the accent sparingly and lean on the paper: someone is working there every day. The attendee surfaces let the neon and real imagery carry more — someone is deciding whether to spend money on a night out. Same tokens, same Vazirmatn, same accessibility floor; what differs is how much of the accent gets spent.",
+    "keyCharacteristics": [
+      "Persian-first and RTL by construction — logical properties only, never left/right",
+      "Light theme only; there is no dark mode in the implementation",
+      "One typeface, Vazirmatn Variable, doing display through caption",
+      "Violet-tinted neutrals, never pure gray",
+      "Glow instead of drop shadow as the primary depth cue",
+      "Colour means something; it is never decoration"
+    ],
+    "rules": [
+      { "name": "The One Sign Rule", "body": "The accent fills exactly one control per screen — the primary action — plus the focus ring. If a screen has two pink buttons, one of them is not the primary action and should be secondary or ghost. Everything else earns attention through weight and spacing.", "section": "colors" },
+      { "name": "The Measured Contrast Rule", "body": "Contrast here is verified, not estimated. tests/contrast.test.ts and tests/token-contrast.test.ts assert the ratios, and values have been rejected for dropping below 4.5:1. Never introduce a colour pair without checking it, and never reach for opacity-* to soften text: it dims whatever it lands on without knowing what that is.", "section": "colors" },
+      { "name": "The Never-Gray Rule", "body": "There are no neutral grays in this system. Every neutral carries violet. A #737373 dropped into this palette is immediately visible as foreign.", "section": "colors" },
+      { "name": "The Persian Numerals Rule", "body": "Every number a user reads is in Persian digits — prices, counts, dates, times, seat numbers, countdowns. lib/format.ts owns this. A Latin numeral in the interface is a defect.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Anything that changes in place while a user watches it — countdowns, prices, seat counts — is tabular-nums, so digits do not reflow as they tick.", "section": "typography" },
+      { "name": "The Logical Property Rule", "body": "ms-*, me-*, ps-*, pe-*, start-*, end-*, text-start, text-end, border-s, border-e. Never ml, mr, pl, pr, left, right. The single most cross-cutting rule in the codebase.", "section": "layout" },
+      { "name": "The Halo-Is-Accent-Only Rule", "body": "A zero-offset coloured glow belongs to the accent and nothing else. Neutral surfaces separate with a border or a real offset shadow; a glow around a gray card is decoration pretending to be depth.", "section": "elevation" },
+      { "name": "The One Radius Per Journey Rule", "body": "A single flow uses one card radius from start to finish. Checkout previously drifted rounded-2xl to rounded-xl to rounded-lg across three screens of one purchase, which reads as three different products.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do spend the accent on exactly one control per screen (The One Sign Rule), plus the focus ring.",
+      "Do use logical properties everywhere — ms/me/ps/pe/start/end.",
+      "Do render every user-facing number through lib/format.ts so it arrives in Persian digits.",
+      "Do use tabular-nums for any figure that updates in place.",
+      "Do reach for buttonVariants when a link must look like a button.",
+      "Do pair a semantic colour's -ink value with its 10% wash — the base fill is not an AA text colour.",
+      "Do verify contrast against the test suite before introducing a colour pair.",
+      "Do keep one card radius for the length of a single user journey."
+    ],
+    "donts": [
+      "Don't introduce a neutral gray. Every neutral in this system carries violet (The Never-Gray Rule).",
+      "Don't use opacity-* to soften text — it silently destroys contrast on whatever it lands on.",
+      "Don't put a coloured glow on anything that is not the accent.",
+      "Don't use #ffffff for a page background; the page is Cool Paper.",
+      "Don't fill a filter chip with pink to show selection — selected chips invert to Violet Ink.",
+      "Don't add a dark-mode branch. This system is light-only; a dark: variant today is untested surface area.",
+      "Don't build a bespoke control where HeroUI or components/ui already has one, and don't add new files to components/ui — it holds thin HeroUI wrappers only.",
+      "Don't ship English in the interface, including strings generated at runtime by the browser."
+    ]
+  }
+}

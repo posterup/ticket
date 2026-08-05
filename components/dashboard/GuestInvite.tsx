@@ -4,6 +4,7 @@ import { useState } from "react";
 import { UserPlus, Phone, AtSign, Check, X, Clock, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
 type Rsvp = "pending" | "going" | "declined";
@@ -95,16 +96,16 @@ export function GuestInvite({
             دعوت
           </Button>
         </div>
-        {error ? <p className="text-xs text-danger">{error}</p> : null}
+        {error ? <p className="text-xs text-danger-text">{error}</p> : null}
       </form>
 
       {guests.length > 0 ? (
         <div className="flex flex-col gap-2 border-t border-border pt-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted">
-              فهرست مهمانان ({guests.length})
+              فهرست مهمانان ({formatNumber(guests.length)})
             </p>
-            <span className="text-xs text-success">{going} می‌آیند</span>
+            <span className="text-xs text-success-text">{going} می‌آیند</span>
           </div>
 
           <ul className="flex flex-col gap-2">
@@ -154,7 +155,7 @@ export function GuestInvite({
                       type="button"
                       onClick={() => onRemove(g.id)}
                       aria-label="حذف مهمان"
-                      className="grid size-8 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-danger focus-visible:ring-2 focus-visible:ring-ring/40"
+                      className="grid size-8 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-danger-text focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Trash2 className="size-4" aria-hidden />
                     </button>
@@ -172,8 +173,8 @@ export function GuestInvite({
 function StatusPill({ status }: { status: Rsvp }) {
   const map = {
     pending: { label: "در انتظار", cls: "text-muted", Icon: Clock },
-    going: { label: "می‌آید", cls: "text-success", Icon: Check },
-    declined: { label: "نمی‌آید", cls: "text-danger", Icon: X },
+    going: { label: "می‌آید", cls: "text-success-text", Icon: Check },
+    declined: { label: "نمی‌آید", cls: "text-danger-text", Icon: X },
   }[status];
   const { Icon } = map;
   return (
@@ -209,9 +210,9 @@ function IconToggle({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "grid size-8 place-items-center rounded-md border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
-        active && tone === "success" && "border-transparent bg-success/10 text-success",
-        active && tone === "danger" && "border-transparent bg-danger/10 text-danger",
+        "grid size-8 place-items-center rounded-md border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+        active && tone === "success" && "border-transparent bg-success/10 text-success-text",
+        active && tone === "danger" && "border-transparent bg-danger/10 text-danger-text",
         !active && "border-border text-muted hover:bg-subtle",
       )}
     >

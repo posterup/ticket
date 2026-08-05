@@ -1,0 +1,38 @@
+# Everything here is either rebuilt inside the image or must never enter it.
+
+# Rebuilt by `npm ci` / `prisma generate` / `next build`
+node_modules
+.next
+out
+build
+generated
+*.tsbuildinfo
+
+# Secrets. The container gets its configuration from compose, not from a file
+# baked into a layer.
+.env
+.env.*
+!.env.example
+
+# Not needed to build or run the server
+.git
+.gitignore
+.github
+.idea
+.claude
+.vercel
+docs
+tests
+*.md
+!README.md
+vitest.config.ts
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Noise
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.pem

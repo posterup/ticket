@@ -4,9 +4,11 @@ import { use } from "react";
 
 import { useApi } from "@/lib/client/api";
 import { AsyncState } from "@/components/ui/async-state";
+import { EventDetailSkeleton } from "@/components/skeletons/EventDetailSkeleton";
 import Link from "next/link";
 
 import {
+  Armchair,
   MapPin,
   Clock,
   ChevronLeft,
@@ -15,12 +17,7 @@ import {
   Video,
 } from "lucide-react";
 
-import {
-  formatJalaliDate,
-  formatTime,
-  formatToman,
-  formatNumber,
-} from "@/lib/format";
+import { formatJalaliDate, formatTime } from "@/lib/format";
 import { cityCoords } from "@/lib/geo/iran";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -28,25 +25,21 @@ import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { EventCover } from "@/components/events/EventCover";
 import { NotifyMe } from "@/components/events/NotifyMe";
-import { BuyBox, type BadgeTone } from "@/components/events/BuyBox";
+import { RequestToJoin } from "@/components/events/RequestToJoin";
+import { JoinWaitlist } from "@/components/events/JoinWaitlist";
+import { BuyBox } from "@/components/events/BuyBox";
 import type {
   Event,
   EventCollaborator,
   TicketType,
   Workspace,
 } from "@/types";
+import { resolveBuyState } from "@/lib/events/buy-state";
 
 interface Params {
   params: Promise<{ id: string }>;
 }
 
-function priceLabel(prices: number[]): string | null {
-  if (prices.length === 0) return null;
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  if (min === 0 && max === 0) return "رایگان";
-  return min === max ? formatToman(min) : `از ${formatToman(min)}`;
-}
 
 interface PageData {
   event: Event;
@@ -54,6 +47,7 @@ interface PageData {
   organizer: Workspace | null;
   collaborators: EventCollaborator[];
   signedIn: boolean;
+  viewer?: { fullName: string; phone: string };
   viewerState: { bookmark: string | null; notify: boolean };
 }
 
@@ -68,8 +62,15 @@ export default function PublicEventDetail({ params }: Params) {
     return (
       <div className="flex min-h-[100dvh] flex-col">
         <PublicHeader />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
-          <AsyncState loading={loading} error={error} onRetry={reload} />
+        {/* Same container and same skeleton as `loading.tsx` — the loaded
+            branch below uses these exact classes, so nothing moves. */}
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+          <AsyncState
+            loading={loading}
+            error={error}
+            onRetry={reload}
+            placeholder={<EventDetailSkeleton />}
+          />
         </main>
         <Footer />
       </div>
@@ -80,6 +81,7 @@ export default function PublicEventDetail({ params }: Params) {
   // The API returns null; the Hosts component treats absent as undefined.
   const organizer = data.organizer ?? undefined;
   const loggedIn = data.signedIn;
+  const viewer = data.viewer;
   const viewerState = data.viewerState;
 
   const sessions = [...event.sessions].sort((a, b) =>
@@ -112,6 +114,7 @@ export default function PublicEventDetail({ params }: Params) {
             {/* 1. Poster */}
             <EventCover
               seed={event.id}
+              poster={event.poster}
               tags={event.tags}
               className="aspect-[16/9] rounded-2xl"
             />
@@ -128,7 +131,7 @@ export default function PublicEventDetail({ params }: Params) {
                 <Link
                   href={`/w/${organizer.slug}`}
                   aria-label={`صفحهٔ برگزارکننده: ${organizer.name}`}
-                  className="group mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pe-2.5 ps-1 outline-none transition-colors hover:border-border-strong hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
+                  className="group mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pe-2.5 ps-1 outline-none transition-colors hover:border-border-strong hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="grid size-7 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
                     {organizer.avatar}
@@ -138,7 +141,7 @@ export default function PublicEventDetail({ params }: Params) {
                     <span className="truncate">{organizer.name}</span>
                     {organizer.verified ? (
                       <BadgeCheck
-                        className="size-4 shrink-0 text-accent"
+                        className="size-4 shrink-0 text-accent-text"
                         aria-label="تأییدشده"
                       />
                     ) : null}
@@ -173,13 +176,26 @@ export default function PublicEventDetail({ params }: Params) {
                 {sessions.map((s) => (
                   <p
                     key={s.id}
-                    className="flex items-center gap-1.5 text-sm text-muted"
+                    className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted"
                   >
                     <Clock className="size-4 shrink-0 text-faint" aria-hidden />
                     <span>
                       {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
                       {formatTime(s.endAt)}
                     </span>
+                    {s.cancelled ? (
+                      <span className="rounded-md bg-subtle px-1.5 py-0.5 text-xs text-danger-text">
+                        لغو شده
+                      </span>
+                    ) : s.layoutVersionId ? (
+                      // Reserved seating changes what the buyer is about to be
+                      // asked to do, so it is said up front rather than sprung
+                      // on them at checkout.
+                      <span className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-1.5 py-0.5 text-xs font-medium text-accent-text">
+                        <Armchair className="size-3.5" aria-hidden />
+                        صندلی شماره‌دار
+                      </span>
+                    ) : null}
                   </p>
                 ))}
               </div>
@@ -190,6 +206,7 @@ export default function PublicEventDetail({ params }: Params) {
               event={event}
               tickets={tickets}
               loggedIn={loggedIn}
+              viewer={viewer}
               notified={viewerState.notify}
               className="lg:hidden"
             />
@@ -234,145 +251,19 @@ export default function PublicEventDetail({ params }: Params) {
   );
 }
 
-/** How the buy-box action behaves for a given sales state. */
-type BuyAction =
-  | { type: "buy"; label: string }
-  | { type: "approval"; label: string }
-  | { type: "notify"; label: string }
-  | { type: "waitlist"; label: string }
-  | { type: "closed"; label: string };
-
-interface BuyState {
-  badge?: { label: string; tone: BadgeTone };
-  title: string;
-  /** Struck-through original price when `title` is a discounted deal. */
-  original?: string;
-  subtitle?: string;
-  action: BuyAction;
-}
-
-const toIso = (ms: number) => new Date(ms).toISOString();
-
-/**
- * Resolve the single sales state to show for an event, from ticket windows,
- * price, stock, and the approval/waitlist flags.
- */
-function resolveBuyState(event: Event, tickets: TicketType[]): BuyState {
-  const now = Date.now();
-  const prices = tickets.map((t) => t.price);
-  const price = priceLabel(prices);
-  const starts = tickets.map((t) => new Date(t.salesStartAt).getTime());
-  const ends = tickets.map((t) => new Date(t.salesEndAt).getTime());
-  const salesStart = starts.length ? Math.min(...starts) : Infinity;
-  const salesEnd = ends.length ? Math.max(...ends) : -Infinity;
-  const capacity = tickets.reduce((sum, t) => sum + (t.capacity || 0), 0);
-  const sold = tickets.reduce((sum, t) => sum + (t.sold ?? 0), 0);
-  const remaining = capacity - sold;
-
-  // 2. Sales haven't started (or no tickets yet).
-  if (tickets.length === 0 || now < salesStart) {
-    return {
-      badge: { label: "به‌زودی", tone: "neutral" },
-      title: "فروش هنوز شروع نشده",
-      subtitle: tickets.length
-        ? `شروع فروش: ${formatJalaliDate(toIso(salesStart))}`
-        : undefined,
-      action: { type: "notify", label: "خبرم کن" },
-    };
-  }
-
-  // 7 & 8. Sold out — stock exhausted or the sales window has ended.
-  const soldOut = (capacity > 0 && remaining <= 0) || now > salesEnd;
-  if (soldOut) {
-    return event.waitlist
-      ? {
-          badge: { label: "تکمیل ظرفیت", tone: "danger" },
-          title: "بلیت‌ها تمام شد",
-          subtitle: "برای لیست انتظار ثبت‌نام کنید",
-          action: { type: "waitlist", label: "لیست انتظار" },
-        }
-      : {
-          badge: { label: "تکمیل ظرفیت", tone: "danger" },
-          title: "بلیت‌ها تمام شد",
-          subtitle: "فروش این رویداد پایان یافت",
-          action: { type: "closed", label: "فروش بسته شد" },
-        };
-  }
-
-  // 4. Registration needs organiser approval.
-  if (event.requiresApproval) {
-    return {
-      badge: { label: "با تأیید میزبان", tone: "accent" },
-      title: price ?? "ثبت درخواست",
-      subtitle: "پس از تأیید میزبان قطعی می‌شود",
-      action: { type: "approval", label: "درخواست ثبت‌نام" },
-    };
-  }
-
-  // 1. Free.
-  if (Math.min(...prices) === 0) {
-    return {
-      badge: { label: "رایگان", tone: "success" },
-      title: "ورود آزاد",
-      subtitle: "بلیت این رویداد رایگان است",
-      action: { type: "buy", label: "دریافت بلیت" },
-    };
-  }
-
-  // 3. An early-bird ticket is currently on sale.
-  const early = tickets.filter(
-    (t) =>
-      t.category === "early-bird" &&
-      new Date(t.salesStartAt).getTime() <= now &&
-      now <= new Date(t.salesEndAt).getTime(),
-  );
-  if (early.length) {
-    const earlyEnd = Math.min(
-      ...early.map((t) => new Date(t.salesEndAt).getTime()),
-    );
-    const dealPrice = Math.min(...early.map((t) => t.price));
-    const regular = tickets
-      .filter((t) => t.category !== "early-bird")
-      .map((t) => t.price);
-    const fullPrice = regular.length ? Math.min(...regular) : dealPrice;
-    return {
-      badge: { label: "فروش ویژه", tone: "accent" },
-      title: formatToman(dealPrice),
-      original:
-        fullPrice > dealPrice ? formatToman(fullPrice) : undefined,
-      subtitle: `بلیت زودهنگام — تا ${formatJalaliDate(toIso(earlyEnd))}`,
-      action: { type: "buy", label: "تهیه بلیت" },
-    };
-  }
-
-  // 5. Almost done — low remaining stock (≤ 10% of capacity).
-  if (capacity > 0 && remaining > 0 && remaining <= Math.max(1, capacity * 0.1)) {
-    return {
-      badge: { label: "آخرین بلیت‌ها", tone: "warning" },
-      title: price ?? "",
-      subtitle: `تنها ${formatNumber(remaining)} بلیت باقی مانده`,
-      action: { type: "buy", label: "تهیه بلیت" },
-    };
-  }
-
-  // 6. Normal on-sale.
-  return {
-    badge: undefined,
-    title: price ?? "",
-    subtitle: undefined,
-    action: { type: "buy", label: "تهیه بلیت" },
-  };
-}
 
 function BuyCard({
   event,
   tickets,
   loggedIn,
+  viewer,
   notified,
   className,
 }: {
   event: Event;
   tickets: TicketType[];
+  /** Signed-in viewer's contact details, for prefilling the forms below. */
+  viewer?: { fullName: string; phone: string };
   /** Resolved on the server, so "notify me" knows where to send a visitor. */
   loggedIn: boolean;
   /** Whether this viewer already asked to be told about the event. */
@@ -382,18 +273,31 @@ function BuyCard({
   const state = resolveBuyState(event, tickets);
   const { action } = state;
   const checkout = `/events/${event.id}/checkout`;
+  // Any bookable showing with a pinned map means the buyer picks seats.
+  const reserved = event.sessions.some(
+    (s) => !s.cancelled && s.layoutVersionId,
+  );
 
   let node: React.ReactNode;
   switch (action.type) {
-    case "buy":
     case "approval":
+      node = (
+        <RequestToJoin
+          eventId={event.id}
+          label={action.label}
+          defaultName={viewer?.fullName}
+          defaultPhone={viewer?.phone}
+        />
+      );
+      break;
+    case "buy":
       node = (
         <Link
           href={checkout}
           className={buttonVariants({ variant: "primary", size: "lg" })}
         >
-          <Ticket aria-hidden />
-          {action.label}
+          {reserved ? <Armchair aria-hidden /> : <Ticket aria-hidden />}
+          {reserved ? "انتخاب صندلی" : action.label}
         </Link>
       );
       break;
@@ -409,13 +313,7 @@ function BuyCard({
       break;
     case "waitlist":
       node = (
-        <NotifyMe
-          eventId={event.id}
-          loggedIn={loggedIn}
-          initialNotified={notified}
-          idleLabel={action.label}
-          activeLabel="در لیست انتظار"
-        />
+        <JoinWaitlist eventId={event.id} label={action.label} viewer={viewer} />
       );
       break;
     case "closed":
@@ -430,6 +328,11 @@ function BuyCard({
           {action.label}
         </span>
       );
+      break;
+    case "none":
+      // A free event is a listing. `BuyBox` renders whatever node it is given,
+      // so nothing here means the box carries its sentence and no control.
+      node = null;
       break;
   }
 
@@ -503,7 +406,7 @@ function Location({
                 href={`https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 text-sm font-medium text-accent underline-offset-4 hover:underline"
+                className="shrink-0 text-sm font-medium text-accent-text underline-offset-4 hover:underline"
               >
                 مسیریابی
               </a>
@@ -585,7 +488,7 @@ function HostRow({
         <span className="flex items-center gap-1 text-sm font-medium text-foreground">
           <span className="truncate">{name}</span>
           {verified ? (
-            <BadgeCheck className="size-4 shrink-0 text-accent" aria-label="تأییدشده" />
+            <BadgeCheck className="size-4 shrink-0 text-accent-text" aria-label="تأییدشده" />
           ) : null}
         </span>
         <span className="block text-xs text-muted">{role}</span>

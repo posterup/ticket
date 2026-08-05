@@ -12,6 +12,7 @@
 import type { Money } from "@/types";
 
 import { db } from "./db";
+import { HttpError, notFound } from "./http";
 
 /** Platform commission on gross sales. */
 const PLATFORM_FEE_RATE = 0.03;
@@ -30,6 +31,8 @@ export interface Transaction {
 }
 
 export interface BankAccount {
+  /** Pre-selected when requesting a withdrawal. */
+  isDefault?: boolean;
   id: string;
   /** Full IR IBAN (`IR` + 24 digits). */
   iban: string;
@@ -37,7 +40,12 @@ export interface BankAccount {
   holder: string;
 }
 
-export type WithdrawalStatus = "paid" | "processing" | "pending";
+/**
+ * `failed` was already excluded from the committed-funds filter while being
+ * absent from this union — a state the code defended against and the types said
+ * could not exist. It can now, because something finally sets these.
+ */
+export type WithdrawalStatus = "paid" | "processing" | "pending" | "failed";
 
 export interface Withdrawal {
   id: string;
@@ -117,10 +125,25 @@ export async function computeFinance(workspaceId: string): Promise<Finance> {
     recentTransactions(workspaceId),
   ]);
 
-  const gross = paid._sum.total ?? 0;
+  /**
+   * A refunded order leaves `PAID` — so it is already absent from the paid
+   * aggregate. Subtracting `refunds` from that total as well debited the
+   * organiser twice: refunding ۲۰۰٬۰۰۰ moved `net` by ۳۹۴٬۰۰۰.
+   *
+   * The bug was unreachable while nothing could set `REFUNDED`, which is
+   * exactly why it survived. It went live the moment refunds did.
+   *
+   * `gross` is now everything ever collected — paid *and* since refunded — so
+   * the finance page can still say what came through the door, and `kept` is
+   * what is actually the organiser's. The platform fee is charged on `kept`,
+   * because taking a commission on money that was handed back is not a fee,
+   * it is a penalty.
+   */
+  const kept = paid._sum.total ?? 0;
   const refunds = refunded._sum.total ?? 0;
-  const fee = Math.round(gross * PLATFORM_FEE_RATE);
-  const net = Math.max(0, gross - fee - refunds);
+  const gross = kept + refunds;
+  const fee = Math.round(kept * PLATFORM_FEE_RATE);
+  const net = Math.max(0, kept - fee);
 
   // Anything not already paid out or in flight is still spendable.
   const committed = payouts
@@ -134,12 +157,17 @@ export async function computeFinance(workspaceId: string): Promise<Finance> {
     net,
     balance: Math.max(0, net - committed),
     transactions,
-    bankAccounts: accounts.map((a) => ({
-      id: a.id,
-      iban: a.iban,
-      bankName: a.bankName,
-      holder: a.holder,
-    })),
+    // Default first, so the withdrawal sheet's pre-selection is the head of
+    // the list rather than whichever row the database returned first.
+    bankAccounts: [...accounts]
+      .sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
+      .map((a) => ({
+        id: a.id,
+        iban: a.iban,
+        bankName: a.bankName,
+        holder: a.holder,
+        isDefault: a.isDefault,
+      })),
     withdrawals: payouts.map((w) => ({
       id: w.id,
       amount: w.amount,
@@ -163,9 +191,12 @@ export async function addBankAccount(
   workspaceId: string,
   input: { iban: string; bankName: string; holder: string },
 ): Promise<BankAccount> {
+  // The first account a workspace adds becomes the default; there is nothing
+  // else to fall back to, and the withdrawal sheet needs a pre-selection.
+  const existing = await db.bankAccount.count({ where: { workspaceId } });
   const row = await db.bankAccount.upsert({
     where: { workspaceId_iban: { workspaceId, iban: input.iban } },
-    create: { workspaceId, ...input },
+    create: { workspaceId, ...input, isDefault: existing === 0 },
     update: { bankName: input.bankName, holder: input.holder },
   });
   return {
@@ -173,7 +204,73 @@ export async function addBankAccount(
     iban: row.iban,
     bankName: row.bankName,
     holder: row.holder,
+    isDefault: row.isDefault,
   };
+}
+
+/**
+ * Remove a payout destination.
+ *
+ * Refused once it has been used: a withdrawal names the account it paid to, and
+ * deleting that record would leave a financial trail pointing at nothing.
+ */
+export async function removeBankAccount(
+  workspaceId: string,
+  accountId: string,
+): Promise<{ removed: boolean; reason?: string }> {
+  const account = await db.bankAccount.findFirst({
+    where: { id: accountId, workspaceId },
+    select: { id: true, isDefault: true, _count: { select: { withdrawals: true } } },
+  });
+  if (!account) return { removed: false, reason: "حساب پیدا نشد." };
+  if (account._count.withdrawals > 0) {
+    return {
+      removed: false,
+      reason: "این حساب سابقه برداشت دارد و حذف نمی‌شود.",
+    };
+  }
+
+  await db.bankAccount.delete({ where: { id: accountId } });
+
+  // Never leave a workspace with accounts but no default.
+  if (account.isDefault) {
+    const next = await db.bankAccount.findFirst({
+      where: { workspaceId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    if (next) {
+      await db.bankAccount.update({
+        where: { id: next.id },
+        data: { isDefault: true },
+      });
+    }
+  }
+  return { removed: true };
+}
+
+/** Exactly one default per workspace, swapped in a single transaction. */
+export async function setDefaultBankAccount(
+  workspaceId: string,
+  accountId: string,
+): Promise<{ ok: boolean }> {
+  const account = await db.bankAccount.findFirst({
+    where: { id: accountId, workspaceId },
+    select: { id: true },
+  });
+  if (!account) return { ok: false };
+
+  await db.$transaction([
+    db.bankAccount.updateMany({
+      where: { workspaceId },
+      data: { isDefault: false },
+    }),
+    db.bankAccount.update({
+      where: { id: accountId },
+      data: { isDefault: true },
+    }),
+  ]);
+  return { ok: true };
 }
 
 export type WithdrawOutcome =
@@ -235,5 +332,125 @@ export async function requestWithdrawal(
       date: row.createdAt.toISOString(),
     },
     balance: balance - input.amount - WITHDRAW_FEE,
+  };
+}
+
+/** Statuses a payout may move to from its current one. */
+const NEXT: Record<WithdrawalStatus, WithdrawalStatus[]> = {
+  pending: ["processing", "paid", "failed"],
+  processing: ["paid", "failed"],
+  // Terminal. A settled payout that turns out to be wrong is a new
+  // transaction, not an edit of the old one.
+  paid: [],
+  failed: [],
+};
+
+export interface PayoutRow {
+  id: string;
+  workspaceId: string;
+  workspaceName: string;
+  amount: Money;
+  fee: Money;
+  status: WithdrawalStatus;
+  iban: string;
+  bankName: string;
+  holder: string;
+  requestedAt: string;
+  settledAt?: string;
+}
+
+/**
+ * Every payout request across the platform, oldest first.
+ *
+ * Organisers could request a withdrawal and nothing could ever advance it:
+ * `settledAt` was never written and no code path moved the status off
+ * `"pending"`. The money was correctly withheld from their balance and then sat
+ * in a state with no exit — a queue nobody could see and nobody could work.
+ */
+export async function listPayouts(
+  status?: WithdrawalStatus,
+): Promise<PayoutRow[]> {
+  const rows = await db.withdrawal.findMany({
+    where: status ? { status } : undefined,
+    // Oldest first: a payout queue is worked in the order people joined it.
+    orderBy: { createdAt: "asc" },
+    include: {
+      bankAccount: true,
+      workspace: { select: { name: true } },
+    },
+  });
+
+  return rows.map((w) => ({
+    id: w.id,
+    workspaceId: w.workspaceId,
+    workspaceName: w.workspace.name,
+    amount: w.amount,
+    fee: w.fee,
+    status: w.status as WithdrawalStatus,
+    iban: w.bankAccount.iban,
+    bankName: w.bankAccount.bankName,
+    holder: w.bankAccount.holder,
+    requestedAt: w.createdAt.toISOString(),
+    settledAt: w.settledAt?.toISOString(),
+  }));
+}
+
+/**
+ * Advance a payout.
+ *
+ * The transition table is enforced rather than trusted: `paid` and `failed` are
+ * terminal, so a double-click cannot re-settle a payout and a mistake cannot be
+ * quietly rewritten into a different past.
+ *
+ * `failed` returns the money to the organiser's spendable balance, because
+ * `computeFinance` counts every non-failed payout as committed — which is why
+ * that filter existed before anything could produce the state.
+ */
+export async function settleWithdrawal(
+  id: string,
+  status: WithdrawalStatus,
+): Promise<PayoutRow> {
+  const current = await db.withdrawal.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!current) throw notFound("درخواست برداشت پیدا نشد.");
+
+  const from = current.status as WithdrawalStatus;
+  if (!NEXT[from]?.includes(status)) {
+    throw new HttpError(
+      409,
+      "CONFLICT",
+      from === status
+        ? "این درخواست همین حالا در همین وضعیت است."
+        : "این تغییر وضعیت مجاز نیست.",
+    );
+  }
+
+  await db.withdrawal.update({
+    where: { id },
+    data: {
+      status,
+      // Stamped only when it actually reaches an end state.
+      settledAt: status === "paid" || status === "failed" ? new Date() : null,
+    },
+  });
+
+  const row = await db.withdrawal.findUniqueOrThrow({
+    where: { id },
+    include: { bankAccount: true, workspace: { select: { name: true } } },
+  });
+  return {
+    id: row.id,
+    workspaceId: row.workspaceId,
+    workspaceName: row.workspace.name,
+    amount: row.amount,
+    fee: row.fee,
+    status: row.status as WithdrawalStatus,
+    iban: row.bankAccount.iban,
+    bankName: row.bankAccount.bankName,
+    holder: row.bankAccount.holder,
+    requestedAt: row.createdAt.toISOString(),
+    settledAt: row.settledAt?.toISOString(),
   };
 }

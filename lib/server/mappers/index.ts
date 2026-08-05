@@ -24,6 +24,7 @@ import type {
   TicketType,
   Venue,
   Workspace,
+  TicketDesign,
 } from "@/types";
 import type * as Row from "@/generated/client";
 
@@ -49,17 +50,40 @@ function opt<T>(value: T | null | undefined): T | undefined {
 
 const iso = (d: Date): string => d.toISOString();
 
-export function toVenue(row: Row.Venue): Venue {
+/**
+ * A venue for the wire.
+ *
+ * `hideAddress` **withholds** the address here rather than leaving it to the
+ * page to not render. It used to travel in full: with the flag set,
+ * `GET /api/events/:id` still answered «خیابان حافظ، تالار وحدت» to any
+ * unauthenticated caller, and it sat in the SSR payload of the public event
+ * page. The event page hid it visually, which is not the same thing at all —
+ * an organiser hiding a venue is usually doing it for a private address or a
+ * safety-sensitive event, and "hidden" that survives `curl` is not hidden.
+ *
+ * The city and province stay: they are what makes the event findable, and an
+ * organiser hiding a street number is not hiding which city they are in. The
+ * coordinates go with the address, because a precise pin *is* the address.
+ *
+ * `reveal` is for the organiser's own edit form, which has to show what it is
+ * editing. Default false, so a new caller is private by accident rather than
+ * public by accident.
+ */
+export function toVenue(
+  row: Row.Venue,
+  { reveal = false }: { reveal?: boolean } = {},
+): Venue {
+  const hidden = row.hideAddress && !reveal;
   return {
     id: row.id,
     name: row.name,
     province: opt(row.province),
     city: row.city,
-    address: row.address,
+    address: hidden ? "" : row.address,
     capacity: row.capacity,
     onlineUrl: opt(row.onlineUrl),
-    lat: opt(row.lat),
-    lng: opt(row.lng),
+    lat: hidden ? undefined : opt(row.lat),
+    lng: hidden ? undefined : opt(row.lng),
     ...(row.hideAddress ? { hideAddress: true } : {}),
   };
 }
@@ -73,6 +97,7 @@ export function toSession(row: Row.EventSession): EventSession {
     venueId: opt(row.venueId),
     ...(row.cancelled ? { cancelled: true } : {}),
     availability: SESSION_AVAILABILITY_FROM_DB[row.availability],
+    layoutVersionId: opt(row.layoutVersionId),
   };
 }
 
@@ -82,7 +107,16 @@ export type EventRow = Row.Event & {
   sessions: Row.EventSession[];
 };
 
-export function toEvent(row: EventRow): Event {
+/**
+ * `reveal` carries through to the venue: an organiser's own dashboard has to
+ * show the address it is about to let them edit, while every public path keeps
+ * a hidden address hidden. Default false — a new caller should be private by
+ * accident, not public by accident.
+ */
+export function toEvent(
+  row: EventRow,
+  { reveal = false }: { reveal?: boolean } = {},
+): Event {
   return {
     id: row.id,
     workspaceId: row.workspaceId,
@@ -90,7 +124,7 @@ export function toEvent(row: EventRow): Event {
     description: row.description,
     status: EVENT_STATUS_FROM_DB[row.status],
     mode: EVENT_MODE_FROM_DB[row.mode],
-    venue: toVenue(row.venue),
+    venue: toVenue(row.venue, { reveal }),
     sessions: row.sessions.map(toSession),
     recurrence: opt(row.recurrence as RecurrenceRule | null),
     recurrenceSchedule: opt(
@@ -103,6 +137,10 @@ export function toEvent(row: EventRow): Event {
     requiresApproval: row.requiresApproval,
     waitlist: row.waitlist,
     slug: opt(row.slug),
+    // JSONB comes back as Prisma's JsonValue; the column only ever holds what
+    // the zod schema let in, so this asserts rather than re-parsing per read.
+    poster: opt(row.poster),
+    ticketDesign: (row.ticketDesign as TicketDesign | null) ?? undefined,
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt),
   };
@@ -211,6 +249,7 @@ export function toDiscount(row: Row.DiscountCode): DiscountCode {
     value: row.value,
     maxRedemptions: row.maxRedemptions,
     redemptions: row.redemptions,
+    reserved: row.reserved,
     expiresAt: row.expiresAt ? iso(row.expiresAt) : null,
     active: row.active,
     createdAt: iso(row.createdAt),

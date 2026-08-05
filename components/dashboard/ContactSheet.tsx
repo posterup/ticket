@@ -171,7 +171,7 @@ export function ContactSheet({
                   type="button"
                   onClick={onClose}
                   aria-label="بستن"
-                  className="grid size-9 shrink-0 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
+                  className="grid size-9 shrink-0 place-items-center rounded-full text-muted outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <X className="size-5" aria-hidden />
                 </button>
@@ -211,14 +211,21 @@ export function ContactSheet({
                       contact.tags.map((t) => (
                         <span
                           key={t}
-                          className="inline-flex items-center gap-1 rounded-full bg-accent-soft py-1 pe-1.5 ps-2.5 text-xs font-medium text-accent"
+                          className="inline-flex items-center gap-1 rounded-full bg-accent-soft py-1 pe-1.5 ps-2.5 text-xs font-medium text-accent-text"
                         >
                           {t}
                           <button
                             type="button"
                             onClick={() => removeTag(t)}
                             aria-label={`حذف برچسب ${t}`}
-                            className="grid size-4 place-items-center rounded-full transition-colors hover:bg-accent/15"
+                            /*
+                              16px of visible chrome, 28px of reachable target.
+                              Growing the button itself would grow the chip it
+                              sits in, so the hit area is extended past the
+                              visual box instead — the standard trick for a
+                              control that has to stay small to fit.
+                            */
+                            className="relative grid size-4 place-items-center rounded-full transition-colors before:absolute before:-inset-1.5 before:content-[''] hover:bg-accent/15"
                           >
                             <X className="size-3" aria-hidden />
                           </button>
@@ -245,7 +252,7 @@ export function ContactSheet({
                     <button
                       type="submit"
                       disabled={!draft.trim()}
-                      className="grid size-10 shrink-0 place-items-center rounded-md bg-foreground text-background outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring/40 active:scale-95 disabled:opacity-40"
+                      className="grid size-10 shrink-0 place-items-center rounded-md bg-foreground text-background outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ring active:scale-95 disabled:opacity-40"
                       aria-label="افزودن برچسب"
                     >
                       <Plus className="size-5" aria-hidden />
@@ -261,7 +268,7 @@ export function ContactSheet({
                             key={t}
                             type="button"
                             onClick={() => addTag(t)}
-                            className="inline-flex items-center gap-1 rounded-full border border-border bg-subtle px-2.5 py-1 text-xs text-muted outline-none transition-colors hover:border-border-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+                            className="inline-flex items-center gap-1 rounded-full border border-border bg-subtle px-2.5 py-1 text-xs text-muted outline-none transition-colors hover:border-border-strong hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             <Plus className="size-3" aria-hidden />
                             {t}

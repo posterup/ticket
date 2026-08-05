@@ -210,10 +210,11 @@ model Venue {
 
   events   Event[]
   sessions EventSession[]
+  layout   VenueLayout?
 }
 
 model Event {
-  id String @id @default(uuid())
+  id              String      @id @default(uuid())
   /// Replaces the hardcoded EVENT_WORKSPACE map. Every event has an owner.
   workspaceId     String
   createdByUserId String?
@@ -224,7 +225,7 @@ model Event {
   venueId         String
 
   /// RecurrenceRule — read and written whole, never queried into.
-  recurrence Json?
+  recurrence         Json?
   /// RecurrenceSchedule — likewise.
   recurrenceSchedule Json?
 
@@ -233,6 +234,16 @@ model Event {
   visibility       EventVisibility @default(PUBLIC)
   audienceTags     String[]
   requiresApproval Boolean         @default(false)
+  /// TicketTemplate — how the issued ticket looks. Read and written whole by
+  /// the designer, never queried into, so JSON rather than eight columns.
+  /// Cover image, as a Blob URL. Null falls back to the generated gradient.
+  ///
+  /// The create wizard has always had a poster field and it went nowhere: the
+  /// draft carried it for the preview and dropped it on submit, so every event
+  /// on the site rendered `EventCover`'s gradient no matter what the organiser
+  /// uploaded.
+  poster           String?
+  ticketDesign     Json?
   waitlist         Boolean         @default(false)
   slug             String?         @unique
 
@@ -255,26 +266,34 @@ model Event {
   orders              Order[]
   bookmarks           Bookmark[]
   notifySubscriptions NotifySubscription[]
+  sectionPricing      SessionSectionPricing[]
+  waitlistEntries     WaitlistEntry[]
 
   @@index([workspaceId, status])
   @@index([status, visibility])
 }
 
 model EventSession {
-  id           String              @id @default(uuid())
-  eventId      String
-  startAt      DateTime
-  endAt        DateTime
-  venueId      String?
-  cancelled    Boolean             @default(false)
-  availability SessionAvailability @default(AVAILABLE)
+  id              String              @id @default(uuid())
+  eventId         String
+  startAt         DateTime
+  endAt           DateTime
+  venueId         String?
+  cancelled       Boolean             @default(false)
+  availability    SessionAvailability @default(AVAILABLE)
+  /// Pinned seat map. Null for unreserved-seating events, which keep selling
+  /// on TicketType capacity alone.
+  layoutVersionId String?
 
-  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  venue Venue? @relation(fields: [venueId], references: [id])
+  event         Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  venue         Venue?              @relation(fields: [venueId], references: [id])
+  layoutVersion VenueLayoutVersion? @relation(fields: [layoutVersionId], references: [id])
 
-  guests  EventGuest[]
-  orders  Order[]
-  tickets Ticket[]
+  guests       EventGuest[]
+  orders       Order[]
+  tickets      Ticket[]
+  seatStatuses SeatStatus[]
+  seatHolds    SeatHold[]
 
   /// Recurrence regeneration matches surviving sessions on this, not on the id.
   @@unique([eventId, startAt])
@@ -291,16 +310,16 @@ enum TicketCategory {
 }
 
 model TicketType {
-  id      String @id @default(uuid())
-  eventId String
-  name    String
+  id       String @id @default(uuid())
+  eventId  String
+  name     String
   /// Integer Toman. 0 is a free ticket.
   price    Int
   capacity Int
   /// Authoritative once orders exist — no longer an estimate.
-  sold     Int @default(0)
+  sold     Int    @default(0)
   /// Held by pending, unexpired orders. `sold + reserved <= capacity`.
-  reserved Int @default(0)
+  reserved Int    @default(0)
 
   salesStartAt DateTime
   salesEndAt   DateTime
@@ -308,9 +327,10 @@ model TicketType {
   description  String?
   createdAt    DateTime       @default(now())
 
-  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
-  tickets    Ticket[]
+  event          Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]
+  tickets        Ticket[]
+  sectionPricing SessionSectionPricing[]
 
   @@index([eventId])
 }
@@ -335,12 +355,12 @@ enum PaymentStatus {
 }
 
 model Order {
-  id String @id @default(uuid())
+  id   String @id @default(uuid())
   /// Human tracking code (کد پیگیری) shown on the order page.
   code String @unique
 
-  eventId   String
-  sessionId String?
+  eventId    String
+  sessionId  String?
   /// Null for guest checkout.
   userId     String?
   buyerName  String
@@ -366,10 +386,12 @@ model Order {
   attendee     Attendee?     @relation(fields: [attendeeId], references: [id])
   discountCode DiscountCode? @relation(fields: [discountCodeId], references: [id])
 
-  items      OrderItem[]
-  payments   Payment[]
-  tickets    Ticket[]
-  redemption DiscountRedemption?
+  items        OrderItem[]
+  payments     Payment[]
+  tickets      Ticket[]
+  redemption   DiscountRedemption?
+  seatStatuses SeatStatus[]
+  seatHolds    SeatHold[]
 
   @@index([userId, createdAt])
   @@index([eventId, status])
@@ -392,8 +414,8 @@ model OrderItem {
 }
 
 model Payment {
-  id      String @id @default(uuid())
-  orderId String
+  id       String @id @default(uuid())
+  orderId  String
   /// "zarinpal" | "zarinpal-sandbox" | "mock" | "free"
   provider String
   /// Toman, as charged. Rial conversion happens only inside the adapter.
@@ -422,20 +444,23 @@ enum TicketStatus {
 }
 
 model Ticket {
-  id           String  @id @default(uuid())
+  id           String       @id @default(uuid())
   orderId      String
   ticketTypeId String
   sessionId    String?
   holderName   String
   holderPhone  String?
   /// 32 random bytes, base64url. What the door scanner reads.
-  qrToken  String       @unique
-  status   TicketStatus @default(ISSUED)
-  issuedAt DateTime     @default(now())
+  qrToken      String       @unique
+  status       TicketStatus @default(ISSUED)
+  issuedAt     DateTime     @default(now())
+  /// Set for assigned seating. Null keeps the historic unreserved behaviour.
+  seatId       String?
 
   order      Order         @relation(fields: [orderId], references: [id])
   ticketType TicketType    @relation(fields: [ticketTypeId], references: [id])
   session    EventSession? @relation(fields: [sessionId], references: [id])
+  seat       VenueSeat?    @relation(fields: [seatId], references: [id])
   checkIn    CheckIn?
 
   @@index([orderId])
@@ -443,7 +468,7 @@ model Ticket {
 }
 
 model CheckIn {
-  id String @id @default(uuid())
+  id          String   @id @default(uuid())
   /// One check-in per ticket, enforced by the database rather than by a guard.
   ticketId    String   @unique
   checkedById String?
@@ -459,18 +484,25 @@ enum DiscountKind {
 }
 
 model DiscountCode {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   workspaceId String
   /// Null scopes the code to every event of the workspace.
-  eventId   String?
-  sessionId String?
+  eventId     String?
+  sessionId   String?
 
   /// Stored upper-case; uniqueness is per workspace.
   code           String
   kind           DiscountKind
   value          Int
   maxRedemptions Int?
+  /// Settled: one per paid order, written alongside a `DiscountRedemption`.
   redemptions    Int          @default(0)
+  /// Claimed by pending, unexpired orders — the same idea as
+  /// `TicketType.reserved`, and for the same reason. The cap was checked
+  /// against `redemptions` alone, which only moves at payment, so every order
+  /// placed before the first buyer paid read the same stale zero and passed.
+  /// `redemptions + reserved <= maxRedemptions` is the real invariant.
+  reserved       Int          @default(0)
   expiresAt      DateTime?
   active         Boolean      @default(true)
   createdAt      DateTime     @default(now())
@@ -500,7 +532,7 @@ model DiscountRedemption {
 // ───────────────────────────── CRM ─────────────────────────────
 
 model Attendee {
-  id String @id @default(uuid())
+  id          String  @id @default(uuid())
   /// The CRM is tenant-scoped: a contact belongs to one workspace.
   workspaceId String
   /// Linked platform account, when the phone matches a User.
@@ -704,6 +736,9 @@ model BankAccount {
   iban        String
   bankName    String
   holder      String
+  /// Pre-selected in the withdrawal sheet. The dashboard offered this control
+  /// before there was anywhere to store the answer.
+  isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -727,4 +762,226 @@ model Withdrawal {
   bankAccount BankAccount @relation(fields: [bankAccountId], references: [id])
 
   @@index([workspaceId, createdAt])
+}
+
+// ───────────────────────── venue layouts (seat maps) ─────────────────────────
+//
+// Three planes, kept apart because they change at wildly different rates:
+//
+//  * Geometry  — VenueLayout / …Version / …Section / …Row / …Seat. Changes on
+//    renovation, i.e. effectively never. Addressed by version id and cached
+//    forever by the client.
+//  * Availability — SeatStatus / SeatHold. Changes constantly. Both are
+//    **sparse**: a seat with no row is available. That keeps these tables
+//    proportional to sales rather than to capacity, which is the difference
+//    between 5k rows and 50k rows per showing on a stadium.
+//  * Commerce  — the existing Order/Ticket flow, extended with Ticket.seatId.
+//
+// Availability keys on EventSession, never on Event: one cinema layout serves
+// five showings of the same film, each with its own independent inventory.
+
+/// The editable head. One per Venue; the designer reads and writes `draft`.
+model VenueLayout {
+  id                 String  @id @default(uuid())
+  venueId            String  @unique
+  name               String
+  /// LayoutSpec — read and written whole by the designer, never queried into.
+  draft              Json
+  publishedVersionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue    Venue                @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  versions VenueLayoutVersion[]
+}
+
+/// An immutable snapshot. Sessions pin one of these, so renovating a venue can
+/// never rewrite the seat printed on an already-sold ticket.
+model VenueLayoutVersion {
+  id          String   @id @default(uuid())
+  layoutId    String
+  version     Int
+  /// Frozen LayoutSpec.
+  spec        Json
+  width       Float
+  height      Float
+  totalSeats  Int
+  publishedAt DateTime @default(now())
+
+  layout   VenueLayout    @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  sections VenueSection[]
+  sessions EventSession[]
+
+  @@unique([layoutId, version])
+}
+
+model VenueSection {
+  id           String      @id @default(uuid())
+  versionId    String
+  /// Stable slug within the version. The wire identity for a section.
+  key          String
+  name         String
+  kind         SectionKind @default(SEATED)
+  /// SectionShape — rect | polygon | arc.
+  shape        Json
+  color        String
+  labelX       Float
+  labelY       Float
+  /// Authored proximity tier; 1 is closest. Never a computed distance — a
+  /// centre balcony seat beats a front-side seat, which geometry cannot know.
+  tier         Int         @default(1)
+  /// Authoritative for STANDING sections, which have no seats.
+  capacity     Int         @default(0)
+  seatCount    Int         @default(0)
+  /// Columnar seat geometry compiled at publish. Drawing reads this blob;
+  /// it never joins VenueSeat.
+  seatBlob     Json?
+  displayOrder Int         @default(0)
+
+  version VenueLayoutVersion      @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  rows    VenueRow[]
+  seats   VenueSeat[]
+  pricing SessionSectionPricing[]
+
+  @@unique([versionId, key])
+}
+
+model VenueRow {
+  id        String @id @default(uuid())
+  sectionId String
+  key       String
+  label     String
+  index     Int
+  seatCount Int
+
+  section VenueSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  seats   VenueSeat[]
+
+  @@unique([sectionId, key])
+}
+
+model VenueSeat {
+  id        String   @id @default(uuid())
+  sectionId String
+  rowId     String
+  /// Section-local ordinal. This is what travels on the wire — uuids never do.
+  index     Int
+  /// ASCII. Persian digits are a rendering concern, so sorting and door
+  /// scanning keep working on the stored value.
+  label     String
+  x         Float
+  y         Float
+  kind      SeatKind @default(STANDARD)
+
+  section  VenueSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  row      VenueRow     @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  statuses SeatStatus[]
+  holds    SeatHold[]
+  tickets  Ticket[]
+
+  @@unique([sectionId, index])
+  @@index([rowId])
+}
+
+/// SPARSE — the absence of a row means the seat is available.
+model SeatStatus {
+  id        String    @id @default(uuid())
+  sessionId String
+  seatId    String
+  state     SeatState
+  orderId   String?
+  createdAt DateTime  @default(now())
+
+  session EventSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  seat    VenueSeat    @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  order   Order?       @relation(fields: [orderId], references: [id])
+
+  @@unique([sessionId, seatId])
+  @@index([sessionId])
+}
+
+/// SPARSE and transient. The unique constraint is the atomicity primitive:
+/// acquisition is one conditional INSERT whose affected-row count is the
+/// verdict, matching how TicketType capacity is claimed in lib/server/orders.ts.
+model SeatHold {
+  id        String   @id @default(uuid())
+  sessionId String
+  seatId    String
+  /// Browser-session token or user id — who may release or convert this hold.
+  holderKey String
+  /// Rate limiting only, never authentication. A guest's holderKey is a cookie
+  /// they control, so rotating it buys another full allowance; the IP is what
+  /// bounds that.
+  ip        String?
+  orderId   String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  session EventSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  seat    VenueSeat    @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  order   Order?       @relation(fields: [orderId], references: [id])
+
+  @@unique([sessionId, seatId])
+  @@index([expiresAt])
+  @@index([sessionId, holderKey])
+}
+
+/// Which TicketType prices a section, per event. Sections are geometry and are
+/// shared across events; price is not.
+model SessionSectionPricing {
+  id           String @id @default(uuid())
+  eventId      String
+  sectionId    String
+  ticketTypeId String
+
+  event      Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  section    VenueSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  ticketType TicketType   @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, sectionId])
+  @@index([eventId])
+}
+
+enum SectionKind {
+  SEATED   @map("seated")
+  STANDING @map("standing")
+}
+
+enum SeatState {
+  SOLD    @map("sold")
+  BLOCKED @map("blocked")
+}
+
+enum SeatKind {
+  STANDARD   @map("standard")
+  WHEELCHAIR @map("wheelchair")
+  COMPANION  @map("companion")
+  OBSTRUCTED @map("obstructed")
+  HOUSE      @map("house")
+}
+
+/// A real queue for a sold-out event, distinct from NotifySubscription.
+///
+/// "Notify me" is interest in an event that has not opened; a waitlist is a
+/// claim on inventory that has run out. They differ in what happens when stock
+/// appears: a notify subscriber is told the event exists, a waitlist entry is
+/// told *their* turn has come, in the order they joined.
+model WaitlistEntry {
+  id         String    @id @default(uuid())
+  eventId    String
+  name       String
+  phone      String
+  quantity   Int       @default(1)
+  /// Set when this entry has been told seats are free, so the sweeper does not
+  /// message the same person twice for one release.
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  /// One place in the queue per person. Joining twice does not jump the line.
+  @@unique([eventId, phone])
+  /// Position is derived from arrival order, so this is the read path.
+  @@index([eventId, createdAt])
 }

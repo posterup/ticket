@@ -13,6 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { apiFetch, ApiCallError } from "@/lib/client/api";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,9 @@ const STATUS: Record<WithdrawalStatus, { label: string; dot: string }> = {
   paid: { label: "واریز شد", dot: "bg-success" },
   processing: { label: "در حال پردازش", dot: "bg-warning" },
   pending: { label: "در انتظار", dot: "bg-muted" },
+  // A failed payout releases its funds back into the spendable balance, so the
+  // organiser needs to see it rather than wonder where the request went.
+  failed: { label: "ناموفق", dot: "bg-danger" },
 };
 
 /** Iranian banks offered when saving a new account. */
@@ -93,11 +97,14 @@ function accountLabel(a: BankAccount): string {
  * confirmation), and the list of past withdrawals beneath.
  */
 export function WalletPanel({
+  slug,
   balance: initialBalance,
   fee,
   accounts: initialAccounts,
   withdrawals: initialWithdrawals,
 }: {
+  /** Workspace the money belongs to. Without it nothing here can persist. */
+  slug: string;
   balance: number;
   fee: number;
   accounts: BankAccount[];
@@ -107,7 +114,9 @@ export function WalletPanel({
   const [balance, setBalance] = useState(initialBalance);
   const [withdrawals, setWithdrawals] = useState(initialWithdrawals);
   const [accounts, setAccounts] = useState(initialAccounts);
-  const [defaultId, setDefaultId] = useState(initialAccounts[0]?.id ?? "");
+  const [defaultId, setDefaultId] = useState(
+    initialAccounts.find((a) => a.isDefault)?.id ?? initialAccounts[0]?.id ?? "",
+  );
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "confirm">("form");
@@ -122,6 +131,8 @@ export function WalletPanel({
   const [bankName, setBankName] = useState<string>(BANKS[0]);
   const [holder, setHolder] = useState("");
   const [addError, setAddError] = useState("");
+  const [addSaving, setAddSaving] = useState(false);
+  const [accountError, setAccountError] = useState("");
 
   const account = accounts.find((a) => a.id === accountId);
   const amountValue = Number(amount) || 0;
@@ -141,7 +152,7 @@ export function WalletPanel({
     reset();
   }
 
-  function addAccount() {
+  async function addAccount() {
     const normalized = normalizeIban(iban);
     if (!isValidIban(normalized)) {
       setAddError("شماره شبا باید با IR و ۲۴ رقم باشد.");
@@ -155,29 +166,75 @@ export function WalletPanel({
       setAddError("نام صاحب حساب را وارد کنید.");
       return;
     }
-    const record: BankAccount = {
-      id: `ba-${Date.now()}`,
-      iban: normalized,
-      bankName,
-      holder: holder.trim(),
-    };
-    setAccounts((prev) => [...prev, record]);
-    // First-ever account becomes the default automatically.
-    setDefaultId((prev) => prev || record.id);
-    setAddOpen(false);
-    setIban("");
-    setBankName(BANKS[0]);
-    setHolder("");
     setAddError("");
+    setAddSaving(true);
+    try {
+      // Previously this built a client-side object and pushed it into state,
+      // so the account vanished on reload while the UI reported success.
+      const record = await apiFetch<BankAccount>(
+        `/api/workspaces/${slug}/bank-accounts`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            iban: normalized,
+            bankName,
+            holder: holder.trim(),
+          }),
+        },
+      );
+      setAccounts((prev) => [...prev, record]);
+      // First-ever account becomes the default automatically.
+      setDefaultId((prev) => prev || record.id);
+      setAddOpen(false);
+      setIban("");
+      setBankName(BANKS[0]);
+      setHolder("");
+    } catch (e) {
+      setAddError(
+        e instanceof ApiCallError ? e.message : "ثبت حساب ناموفق بود.",
+      );
+    } finally {
+      setAddSaving(false);
+    }
   }
 
-  function removeAccount(id: string) {
-    setAccounts((prev) => {
-      const next = prev.filter((a) => a.id !== id);
-      if (id === defaultId) setDefaultId(next[0]?.id ?? "");
-      if (id === accountId) setAccountId(next[0]?.id ?? "");
-      return next;
-    });
+  async function removeAccount(id: string) {
+    setAccountError("");
+    try {
+      // The server refuses an account that has been paid to, so the list only
+      // changes once it has actually gone.
+      await apiFetch(`/api/workspaces/${slug}/bank-accounts/${id}`, {
+        method: "DELETE",
+      });
+      setAccounts((prev) => {
+        const next = prev.filter((a) => a.id !== id);
+        if (id === defaultId) setDefaultId(next[0]?.id ?? "");
+        if (id === accountId) setAccountId(next[0]?.id ?? "");
+        return next;
+      });
+    } catch (e) {
+      setAccountError(
+        e instanceof ApiCallError ? e.message : "حذف حساب ناموفق بود.",
+      );
+    }
+  }
+
+  async function makeDefault(id: string) {
+    setAccountError("");
+    const previous = defaultId;
+    setDefaultId(id);
+    try {
+      await apiFetch(`/api/workspaces/${slug}/bank-accounts/${id}`, {
+        method: "PATCH",
+      });
+    } catch (e) {
+      // Put the marker back rather than leave the screen disagreeing with
+      // what the next withdrawal will actually use.
+      setDefaultId(previous);
+      setAccountError(
+        e instanceof ApiCallError ? e.message : "تغییر حساب پیش‌فرض ناموفق بود.",
+      );
+    }
   }
 
   function goConfirm() {
@@ -189,8 +246,13 @@ export function WalletPanel({
       setError(`مبلغ برداشت باید بیشتر از کارمزد (${formatToman(fee)}) باشد.`);
       return;
     }
-    if (amountValue > balance) {
-      setError("مبلغ برداشت بیشتر از موجودی کیف پول است.");
+    // The server takes the fee on top of the amount, so a request for exactly
+    // the balance is short by the fee. Checking the same sum here means the
+    // buyer is told before the confirm step, not after it.
+    if (amountValue + fee > balance) {
+      setError(
+        `با احتساب کارمزد (${formatToman(fee)}) موجودی کافی نیست.`,
+      );
       return;
     }
     if (!account) {
@@ -201,23 +263,35 @@ export function WalletPanel({
     setStep("confirm");
   }
 
-  function submit() {
+  async function submit() {
     if (!account) return;
     setSubmitting(true);
-    // Sample data: append the request locally and debit the wallet.
-    const record: Withdrawal = {
-      id: `wd-${Date.now()}`,
-      amount: amountValue,
-      fee,
-      iban: account.iban,
-      bankName: account.bankName,
-      status: "pending",
-      date: new Date().toISOString(),
-    };
-    setWithdrawals((prev) => [record, ...prev]);
-    setBalance((b) => b - amountValue);
-    setOpen(false);
-    reset();
+    setError("");
+    try {
+      // The server owns the balance and the fee; what comes back is the
+      // recorded request, not an optimistic guess at one.
+      const result = await apiFetch<{ withdrawal: Withdrawal; balance: number }>(
+        `/api/workspaces/${slug}/withdrawals`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            amount: amountValue,
+            bankAccountId: account.id,
+          }),
+        },
+      );
+      setWithdrawals((prev) => [result.withdrawal, ...prev]);
+      if (typeof result.balance === "number") setBalance(result.balance);
+      setOpen(false);
+      reset();
+    } catch (e) {
+      setStep("form");
+      setError(
+        e instanceof ApiCallError ? e.message : "ثبت درخواست برداشت ناموفق بود.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -305,6 +379,11 @@ export function WalletPanel({
             افزودن حساب
           </Button>
         </div>
+        {accountError ? (
+          <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger-text">
+            {accountError}
+          </p>
+        ) : null}
         {accounts.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border bg-subtle/40 px-5 py-8 text-center text-sm text-muted">
             هنوز حساب بانکی ثبت نکرده‌اید. برای برداشت، یک شبا اضافه کنید.
@@ -320,7 +399,7 @@ export function WalletPanel({
                   <p className="flex items-center gap-2 text-sm font-medium text-foreground">
                     {a.bankName}
                     {a.id === defaultId ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/5 px-2 py-0.5 text-[0.625rem] text-accent">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/5 px-2 py-0.5 text-[0.625rem] text-accent-text">
                         <Star className="size-2.5 fill-current" aria-hidden />
                         پیش‌فرض
                       </span>
@@ -336,7 +415,7 @@ export function WalletPanel({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDefaultId(a.id)}
+                      onClick={() => makeDefault(a.id)}
                     >
                       پیش‌فرض
                     </Button>
@@ -345,7 +424,7 @@ export function WalletPanel({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="text-danger hover:bg-danger/5"
+                    className="text-danger-text hover:bg-danger/5"
                     aria-label="حذف حساب"
                     onClick={() => removeAccount(a.id)}
                   >
@@ -409,7 +488,7 @@ export function WalletPanel({
                 />
               </Field>
 
-              {addError ? <p className="text-sm text-danger">{addError}</p> : null}
+              {addError ? <p className="text-sm text-danger-text">{addError}</p> : null}
 
               <div className="grid grid-cols-2 gap-3 border-t border-border pt-4">
                 <Button
@@ -420,7 +499,12 @@ export function WalletPanel({
                 >
                   انصراف
                 </Button>
-                <Button type="button" className="w-full" onClick={addAccount}>
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={addSaving}
+                  onClick={addAccount}
+                >
                   <Check aria-hidden />
                   ذخیره حساب
                 </Button>
@@ -469,7 +553,7 @@ export function WalletPanel({
                   </Select>
                 </Field>
 
-                {error ? <p className="text-sm text-danger">{error}</p> : null}
+                {error ? <p className="text-sm text-danger-text">{error}</p> : null}
 
                 <div className="grid grid-cols-2 gap-3 border-t border-border pt-4">
                   <Button

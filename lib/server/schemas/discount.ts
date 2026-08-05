@@ -44,5 +44,9 @@ export const createDiscountSchema = z
 export const validateDiscountSchema = z.object({
   code: z.string(),
   eventId: z.string(),
+  // The showing being bought. A code pinned to one سانس is only valid there,
+  // and preview must apply the same rule as checkout or the buyer is told
+  // "applied" and refused at submit.
+  sessionId: z.string().optional(),
   subtotal: z.number().finite(),
 });

@@ -14,6 +14,8 @@ export interface FeedEvent {
   venue: string;
   dateLabel: string;
   price: string | null;
+  /** Cover image URL, or null for the generated gradient. */
+  poster: string | null;
   tags: string[];
   wsSlug: string;
   wsName: string;
@@ -64,7 +66,7 @@ export function FeedClient({
               <span className="flex items-center gap-1">
                 {e.wsName}
                 {e.wsVerified ? (
-                  <BadgeCheck className="size-4 text-accent" aria-label="تأییدشده" />
+                  <BadgeCheck className="size-4 text-accent-text" aria-label="تأییدشده" />
                 ) : null}
               </span>
             </Link>
@@ -73,6 +75,7 @@ export function FeedClient({
           <Link href={`/events/${e.id}`} className="mt-4 block">
             <EventCover
               seed={e.id}
+              poster={e.poster}
               tags={e.tags}
               className="mb-4 aspect-[16/7] rounded-lg"
             />

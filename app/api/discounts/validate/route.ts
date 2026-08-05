@@ -8,9 +8,9 @@ import { validateDiscountSchema } from "@/lib/server/schemas/discount";
  * 400 only when the request body itself is malformed.
  */
 export const POST = handler(async (request: Request) => {
-  const { code, eventId, subtotal } = await readJson(
+  const { code, eventId, sessionId, subtotal } = await readJson(
     request,
     validateDiscountSchema,
   );
-  return ok(await validateDiscount(code, eventId, subtotal));
+  return ok(await validateDiscount(code, eventId, subtotal, sessionId));
 });

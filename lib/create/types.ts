@@ -344,3 +344,19 @@ export function expandSchedule(schedule: ScheduleDraft): SessionDraft[] {
   }
   return out;
 }
+
+/**
+ * What a blank capacity field means.
+ *
+ * `TicketType.capacity` is a non-null `Int` and `reserve()` uses it as a hard
+ * ceiling — `sold + reserved + qty <= capacity` — so a blank field sent as `0`
+ * makes the ticket unsellable. The capacity input's placeholder says
+ * «نامحدود», and the wizard was turning that promise into zero: the event page
+ * offered «ورود آزاد» and the order was refused with «ظرفیت تکمیل شده است».
+ *
+ * A large number rather than a nullable column: `capacity` is read as a
+ * denominator by the availability indicator and as the allocation ceiling by
+ * the seat map, and both behave correctly with a big value. Making it nullable
+ * would mean teaching every one of those to handle "no ceiling".
+ */
+export const UNLIMITED_CAPACITY = 1_000_000;

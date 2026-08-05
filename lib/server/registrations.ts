@@ -4,8 +4,13 @@
  */
 
 import type { EventRegistration, RegistrationStatus } from "@/types";
+import { normalizeMobile } from "@/lib/server/sms";
 
 import { db } from "./db";
+import {
+  notifyRegistrationDecision,
+  notifyRegistrationRequested,
+} from "./notifications/waiting";
 import { toRegistration } from "./mappers";
 import { REGISTRATION_STATUS_TO_DB } from "./mappers/enums";
 
@@ -38,10 +43,19 @@ export async function createRegistration(
     data: {
       eventId,
       name: input.name,
-      phone: input.phone,
+      // Normalised on the way in, like `waitlist.ts` does. Stored raw, the same
+      // requester typing `+98…` one day and `09…` the next produced two
+      // requests, and the approval gate in `createOrder` matched whichever one
+      // the organiser happened to accept.
+      phone: normalizeMobile(input.phone),
       tickets: input.tickets,
     },
   });
+
+  // Not awaited: the guest's confirmation should not wait on an SMS operator,
+  // and the notifier never throws.
+  void notifyRegistrationRequested(row.id);
+
   return toRegistration(row);
 }
 
@@ -52,13 +66,21 @@ export async function setRegistrationStatus(
 ): Promise<EventRegistration | undefined> {
   const exists = await db.eventRegistration.findUnique({
     where: { id },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (!exists) return undefined;
 
+  const next = REGISTRATION_STATUS_TO_DB[status];
+  // Only a real change notifies. Re-saving an already-accepted request, which
+  // a dashboard does on every click, must not text the guest twice.
+  const changed = exists.status !== next;
+
   const row = await db.eventRegistration.update({
     where: { id },
-    data: { status: REGISTRATION_STATUS_TO_DB[status] },
+    data: { status: next },
   });
+
+  if (changed) void notifyRegistrationDecision(row.id);
+
   return toRegistration(row);
 }

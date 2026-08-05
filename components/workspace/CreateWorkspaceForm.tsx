@@ -53,7 +53,7 @@ export function CreateWorkspaceForm() {
                 aria-pressed={type === t.value}
                 onClick={() => setType(t.value)}
                 className={cn(
-                  "flex items-start gap-3 rounded-lg border p-4 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                  "flex items-start gap-3 rounded-lg border p-4 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                   type === t.value
                     ? "border-foreground bg-subtle"
                     : "border-border hover:border-border-strong",

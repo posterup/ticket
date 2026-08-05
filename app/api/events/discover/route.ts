@@ -4,6 +4,7 @@ import {
   listPublicEvents,
   minPriceByEvent,
 } from "@/lib/server";
+import { getCurrentUser } from "@/lib/server/auth/guards";
 import { handler, ok } from "@/lib/server/http";
 import { formatJalaliDate, formatToman } from "@/lib/format";
 import { modeLabel } from "@/lib/events/labels";
@@ -25,7 +26,12 @@ function fromPrice(min: number | undefined): string | null {
  * cannot drift apart on how a date or price reads.
  */
 export const GET = handler(async () => {
-  const events = await listPublicEvents();
+  // Anonymous callers get the public list; a signed-in one also sees events
+  // aimed at a CRM segment they are in.
+  const viewer = await getCurrentUser();
+  const events = await listPublicEvents(
+    viewer ? { id: viewer.id, phone: viewer.phone } : undefined,
+  );
   const ids = events.map((e) => e.id);
 
   const [prices, orgs, engagement] = await Promise.all([
@@ -41,6 +47,7 @@ export const GET = handler(async () => {
       id: event.id,
       title: event.title,
       modeLabel: modeLabel(event.mode),
+      poster: event.poster ?? null,
       city: event.venue.city,
       venueName: event.venue.name,
       dateLabel: first ? formatJalaliDate(first.startAt) : "",

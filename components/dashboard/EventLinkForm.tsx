@@ -86,11 +86,11 @@ export function EventLinkForm({
           type="button"
           onClick={copy}
           aria-label="کپی لینک"
-          className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
           {copied ? (
             <>
-              <Check className="size-3.5 text-success" aria-hidden />
+              <Check className="size-3.5 text-success-text" aria-hidden />
               کپی شد
             </>
           ) : (
@@ -120,7 +120,7 @@ export function EventLinkForm({
         </p>
       </div>
       {error && !confirmOpen ? (
-        <p className="mt-2 text-xs text-danger">{error}</p>
+        <p className="mt-2 text-xs text-danger-text">{error}</p>
       ) : null}
 
       <ConfirmDialog
@@ -135,7 +135,7 @@ export function EventLinkForm({
         <p className="text-sm text-muted">
           با ساخت لینک جدید، لینک فعلی از کار می‌افتد. مطمئن هستید؟
         </p>
-        {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
+        {error ? <p className="mt-2 text-xs text-danger-text">{error}</p> : null}
       </ConfirmDialog>
     </div>
   );

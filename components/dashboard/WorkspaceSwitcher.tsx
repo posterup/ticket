@@ -20,7 +20,6 @@ export function WorkspaceSwitcher() {
   const { workspaces, active, select } = useWorkspaceSwitcher();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const activeId = active?.id ?? "";
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -51,7 +50,7 @@ export function WorkspaceSwitcher() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-card p-2 text-start outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-card p-2 text-start outline-none transition-colors hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Avatar workspace={active} />
         <div className="min-w-0 flex-1">

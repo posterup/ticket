@@ -1,4 +1,4 @@
-import { it, expect, beforeAll } from "vitest";
+import { it, expect, afterAll, beforeAll } from "vitest";
 
 import { GET as FINANCE } from "@/app/api/workspaces/[slug]/finance/route";
 import { POST as ADD_ACCOUNT } from "@/app/api/workspaces/[slug]/bank-accounts/route";
@@ -13,13 +13,19 @@ import {
   ctx,
   data,
   describeApi,
+  dropTrackedEvents,
   errorCode,
   parse,
   req,
   signInAs,
   signInAsOwner,
   signOut,
+  trackEvent,
+  trackVenue,
 } from "./helpers";
+
+// Remove the throwaway events, venues and orders this suite creates.
+afterAll(dropTrackedEvents);
 
 const AVA = "ava-events";
 const AVA_OWNER = "09120000001";
@@ -37,6 +43,7 @@ async function eventWithSale(total: number) {
   const venue = await db.venue.create({
     data: { name: "تالار", city: "تهران", address: "نشانی", capacity: 50 },
   });
+  trackVenue(venue.id);
   const event = await db.event.create({
     data: {
       workspaceId: workspace.id,
@@ -78,16 +85,35 @@ async function eventWithSale(total: number) {
     await signInAs(AVA_OWNER);
   }
 
-  return { eventId: event.id, workspaceId: workspace.id };
+  return { eventId: trackEvent(event.id), workspaceId: workspace.id };
 }
 
 beforeAll(async () => {
   if (!process.env.DATABASE_URL) return;
   const { db } = await import("@/lib/server/db");
-  // Payouts accumulate across runs and would skew the balance.
-  await db.withdrawal.deleteMany();
-  await db.bankAccount.deleteMany();
+  // Defensive: residue from an interrupted run would skew every balance here.
+  await db.withdrawal.deleteMany({ where: { bankAccount: { iban: IBAN } } });
+  await db.bankAccount.deleteMany({ where: { iban: IBAN } });
   await signInAsOwner();
+});
+
+/**
+ * Clean up *after*, not only before.
+ *
+ * This used to wipe withdrawals in `beforeAll` alone, which tidies the suite's
+ * own runway and leaves its residue behind for everything downstream: a pending
+ * ۱۰۰٬۰۰۰ payout sat in the database after every run, quietly holding
+ * ۱۰۵٬۰۰۰ out of the workspace's spendable balance. Anything that later read
+ * that balance got a number it could not explain.
+ *
+ * Scoped to this suite's own IBAN, too. The unscoped `deleteMany()` it used
+ * would take another suite's live payouts with it.
+ */
+afterAll(async () => {
+  if (!process.env.DATABASE_URL) return;
+  const { db } = await import("@/lib/server/db");
+  await db.withdrawal.deleteMany({ where: { bankAccount: { iban: IBAN } } });
+  await db.bankAccount.deleteMany({ where: { iban: IBAN } });
 });
 
 describeApi("GET /api/workspaces/:slug/finance", () => {

@@ -19,6 +19,7 @@ function code(overrides: Partial<DiscountCode>): DiscountCode {
     value: 10,
     maxRedemptions: null,
     redemptions: 0,
+    reserved: 0,
     expiresAt: null,
     active: true,
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -55,9 +56,36 @@ describe("computeDiscountAmount", () => {
     expect(computeDiscountAmount(code({ kind: "percent", value: 10 }), 12_345)).toBe(1_234);
   });
 
-  it("fixed is capped at the subtotal", () => {
+  it("fixed is capped so something is still payable", () => {
     expect(computeDiscountAmount(code({ kind: "fixed", value: 500_000 }), 2_000_000)).toBe(500_000);
-    expect(computeDiscountAmount(code({ kind: "fixed", value: 500_000 }), 300_000)).toBe(300_000);
+    // Was capped at the subtotal, leaving nothing to pay; now it stops one
+    // gateway minimum short of it.
+    expect(computeDiscountAmount(code({ kind: "fixed", value: 500_000 }), 300_000)).toBe(299_900);
+  });
+
+  /**
+   * A discount never takes an order to zero.
+   *
+   * `total === 0` makes `createOrder` settle the order itself and skip the
+   * gateway, so a 100% code was a free-ticket generator in the hands of anyone
+   * who had one. The floor is Zarinpal's own minimum: below it the order could
+   * not be paid even if it tried.
+   */
+  it("never lets a discount reach zero", () => {
+    for (const [kind, value] of [
+      ["percent", 100],
+      ["fixed", 5_000_000],
+    ] as const) {
+      const amount = computeDiscountAmount(code({ kind, value }), 1_000_000);
+      expect(amount).toBe(999_900);
+      expect(1_000_000 - amount).toBeGreaterThan(0);
+    }
+  });
+
+  it("declines to discount a subtotal already under the floor", () => {
+    // Nothing to clamp to. The gateway refuses such an order on its own terms;
+    // this does not invent a second rule about it.
+    expect(computeDiscountAmount(code({ kind: "percent", value: 50 }), 50)).toBe(0);
   });
 });
 

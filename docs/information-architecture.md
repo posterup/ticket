@@ -1,22 +1,28 @@
 # Information Architecture
 
-This document describes the surfaces of the Poster platform: what exists today
-(the public landing page and the ticket-creation wizard) and the anticipated
-future dashboard.
+This document describes the surfaces of the Poster platform and their status.
 
 ## Surface overview
 
 | Surface | Audience | Status |
 | --- | --- | --- |
-| Public marketing (landing) | Prospective organizers | Now |
+| Explore + public event pages | Attendees | Now |
+| Checkout, incl. assigned seating | Attendees | Now |
+| Attendee account (tickets, feed, orders) | Attendees | Now |
+| Public marketing (`/hosts`) | Prospective organizers | Now |
 | Ticket-creation wizard | Organizers | Now |
-| Public event page + checkout | Attendees | Vision |
-| Organizer dashboard | Organizers and staff | Vision |
+| Organizer dashboard | Organizers and staff | Now |
+| Venue designer (`/admin`) | Internal staff | Now |
 
 ## Route tree
 
 ```
-/                         Public landing page (marketing)
+/                         Redirects to /events — the front door is explore
+/events                   Explore: browse and filter public events
+/sessions/{id}/seats      Seat selection for one showing (assigned seating)
+/me/tickets               The buyer's issued tickets and entry codes
+/admin/venues             Venue designer — internal staff only
+/hosts                    Organizer landing page (marketing)
   header                    Brand, primary nav, call to action
   hero                      Value proposition + primary CTA
   (sections)                Features, segments, social proof
@@ -27,9 +33,9 @@ future dashboard.
   step 2                    Schedule & Availability
   step 3                    Ticket Types
 
---- Anticipated future route groups (Vision) ---
+--- Organizer dashboard ---
 
-/dashboard                Organizer home (overview)
+/dashboard/events         Organizer home (my events)
 /dashboard/events         Event Management (list, create, templates, venues)
 /dashboard/tickets        Ticketing (types, categories, discount codes, pricing)
 /dashboard/contacts       CRM (attendee profiles, notes, tags, segments, orgs)
@@ -39,17 +45,23 @@ future dashboard.
 /dashboard/finance        Payments, refunds, settlement, financial dashboard
 /dashboard/settings       Organization, team, roles, billing
 
-/e/[slug]                 Public event page (Vision)
-/e/[slug]/checkout        Attendee checkout (Vision)
+/events/{id}              Public event page
+/events/{id}/checkout     Checkout — seat picker or ticket type + quantity
+/orders/{code}            Order result, by tracking code
 ```
 
-The `/dashboard/*` groups are directional, not committed. They exist here so the
-current work stays consistent with where the product is heading.
+Some `/dashboard/*` paths above are directional rather than built — see
+`components/dashboard/nav.ts` for what actually ships in the sidebar.
 
 ## Public surface (Now)
 
-The landing page is the marketing front door for prospective organizers. It is
-composed of three structural regions:
+The public surface has two front doors, and they speak to different people.
+`/` belongs to attendees: it redirects to `/events`, so a first-time visitor
+lands on explore and can find something to go to without reading a pitch.
+
+The landing page at `/hosts` is the marketing front door for prospective
+organizers, reached from the footer link on every public page. It is composed
+of three structural regions:
 
 - **Header** - brand mark (پوستر), primary navigation, and a primary call to
   action that leads organizers toward getting started.
@@ -121,10 +133,36 @@ flowchart TD
     Review --> Publish([Publish event])
 ```
 
-## Future dashboard (Vision)
+## Dashboard
 
-Once the wizard and public event page are live, the platform grows into a full
-organizer dashboard. The route groups above map one-to-one to the capability
-areas in `product-vision.md`: Event Management, Ticketing, CRM, Marketing,
+The route groups above map one-to-one to the capability areas in
+`product-vision.md`: Event Management, Ticketing, CRM, Marketing,
 Operations, Analytics, and Finance. The dashboard is the daily workspace where
 the organizer manages the audience the wizard and checkout help them acquire.
+
+## The buy box states
+
+`lib/events/buy-state.ts` resolves the single sales state an event page shows.
+Order matters: each branch answers "why can I not buy this", and the most useful
+answer wins.
+
+1. **Every سانس is off** — cancelled, «تکمیل ظرفیت» or «به زودی». Checked first,
+   because "the show is not happening" beats "the tickets sold out". All
+   cancelled reads «لغو شده» and mentions the refund, since that is the first
+   thing a holder will wonder about; all «به زودی» offers «خبرم کن»; otherwise
+   it is the waitlist when the organiser enabled one and a closed box when they
+   did not.
+2. Sales have not started, or there are no ticket types yet.
+3. Stock exhausted or the window has closed.
+4. Registration needs approval.
+5. Free.
+6. An early-bird ticket is on sale.
+7. Otherwise: buy.
+
+`almost-full` is deliberately bookable — it is an urgency hint an organiser sets
+to sell faster, and treating it as a stop would invert it.
+
+This used to look only at ticket types, so an event with every showing cancelled
+still offered «خرید بلیت». The server refuses each of them and the checkout page
+disables the buttons, so the buyer found out only after clicking through to a
+page where nothing was selectable.

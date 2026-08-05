@@ -105,7 +105,7 @@ export function EditEventForm({ eventId, title, description }: Props) {
             }
           />
         </Field>
-        {error ? <p className="text-xs text-danger">{error}</p> : null}
+        {error ? <p className="text-xs text-danger-text">{error}</p> : null}
         <div className="flex items-center gap-2">
           <Button type="button" size="sm" onClick={save} disabled={saving}>
             <Check aria-hidden />

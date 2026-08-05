@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { toAsciiDigits } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -121,7 +122,7 @@ export function PhoneOtpForm({ onVerified, submitLabel = "ورود" }: Props) {
           autoComplete="tel"
           value={phone}
           disabled={step === "code"}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => setPhone(toAsciiDigits(e.target.value))}
         />
       </Field>
 
@@ -135,11 +136,11 @@ export function PhoneOtpForm({ onVerified, submitLabel = "ورود" }: Props) {
             autoComplete="one-time-code"
             maxLength={6}
             value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => setCode(toAsciiDigits(e.target.value).replace(/\D/g, ""))}
           />
         </Field>
       ) : error ? (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-sm text-danger-text">
           {error}
         </p>
       ) : null}

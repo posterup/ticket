@@ -89,7 +89,7 @@ function SlotRow({
           type="button"
           onClick={onRemove}
           aria-label="حذف سانس"
-          className="mb-1 grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-subtle hover:text-danger focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="mb-1 grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-subtle hover:text-danger-text focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Trash2 className="size-4" aria-hidden />
         </button>
@@ -200,7 +200,7 @@ export function SessionsEditor(props: Props) {
           aria-pressed={isRange === range}
           onClick={() => selectScenario(range)}
           className={cn(
-            "flex items-start gap-2.5 rounded-md border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+            "flex items-start gap-2.5 rounded-md border p-3 text-start outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
             isRange === range
               ? "border-foreground bg-subtle"
               : "border-border hover:border-border-strong",
@@ -290,7 +290,7 @@ export function SessionsEditor(props: Props) {
                   aria-pressed={schedule.byDay.includes(d)}
                   onClick={() => onToggleDay(d)}
                   className={cn(
-                    "rounded-full border px-3 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                    "rounded-full border px-3 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                     schedule.byDay.includes(d)
                       ? "border-foreground bg-foreground text-background"
                       : "border-border text-muted hover:border-border-strong",
@@ -348,7 +348,20 @@ export function SessionsEditor(props: Props) {
                             <button
                               type="button"
                               onClick={() => openDaySlot(s.id)}
-                              className="outline-none hover:underline"
+                              /*
+                                `outline-none` with nothing put back: tabbing to
+                                this سانس chip showed no focus at all, the one
+                                case CLAUDE.md's "visible focus ring on every
+                                interactive element" is meant to prevent.
+
+                                Not the house `ring-ring` either. That is
+                                tuned for light surfaces, and this button sits on
+                                a `bg-foreground` chip where the pink at 40%
+                                measures **1.53:1** — a focus ring nobody can
+                                see, which is the same bug with more code. The
+                                chip's own ink is 18.3:1 against it.
+                              */
+                              className="rounded-sm outline-none hover:underline focus-visible:underline focus-visible:ring-2 focus-visible:ring-background"
                             >
                               {s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime}
                             </button>
@@ -402,7 +415,7 @@ export function SessionsEditor(props: Props) {
                               onClick={() => closeDaySlot(s.id)}
                               disabled={!s.startTime}
                               aria-label="تأیید سانس"
-                              className="grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-40"
+                              className="grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
                             >
                               <Check className="size-4" aria-hidden />
                             </button>
@@ -413,7 +426,7 @@ export function SessionsEditor(props: Props) {
                                 onRemoveDaySlot(day, s.id);
                               }}
                               aria-label="حذف سانس"
-                              className="grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-background hover:text-danger focus-visible:ring-2 focus-visible:ring-ring/40"
+                              className="grid size-9 place-items-center rounded-md text-muted outline-none transition-colors hover:bg-background hover:text-danger-text focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <Trash2 className="size-4" aria-hidden />
                             </button>
@@ -461,7 +474,7 @@ export function SessionsEditor(props: Props) {
                       type="button"
                       onClick={() => onRemoveException(d)}
                       aria-label="حذف استثنا"
-                      className="text-muted hover:text-danger"
+                      className="text-muted hover:text-danger-text"
                     >
                       <X className="size-3.5" aria-hidden />
                     </button>
@@ -479,7 +492,7 @@ export function SessionsEditor(props: Props) {
         </p>
       ) : null}
 
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? <p className="text-sm text-danger-text">{error}</p> : null}
     </div>
   );
 }

@@ -165,7 +165,7 @@ export function EventCollaborators({
             درخواست
           </Button>
         </div>
-        {error ? <p className="text-xs text-danger">{error}</p> : null}
+        {error ? <p className="text-xs text-danger-text">{error}</p> : null}
       </form>
 
       {suggestions.length > 0 ? (
@@ -212,7 +212,7 @@ export function EventCollaborators({
                 type="button"
                 onClick={() => remove(c.id)}
                 aria-label="لغو درخواست"
-                className="grid size-8 shrink-0 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-danger focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="grid size-8 shrink-0 place-items-center rounded-md text-faint outline-none transition-colors hover:bg-subtle hover:text-danger-text focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X className="size-4" aria-hidden />
               </button>
@@ -243,7 +243,7 @@ function Leading({ row }: { row: Row }) {
 function StatusPill({ status }: { status: Status }) {
   const map = {
     pending: { label: "در انتظار پاسخ", cls: "text-muted", Icon: Clock },
-    accepted: { label: "همکار", cls: "text-success", Icon: Check },
+    accepted: { label: "همکار", cls: "text-success-text", Icon: Check },
     // A withdrawn invite stays visible so it is clear access was removed
     // rather than never granted.
     revoked: { label: "لغو شده", cls: "text-faint", Icon: X },

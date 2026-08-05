@@ -187,7 +187,7 @@ export function TicketEditor({
                         })
                       }
                       className={cn(
-                        "rounded-full border px-3 py-1 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/15",
+                        "rounded-full border px-3 py-1 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                         on
                           ? "border-foreground bg-foreground text-background"
                           : "border-border text-muted hover:border-border-strong",
@@ -203,14 +203,14 @@ export function TicketEditor({
         ) : null}
       </Disclosure>
 
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? <p className="text-sm text-danger-text">{error}</p> : null}
 
       {canRemove ? (
         <div className="flex justify-end border-t border-border pt-3">
           <button
             type="button"
             onClick={onRemove}
-            className="inline-flex items-center gap-1 text-sm text-muted hover:text-danger"
+            className="inline-flex items-center gap-1 text-sm text-muted hover:text-danger-text"
           >
             <Trash2 className="size-4" aria-hidden />
             حذف این بلیت

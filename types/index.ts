@@ -10,3 +10,4 @@ export * from "./guest";
 export * from "./registration";
 export * from "./collaborator";
 export * from "./order";
+export * from "./venue-layout";
