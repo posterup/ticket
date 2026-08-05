@@ -194,24 +194,29 @@ export async function requestOtp(
    * Two changes, either of which alone would fix it, kept together because the
    * cost is nothing and the failure was silent:
    *
-   *  - an interactive transaction, which is sequential by construction rather
-   *    than by assumption about batch semantics, and
-   *  - `id: { not: issued.id }`, so the new row is excluded by identity. No
-   *    ordering guarantee is required for correctness any more.
+   * The fix is `id: { not: issued.id }` — the new row is excluded by identity,
+   * so no ordering guarantee is required for correctness at all.
+   *
+   * Deliberately **not** wrapped in a transaction. An interactive one was tried
+   * and fails here with `P2028: Transaction not found`: interactive
+   * transactions need a sticky session, and the runtime connects through
+   * Neon's pooled endpoint in transaction mode, which cannot provide one. The
+   * array form is what caused the original bug. Two awaited statements are
+   * what is left, and they are enough — if the second never runs, an older
+   * code merely stays valid until its own TTL expires, which is a safe
+   * direction to fail in and far better than the alternative this replaces.
    */
-  await db.$transaction(async (tx) => {
-    const issued = await tx.otpCode.create({
-      data: {
-        phone,
-        codeHash: hashCode(code),
-        expiresAt: new Date(Date.now() + OTP_TTL_SEC * 1000),
-        ip: ctx.ip,
-      },
-    });
-    await tx.otpCode.updateMany({
-      where: { phone, consumedAt: null, id: { not: issued.id } },
-      data: { consumedAt: new Date() },
-    });
+  const issued = await db.otpCode.create({
+    data: {
+      phone,
+      codeHash: hashCode(code),
+      expiresAt: new Date(Date.now() + OTP_TTL_SEC * 1000),
+      ip: ctx.ip,
+    },
+  });
+  await db.otpCode.updateMany({
+    where: { phone, consumedAt: null, id: { not: issued.id } },
+    data: { consumedAt: new Date() },
   });
 
   // Whichever operator is selected. Both need an approved template for codes,
