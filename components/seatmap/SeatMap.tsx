@@ -67,6 +67,19 @@ interface Props {
    * not asking a question: each new value means "re-check, the server said no".
    */
   resyncNonce?: number;
+  /**
+   * The soonest hold deadline, whenever it moves.
+   *
+   * The clock belongs here — this is where the holds are taken — but the moment
+   * it decides anything is the one where the buyer commits, and on the layout
+   * that actually ships the pay button sits a whole form below the map. So the
+   * countdown was running out of sight of the person racing it. Reporting the
+   * deadline upward lets checkout show the same clock next to the money without
+   * a second source of truth.
+   *
+   * Must be identity-stable, like the callbacks above.
+   */
+  onHoldChange?: (expiresAt: string | null) => void;
   className?: string;
 }
 
@@ -76,6 +89,7 @@ export function SeatMap({
   onSelectionChange,
   onStandingChange,
   resyncNonce = 0,
+  onHoldChange,
   className,
 }: Props) {
   const overview = useOverview(layoutVersionId);
@@ -280,6 +294,10 @@ export function SeatMap({
     () => earliestDeadline(picks, expiries),
     [picks, expiries],
   );
+
+  useEffect(() => {
+    onHoldChange?.(holdExpiresAt);
+  }, [holdExpiresAt, onHoldChange]);
 
   useEffect(() => {
     picksRef.current = picks;

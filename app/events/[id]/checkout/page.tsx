@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import Link from "next/link";
 
 import { useApi } from "@/lib/client/api";
 import { AsyncState } from "@/components/ui/async-state";
@@ -50,6 +51,45 @@ export default function CheckoutPage({
     );
   }
 
+  /**
+   * A free event has no checkout to reach.
+   *
+   * The event page no longer offers one — `resolveBuyState` returns `none` when
+   * every ticket is free — but the route stays reachable by hand, by an old
+   * link, and by a bookmark from before this changed. Landing on a payment form
+   * for something that costs nothing is the confusing end of that, so this says
+   * what is actually true and points back.
+   *
+   * `every`, matching `resolveBuyState`: a mixed free/paid event is a paid event
+   * and belongs here. So does a paid order that a discount code takes to zero —
+   * that is decided at submit, not at arrival, and never passes through this.
+   */
+  if (data.tickets.every((t) => t.price === 0)) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col">
+        <PublicHeader />
+        <main className="mx-auto w-full max-w-lg flex-1 px-4 py-16 sm:px-6">
+          <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <h1 className="text-lg font-bold text-foreground">
+              این رویداد بلیت نمی‌خواهد
+            </h1>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
+              ورود به «{data.event.title}» آزاد است. کافی است در زمان اعلام‌شده
+              به محل مراجعه کنید.
+            </p>
+            <Link
+              href={`/events/${id}`}
+              className="mt-6 inline-block text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+            >
+              مشاهدهٔ جزئیات رویداد
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   const tickets: CheckoutTicket[] = data.tickets.map((t) => ({
     id: t.id,
     name: t.name,
@@ -67,6 +107,7 @@ export default function CheckoutPage({
         <CheckoutForm
           eventId={data.event.id}
           eventTitle={data.event.title}
+          eventVenue={data.event.venue?.name}
           tickets={tickets}
           initialTicketId={initialTicketId}
           sessions={data.event.sessions}
