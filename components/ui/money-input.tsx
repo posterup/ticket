@@ -1,13 +1,7 @@
 "use client";
 
 import { Input, type InputProps } from "@/components/ui/input";
-
-/** Convert Persian/Arabic-Indic digits to ASCII so typed input normalises. */
-function toAsciiDigits(s: string): string {
-  return s
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-}
+import { toAsciiDigits } from "@/lib/format";
 
 /** Group an all-digit string with thousands separators, e.g. `50000` → `50,000`. */
 function group(digits: string): string {

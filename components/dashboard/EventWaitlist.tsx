@@ -49,7 +49,7 @@ export function EventWaitlist({ eventId }: { eventId: string }) {
     return (
       <div className="rounded-xl border border-border bg-card p-8 text-center">
         <ListOrdered className="mx-auto mb-2 size-6 text-faint" aria-hidden />
-        <p className="text-sm text-muted">هنوز کسی در فهرست انتظار نیست.</p>
+        <p className="text-sm text-muted">هنوز کسی در لیست انتظار نیست.</p>
         <p className="mt-1 text-xs text-faint">
           وقتی بلیت‌ها تمام شود، خریداران می‌توانند در صف بنشینند.
         </p>
@@ -60,7 +60,7 @@ export function EventWaitlist({ eventId }: { eventId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-bold text-foreground">فهرست انتظار</h3>
+        <h3 className="text-sm font-bold text-foreground">لیست انتظار</h3>
         <p className="text-xs text-muted">
           {formatNumber(data.length)} نفر · {formatNumber(demand)} بلیت
           درخواستی

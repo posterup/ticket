@@ -27,7 +27,16 @@ type BuyAction =
   | { type: "approval"; label: string }
   | { type: "notify"; label: string }
   | { type: "waitlist"; label: string }
-  | { type: "closed"; label: string };
+  | { type: "closed"; label: string }
+  /**
+   * Nothing to do. The box states the situation and offers no control.
+   *
+   * Distinct from `closed`, which renders a dead button because there *was*
+   * something to do and the moment has passed. This one is for states where no
+   * action was ever appropriate — a free event, which is a listing rather than
+   * something you buy.
+   */
+  | { type: "none" };
 
 export interface BuyState {
   badge?: { label: string; tone: BadgeTone };
@@ -175,12 +184,29 @@ export function resolveBuyState(event: Event, tickets: TicketType[]): BuyState {
    * `priceLabel` says «از ۰ تومان» — the cheapest ticket really is free, and
    * «از» is what makes it a floor rather than the price.
    */
+  /*
+    A free event is a listing, not a purchase.
+
+    It used to send the visitor to checkout for a «دریافت بلیت» that created an
+    order, settled it at zero, and issued a QR — a whole reservation ceremony
+    for something nobody reserves. Poster does not sell these; it says what is
+    happening and where, and the visitor turns up.
+
+    So: no action. `BuyBox` takes `action` as a node and renders whatever it is
+    given, so `none` simply produces no control, and the box becomes the one
+    sentence that matters — you do not need a ticket for this.
+
+    Note this is only reached when *every* ticket is free. A mixed free/paid
+    event falls through to the on-sale branches below, and a paid order taken to
+    zero by a discount code is a different thing entirely: that one still runs
+    through checkout, and `createOrder` still settles it immediately.
+  */
   if (prices.every((p) => p === 0)) {
     return {
       badge: { label: "رایگان", tone: "success" },
       title: "ورود آزاد",
-      subtitle: "بلیت این رویداد رایگان است",
-      action: { type: "buy", label: "دریافت بلیت" },
+      subtitle: "برای این رویداد بلیت لازم نیست؛ در زمان اعلام‌شده به محل مراجعه کنید",
+      action: { type: "none" },
     };
   }
 

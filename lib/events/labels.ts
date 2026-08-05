@@ -22,8 +22,13 @@ export function modeLabel(mode: EventMode): string | null {
 export const SESSION_AVAILABILITY_LABELS: Record<SessionAvailability, string> = {
   full: "تکمیل ظرفیت",
   "almost-full": "رو به اتمام",
-  soon: "به زودی",
-  available: "درحال فروش",
+  // «به‌زودی» with the ZWNJ, matching `resolveBuyState`'s badge — the two can
+  // land on one screen (the event page badge above the سانس picker), and the
+  // same word spelled two ways reads as two different states.
+  soon: "به‌زودی",
+  // «در حال فروش», with the space: «درحال» is a typo, and «در حال …» is the
+  // form every other progress label in the product uses («در حال ثبت…»).
+  available: "در حال فروش",
 };
 
 /** Display order for the availability options an organizer chooses between. */

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { faDigits, formatJalaliDate, formatNumber, formatSeat, formatTime, formatToman, relativeDay } from "@/lib/format";
+import { faDigits, formatJalaliDate, formatNumber, formatSeat, formatTime, formatToman, relativeDay, toAsciiDigits } from "@/lib/format";
 
 describe("formatNumber", () => {
   it("renders Persian digits", () => {
@@ -147,5 +147,34 @@ describe("relativeDay", () => {
 
   it("returns nothing rather than NaN for an unparseable date", () => {
     expect(relativeDay("not a date", now)).toBeUndefined();
+  });
+});
+
+/**
+ * `\D` matches «۰»–«۹». They are not ASCII digits, so an input that sanitised
+ * itself with `.replace(/\D/g, "")` discarded every Persian numeral — the
+ * sign-in code field rejected the digits printed in the user's own SMS and gave
+ * no reason, on a product whose brand commitment is that Persian is not a
+ * localisation layer.
+ */
+describe("toAsciiDigits", () => {
+  it("folds Persian digits, which \\D deletes outright", () => {
+    // The bug, pinned: this is what every affected input was doing.
+    expect("۰۹۱۲۳۴۵۶۷۸۹".replace(/\D/g, "")).toBe("");
+    expect(toAsciiDigits("۰۹۱۲۳۴۵۶۷۸۹")).toBe("09123456789");
+    expect(toAsciiDigits("۱۲۳۴۵۶").replace(/\D/g, "")).toBe("123456");
+  });
+
+  it("folds Arabic-Indic digits, which iOS Arabic keyboards emit", () => {
+    expect(toAsciiDigits("٠٩١٢٣٤٥٦٧٨٩")).toBe("09123456789");
+  });
+
+  it("leaves ASCII digits and surrounding text alone", () => {
+    expect(toAsciiDigits("09123456789")).toBe("09123456789");
+    expect(toAsciiDigits("کد: ۱۲۳")).toBe("کد: 123");
+  });
+
+  it("round-trips with faDigits", () => {
+    expect(toAsciiDigits(faDigits("2026"))).toBe("2026");
   });
 });

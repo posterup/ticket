@@ -36,3 +36,10 @@ yarn-error.log*
 
 # prisma generated client
 /generated
+
+# impeccable critique snapshots (local design-review cache).
+# Narrower than the whole directory: `.impeccable/design.json` is the DESIGN.md
+# sidecar — design authority that tooling reads — and belongs in the repo.
+/.impeccable/critique/
+/.impeccable/live/
+.env*

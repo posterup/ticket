@@ -69,12 +69,12 @@ export function JoinWaitlist({
       });
       const json = await res.json();
       if (!res.ok || !("data" in json)) {
-        setErrors({ form: json?.error?.message ?? "ثبت در فهرست انتظار ناموفق بود." });
+        setErrors({ form: json?.error?.message ?? "ثبت در لیست انتظار انجام نشد. دوباره تلاش کنید." });
         return;
       }
       setPlace(json.data as Place);
     } catch {
-      setErrors({ form: "ارتباط برقرار نشد. دوباره تلاش کنید." });
+      setErrors({ form: "ارتباط با سرور برقرار نشد. دوباره تلاش کنید." });
     } finally {
       setSubmitting(false);
     }
@@ -150,7 +150,7 @@ export function JoinWaitlist({
       ) : null}
 
       <Button onClick={submit} disabled={submitting} className="w-full">
-        {submitting ? "در حال ثبت…" : "ثبت در فهرست انتظار"}
+        {submitting ? "در حال ثبت…" : "ثبت در لیست انتظار"}
       </Button>
     </div>
   );
