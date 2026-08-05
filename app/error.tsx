@@ -6,6 +6,7 @@ import { TriangleAlert } from "lucide-react";
 
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
+import { ErrorScreen } from "@/components/ErrorScreen";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,9 @@ import { cn } from "@/lib/utils";
  * The `digest` is shown deliberately. Server errors are redacted before they
  * reach the browser — that is the point — so this hash is the only thing a
  * person can quote that ties their screen to a line in the log.
+ *
+ * No glyph: this boundary catches anything, so there is no status code to set
+ * behind it, and inventing one would be a number that means nothing.
  */
 export default function Error({
   error,
@@ -43,38 +47,33 @@ export default function Error({
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <PublicHeader />
-      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
-        <span className="mb-5 grid size-14 place-items-center rounded-full bg-danger/10 text-danger-text">
-          <TriangleAlert className="size-7" aria-hidden />
-        </span>
-        <h1 className="text-xl font-bold text-foreground">
-          این صفحه باز نشد
-        </h1>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
-          خطایی رخ داد و این بخش نمایش داده نشد. معمولاً با یک تلاش دوباره درست
-          می‌شود.
-        </p>
-        <p className="mx-auto mt-3 max-w-sm text-xs leading-relaxed text-faint">
-          اگر بلیت خریده‌اید، سفارش شما ثبت است و از «بلیت‌های من» در دسترس
-          می‌ماند؛ کد پیگیری هم در پیامک تأیید شماست.
-        </p>
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-          <Button onClick={reset} size="lg">
-            تلاش دوباره
-          </Button>
-          <Link
-            href="/me/tickets"
-            className={cn(buttonVariants({ variant: "secondary", size: "lg" }))}
-          >
-            بلیت‌های من
-          </Link>
-        </div>
-        {error.digest ? (
-          <p dir="ltr" className="mt-6 font-mono text-[11px] text-faint">
-            {error.digest}
-          </p>
-        ) : null}
-      </main>
+      <ErrorScreen
+        icon={TriangleAlert}
+        tone="danger"
+        title="این صفحه باز نشد"
+        description="خطایی رخ داد و این بخش نمایش داده نشد. معمولاً با یک تلاش دوباره درست می‌شود."
+        note="اگر بلیت خریده‌اید، سفارش شما ثبت است و از «بلیت‌های من» در دسترس می‌ماند؛ کد پیگیری هم در پیامک تأیید شماست."
+        actions={
+          <>
+            <Button onClick={reset} size="lg">
+              تلاش دوباره
+            </Button>
+            <Link
+              href="/me/tickets"
+              className={cn(buttonVariants({ variant: "secondary", size: "lg" }))}
+            >
+              بلیت‌های من
+            </Link>
+          </>
+        }
+        footnote={
+          error.digest ? (
+            <p dir="ltr" className="font-mono text-[11px] text-faint">
+              {error.digest}
+            </p>
+          ) : null
+        }
+      />
       <Footer />
     </div>
   );

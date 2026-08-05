@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { bounceToInternalError } from "@/lib/client/error-redirect";
 import type { ApiResponse } from "@/types";
 
 /** An API call that failed, carrying the envelope's code so callers can branch. */
@@ -154,6 +155,29 @@ export function useApi<T>(path: string | null): ApiState<T> {
         if (live) setData(result);
       })
       .catch((err: unknown) => {
+        /**
+         * The server broke, so this page cannot exist. Show it a page of its
+         * own rather than one red line inside a layout.
+         *
+         * «خطای غیرمنتظره‌ای رخ داد.» (`lib/server/http.ts`) used to arrive
+         * through `AsyncState` as `error.message` in `text-danger-text`, which
+         * reads like a validation complaint about something the reader did.
+         * They did nothing, and re-reading it does not help.
+         *
+         * Here rather than in `apiFetch`, and the distinction is the whole
+         * design: this hook owns *the page's own data*, so there is no user
+         * input on screen to lose. `apiFetch` also carries seat holds, venue
+         * layout saves, refunds and bank-account edits — bouncing out of one of
+         * those would discard a half-filled checkout or an unsaved seat map to
+         * report a failure the caller was already handling inline.
+         *
+         * 5xx only. A 404 is a real answer about a real resource, and the
+         * page's own empty state says it better than a server-error screen.
+         */
+        if (err instanceof ApiCallError && err.status >= 500) {
+          bounceToInternalError();
+          return;
+        }
         // `apiFetch` only throws `ApiCallError`, but the annotation used to say
         // so without checking, and a raw `TypeError` typed as one reaches
         // `AsyncState` with an English `message` and an undefined `code`.
