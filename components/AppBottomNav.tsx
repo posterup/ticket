@@ -72,6 +72,24 @@ const GUEST_ITEMS: NavItem[] = [
   { href: "/login", label: "ورود", icon: LogIn, accent: true },
 ];
 
+/**
+ * What is true before we know who this is.
+ *
+ * `SessionProvider` learns the reader from `/api/auth/me`, which is a client
+ * fetch — so the server renders every page as signed out, and the tab bar in
+ * the HTML said «ورود» to everyone. A person who *is* signed in was told to
+ * sign in on first paint of every page, for as long as that request took,
+ * which on the connections this product runs on is not a flicker.
+ *
+ * Both public destinations, and nothing that asserts an identity. The bar
+ * keeps its height and its position, so resolving the session adds a tab
+ * rather than moving the ones already under a thumb.
+ */
+const UNKNOWN_ITEMS: NavItem[] = [
+  { href: "/events", label: "رویدادها", icon: Compass },
+  { href: "/pages", label: "برگزارکنندگان", icon: Store },
+];
+
 /** RTL order (right→left): explore · following · my tickets · me. */
 const ATTENDEE_ITEMS: NavItem[] = [
   { href: "/events", label: "رویدادها", icon: Compass },
@@ -86,13 +104,15 @@ function isActive(pathname: string, href: string): boolean {
 
 export function AppBottomNav() {
   const pathname = usePathname();
-  const { user, memberships } = useSession();
+  const { user, memberships, loading } = useSession();
   // Belonging to any workspace is what opens the dashboard, in any role.
-  const items = !user
-    ? GUEST_ITEMS
-    : memberships.length > 0
-      ? ORGANISER_ITEMS
-      : ATTENDEE_ITEMS;
+  const items = loading
+    ? UNKNOWN_ITEMS
+    : !user
+      ? GUEST_ITEMS
+      : memberships.length > 0
+        ? ORGANISER_ITEMS
+        : ATTENDEE_ITEMS;
 
   return (
     <nav
