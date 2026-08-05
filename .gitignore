@@ -36,3 +36,6 @@ yarn-error.log*
 
 # prisma generated client
 /generated
+
+# impeccable critique snapshots (local design-review cache)
+/.impeccable/
