@@ -44,17 +44,85 @@ export function isUploadKind(value: unknown): value is UploadKind {
   return typeof value === "string" && Object.hasOwn(UPLOAD_PREFIX, value);
 }
 
-/** Human-readable refusal, or `undefined` when the file is acceptable. */
+/**
+ * The longest edge each kind is stored at, in CSS pixels.
+ *
+ * A phone camera produces 4000px images and every one of them was being stored
+ * and served at full size. These are sized from where the image is actually
+ * rendered, doubled for a retina screen:
+ *
+ * - a **poster** is a 16:9 cover filling a phone's width, and is also the
+ *   largest thing on the public event page;
+ * - **ticket art** is a logo on a ticket, which is additionally rasterised to
+ *   PNG by `html-to-image` when the holder exports it;
+ * - a **workspace** logo never renders above 64px, and its banner above ~400.
+ */
+export const MAX_DIMENSION: Record<UploadKind, number> = {
+  poster: 1600,
+  "ticket-art": 1024,
+  workspace: 1024,
+};
+
+/**
+ * Above this, an image is re-encoded even if its dimensions already fit.
+ *
+ * A 300×300 PNG can still be 3MB; dimensions alone are not a proxy for bytes.
+ */
+export const DOWNSCALE_ABOVE_BYTES = 512 * 1024;
+
+/**
+ * Fit `w`×`h` inside a `max`×`max` box, preserving the aspect ratio.
+ *
+ * Returns the input unchanged when it already fits — callers use that to skip
+ * the re-encode entirely rather than round-trip an image through a canvas for
+ * nothing. Never returns a zero edge: a 2000×3 banner would otherwise scale to
+ * a height of 0 and produce a blank image instead of a thin one.
+ */
+export function fitWithin(
+  w: number,
+  h: number,
+  max: number,
+): { width: number; height: number } {
+  if (w <= max && h <= max) return { width: w, height: h };
+  const scale = max / Math.max(w, h);
+  return {
+    width: Math.max(1, Math.round(w * scale)),
+    height: Math.max(1, Math.round(h * scale)),
+  };
+}
+
+/** Human-readable refusal for an unacceptable *format*, or `undefined`. */
+export function rejectImageType(type: string): string | undefined {
+  if (!IMAGE_TYPES.includes(type as (typeof IMAGE_TYPES)[number])) {
+    return "فقط تصویر PNG، JPEG، WebP یا AVIF پذیرفته می‌شود.";
+  }
+  return undefined;
+}
+
+/** Human-readable refusal for an oversized file, or `undefined`. */
+export function rejectImageSize(size: number): string | undefined {
+  if (size > MAX_IMAGE_BYTES) {
+    return "حجم تصویر باید کمتر از ۴ مگابایت باشد.";
+  }
+  return undefined;
+}
+
+/**
+ * Both checks at once.
+ *
+ * Kept for the server's benefit, which sees one finished file. The client runs
+ * them at *different moments* — format before decoding, size after downscaling
+ * — because refusing a 9MB phone photo that would have become 200KB is a worse
+ * product than resizing it.
+ */
 export function rejectImage(file: {
   type: string;
   size: number;
 }): string | undefined {
-  if (!IMAGE_TYPES.includes(file.type as (typeof IMAGE_TYPES)[number])) {
-    return "فقط تصویر PNG، JPEG، WebP یا AVIF پذیرفته می‌شود.";
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    return "حجم تصویر باید کمتر از ۴ مگابایت باشد.";
-  }
+  const badType = rejectImageType(file.type);
+  if (badType) return badType;
+  const tooBig = rejectImageSize(file.size);
+  if (tooBig) return tooBig;
   return undefined;
 }
 

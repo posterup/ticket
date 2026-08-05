@@ -96,6 +96,20 @@ to Vercel Blob through `lib/client/upload.ts`; `/api/uploads` only signs the
 request. Stored fields hold a **URL**, never base64 — a data URL travels in the
 SSR payload of every page that reads the row.
 
+`uploadImage` **downscales before sending**, to the longest edge its kind is
+actually rendered at (`MAX_DIMENSION` in `lib/uploads.ts`) and re-encodes to
+WebP — WebP rather than JPEG because it keeps the alpha channel, and a logo
+with a transparent background is exactly the case that would otherwise come
+back with a black box behind it. Measured in Chrome: a 4000×3000, 10.7 MB photo
+becomes 658 KB at 1600×1200. Every failure path returns the original file, and
+a small crisp image is passed through untouched rather than round-tripped
+through a lossy codec.
+
+That is also why the two guards run at different moments: **format** is refused
+before any decoding, **size** is checked on what is about to be sent. Refusing a
+9 MB camera photo that would have become 200 KB is the wrong answer to the right
+question.
+
 They render as plain `<img>`, not `next/image`: the host is a Blob domain only
 known at runtime. Server-side, `isStoredImage` (`lib/uploads.ts`) is what keeps
 an image field from becoming a pointer at any host on the internet.
