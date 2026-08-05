@@ -34,9 +34,15 @@ lib/server/
   mappers/          # database rows → domain types (the only conversion point)
   auth/             # session.ts, otp.ts, guards.ts, permissions.ts
   payments/         # gateway.ts, mock.ts, zarinpal.ts, zarinpal-codes.ts
-  events.ts tickets.ts orders.ts discounts/ attendees.ts guests.ts
-  registrations.ts collaborators.ts workspaces.ts campaigns.ts
-  engagement.ts engagement-user.ts checkins.ts finance.ts users.ts
+  sms/              # gateway.ts, kavenegar.ts, smsir.ts
+  notifications/    # messages.ts + one file per moment; none of them throw
+  venues/           # layouts.ts, seatmap.ts, holds.ts, assign.ts,
+                    # best-available.ts, holder.ts
+  discounts/        # index.ts (lookup, scoped) + rules.ts (pure eligibility)
+  events.ts tickets.ts orders.ts refunds.ts attendees.ts guests.ts
+  registrations.ts collaborators.ts waitlist.ts campaigns.ts checkins.ts
+  workspaces.ts workspaces-create.ts engagement.ts engagement-user.ts
+  finance.ts users.ts
 ```
 
 ## Conventions
@@ -183,9 +189,9 @@ inside the adapter. Verify code `101` means *already verified* and is a success.
 
 ## API endpoints
 
-78 endpoints across 62 route files. 50 of the 62 route files are exercised by
-`tests/api/*.test.ts`. The 12 without direct coverage are listed in **Known
-limits** — the claim used to be "every one", which was not true.
+89 handlers across 70 route files. 60 of the 70 route files are imported and
+exercised by `tests/api/*.test.ts`; the 10 without direct coverage are listed in
+**Known limits**. The claim was once "every one", which was not true.
 
 | Area | Endpoints |
 | --- | --- |
@@ -203,7 +209,9 @@ limits** — the claim used to be "every one", which was not true.
 | Waitlist | `GET`/`POST`/`DELETE /api/events/{id}/waitlist` — `?phone=` reads one caller's own place and is public; without it the queue is organiser-only |
 | Seat-map assignment | `GET`/`PATCH /api/events/{id}/seatmap` — an organiser adopts a published layout for their own venue and prices its sections. Refused once a seat is sold or held. |
 | Admin (staff) | `GET /api/admin/venues`, `GET`/`PATCH /api/admin/venues/{venueId}/layout`, `POST /api/admin/venues/{venueId}/layout/publish` |
-| Finance | `GET /api/workspaces/{slug}/finance`, `POST /api/workspaces/{slug}/bank-accounts`, `POST /api/workspaces/{slug}/withdrawals` |
+| Finance | `GET /api/workspaces/{slug}/finance`, `GET`/`POST /api/workspaces/{slug}/bank-accounts`, `PATCH`/`DELETE /api/workspaces/{slug}/bank-accounts/{accountId}`, `POST /api/workspaces/{slug}/withdrawals`, `GET`/`PATCH /api/admin/payouts` |
+| Workspaces | `GET`/`POST /api/workspaces`, `GET`/`PATCH /api/workspaces/{slug}`, `GET /api/workspaces/{slug}/{events,attendees,campaigns}` |
+| Uploads | `POST /api/uploads` — signs a direct-to-Blob write. **The only route that does not return an `ApiResponse` envelope**: the body is Blob's own client protocol, which `upload()` in the browser parses. |
 
 `GET /api/events` and `GET /api/tickets?eventId=` are the only organiser-adjacent
 reads open to anonymous callers, and both are filtered to published, publicly
@@ -232,26 +240,30 @@ short-lived. Detail: `docs/venue-architecture.md`.
 
 - Route files with no direct test. Most are thin reads over `lib/server`
   functions that *are* covered, but they are untested as endpoints:
+  `/admin/payouts/[id]`
   `/events/[id]/dashboard`
   `/events/[id]/holders`
   `/events/[id]/page-data`
-  `/events/discover`
   `/me/tags`
   `/me/workspaces`
-  `/orders/by-code/[code]`
-  `/workspaces/[slug]/attendees`
+  `/uploads`
+  `/workspaces`
   `/workspaces/[slug]/campaigns`
   `/workspaces/[slug]/events`
-  `/workspaces/[slug]`
-  `/workspaces`
 
-- `/me/tickets` shows the entry token as text, not a scannable QR — there is no
-  QR encoder and no camera-based scanner in the codebase. See
-  `docs/venue-architecture.md` §14.
-- Refunds have a status but no endpoint; withdrawals are recorded, not paid out.
-- The Zarinpal adapter itself is unverified against the live gateway — its pure
-  amount and response-code helpers are tested, the HTTP calls are not.
-- Notifications are subscribed to but nothing sends them yet.
+- **The money leaving the platform is manual.** Iranian gateways settle to the
+  organiser, not to the platform, so refunds and payouts record consequences
+  rather than move rials. See *Refunds* and *Payouts* below.
+- The Zarinpal adapter is unverified against the live gateway — its pure amount
+  and response-code helpers are tested, the HTTP calls are not. The same is
+  true of both SMS operators.
+- **No email.** `Campaign.channel` only ever holds `sms`, there is no mail
+  module and no variable configures one.
+- No SSE for seat availability; the clients poll. `docs/venue-architecture.md`
+  §10 has the reasoning.
+- The organiser's public-profile edit form (`/dashboard/profile/edit`) is the
+  only writer of `Workspace.avatar`/`banner`; there is no crop or resize step,
+  so what is uploaded is what is served.
 
 ## Tickets at the door
 
@@ -280,6 +292,38 @@ Scanning decides nothing. The unique constraint on the `CheckIn` row is still
 what prevents a second admission; a duplicate scan is refused by the server and
 reported, not swallowed at the door.
 
+
+## A workspace's slug, and its logo
+
+Both were derived from the name, and both were wrong for the same reason: a
+Persian name has nothing to derive from.
+
+**The slug.** `slugify` stripped everything non-ASCII, so «استودیو رویداد آوا»
+produced the empty string and fell back to `workspace` — then `workspace-2`,
+`workspace-3`, one counter shared by every Persian-named organiser on the
+platform. That counter was published in the URL of every organiser page, so the
+address of a workspace told anyone who looked roughly how many existed. Slugs
+are now 12 random base32 characters (`randomSlug`, ~60 bits) with the unique
+index as the backstop. They do not encode the name, which also means renaming a
+workspace no longer needs to move a URL that attendees have already been sent.
+
+**The logo.** `Workspace.avatar` held one or two initials taken from the first
+letters of the first two words — so a two-word Persian name rendered as «سس».
+It is now an optional **image URL**; absent means the UI draws its default icon
+(`components/workspace/WorkspaceAvatar.tsx`), and there is no initials path at
+all. The migration nulls every value that is not one of our own stored images,
+because an initial rendered as an `<img src>` is a broken image.
+
+`EventCollaborator.avatar` is a copy of the invitee workspace's and was read
+from the *request body*. Now that the field is a URL that other people's
+browsers load, the client does not get to pick it: `addCollaborator` reads it
+off the workspace it resolves, and the schema no longer accepts it.
+
+`PATCH /api/workspaces/{slug}` is what writes the profile — name, bio, avatar,
+banner — behind `workspace:edit`. Images are validated with the shared
+`storedImage` schema, so the field accepts our Blob host and nothing else. The
+edit form had been a mock: it validated, set a boolean and rendered «ذخیره شد»
+while persisting nothing, and both upload buttons were disabled «به‌زودی».
 
 ## Refunds
 

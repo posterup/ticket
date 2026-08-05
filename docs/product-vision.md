@@ -57,62 +57,68 @@ staff, and an ongoing relationship with attendees, not a one-time seller.
 
 Capabilities are grouped by area. Each item is tagged:
 
-- **[Now]** in current scope (landing page and ticket-creation wizard).
+- **[Now]** built and reachable in the product today.
 - **[Vision]** part of the long-term product, not yet built.
+
+Most of this map is **[Now]**. It is kept as a map rather than deleted because
+the areas are the shape of the product; the tags are what needs to stay honest.
 
 ### Event Management
 
-- Create events **[Vision]** (the ticket-creation wizard captures event
-  information today as its first step **[Now]**)
+- Create events **[Now]** — the 3-step wizard at `/tickets/create`
+- One-time, multi-session (سانس) and recurring events **[Now]** — recurring is
+  behind `NEXT_PUBLIC_CALENDAR_MODE` and hidden site-wide while off
+- Venue management, including seat maps and an internal designer **[Now]**
+- Collaborators and co-hosts per event **[Now]**
 - Event templates **[Vision]**
-- One-time, recurring, and multi-session events **[Vision]** (recurring rules
-  are captured in the wizard **[Now]**)
-- Venue management **[Vision]** (venue is captured as a wizard field **[Now]**)
 
 ### Ticketing
 
 - Unlimited ticket types and categories **[Now]**
-- Per-type capacity **[Now]**
-- Per-type sales start and sales end windows **[Now]**
-- Early-bird, VIP, student, group, and custom tiers **[Now]** (as authored
-  ticket types)
-- Discount codes **[Vision]**
+- Per-type capacity and sales windows **[Now]**
+- Early-bird, VIP, student, group and custom tiers **[Now]**
+- Assigned seating with real server-side seat holds **[Now]**
+- Discount codes with redemption caps and سانس scoping **[Now]**
+- Waitlists and organiser-approval registration **[Now]**
 - Dynamic pricing **[Vision]**
 
 ### CRM
 
-- Attendee profiles and history **[Vision]**
-- Notes, tags, and segments **[Vision]**
-- Contacts and custom fields **[Vision]**
+- Attendee profiles and history **[Now]** — settlement upserts the buyer
+- Notes, tags and segments **[Now]**
+- Contacts and custom fields **[Now]**
 - Organization (company) management **[Vision]**
 
 ### Marketing
 
-- SMS and email campaigns **[Vision]**
-- Segmentation and targeting **[Vision]**
-- Referrals and promotions **[Vision]**
-- Landing pages **[Vision]** (the public marketing landing page exists **[Now]**)
+- SMS campaigns **[Now]** — Kavenegar or sms.ir
+- Segmentation and targeting **[Now]**
+- Promotional codes **[Now]**
+- Organizer public pages and a follower graph **[Now]**
+- **Email [Vision]** — deliberately not built; `Campaign.channel` only ever
+  holds `sms`, and no variable configures a mail provider
+- Referrals **[Vision]**
 
 ### Operations
 
-- QR tickets **[Vision]**
-- QR check-in and gate scanning **[Vision]**
-- Staff management and roles **[Vision]**
-- Entry permissions **[Vision]**
+- QR tickets, drawn client-side so they work at a door with no signal **[Now]**
+- QR check-in and gate scanning via native `BarcodeDetector` **[Now]**
+- Staff management, roles and entry permissions **[Now]**
 
 ### Analytics
 
-- Revenue and ticket-sales analytics **[Vision]**
-- Customer and attendance analytics **[Vision]**
-- Conversion funnel **[Vision]**
-- Marketing performance **[Vision]**
+- Revenue, ticket sales and attendance per event **[Now]**
+- A cross-event analytics surface, conversion funnel and marketing
+  performance **[Vision]**
 
 ### Finance
 
-- Online payments **[Vision]**
-- Refunds **[Vision]**
-- Settlement **[Vision]**
-- Financial dashboard **[Vision]**
+- Online payments through Zarinpal **[Now]**
+- Refunds, with the seat genuinely returned to sale **[Now]**
+- Commission, balance and a payout queue **[Now]** — the transfer itself is a
+  bank action taken outside the product; what is recorded here is that it
+  happened
+- Automated settlement **[Vision]**
 
 ## Product principles
 

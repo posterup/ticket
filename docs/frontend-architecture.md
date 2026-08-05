@@ -1,82 +1,126 @@
 # Frontend Architecture
 
-The frontend is a Next.js 15 App Router application rendering a Persian-first
-(RTL) landing page for the Poster Event CRM. It is intentionally structured so
-that the same conventions scale to the future organizer dashboard.
+The frontend is a Next.js 15 App Router application: a Persian-first (RTL)
+attendee experience (explore, event pages, checkout, ticket wallet), an
+organizer dashboard, and an internal admin surface. For the tech stack and
+cross-cutting conventions see `CLAUDE.md`; for the route tree and what each
+surface is for, `docs/information-architecture.md`.
+
+**Mobile web only, for now.** `components/DesktopGate.tsx`, wired at
+`app/layout.tsx`, closes every viewport at or above `1024px` behind a notice.
+The `lg:` branches throughout the codebase are unfinished desktop work rather
+than dead code — keep writing both, while knowing only the mobile branch is
+presently reachable. Rationale: `PRODUCT.md`.
 
 ## Principles
 
-- **Server Components by default.** Only components that need motion or browser
-  APIs are Client Components (`"use client"`), isolated as leaves.
-- **RTL and Persian only.** Prefer logical properties and Tailwind's RTL-aware
-  utilities (`me-*`, `ms-*`) over physical left/right. See the RTL &
-  Persian-first rule in `CLAUDE.md`.
-- **Design tokens over ad-hoc values.** Colors, radii, and fonts come from CSS
-  variables defined in `app/globals.css` and surfaced to Tailwind through
-  `@theme inline`. See `docs/design-system.md`.
-- **Small, reusable components.** Presentation lives in focused files; shared
-  primitives live under `components/ui`.
+- **Server Components by default.** Only components that need motion, state or
+  browser APIs are Client Components (`"use client"`), isolated as leaves.
+  HeroUI imports `client-only`, so any module importing `@heroui/react` is one.
+- **HeroUI for everything.** Do not hand-roll styled controls; `components/ui`
+  holds thin wrappers that exist only to keep native-style APIs at call sites.
+- **RTL and Persian only.** Logical utilities (`me-*`, `ms-*`, `start-*`,
+  `end-*`) over physical left/right. See the RTL rule in `CLAUDE.md`.
+- **Design tokens over ad-hoc values.** Colors, radii and fonts come from the
+  CSS variables in `app/globals.css`, surfaced to Tailwind through
+  `@theme inline` and read directly by HeroUI. See `docs/design-system.md`.
+- **Never quote a number the server will not honour.** Prices, totals and
+  availability shown to a buyer are a preview of a server decision.
 
 ## Directory layout
 
 ```
 app/
-  layout.tsx        # Root layout: <html lang="fa" dir="rtl">, Vazirmatn font, metadata
-  page.tsx          # Landing route: composes Header + Hero + Footer
-  globals.css       # Tailwind v4 + design tokens (light/dark)
+  layout.tsx           Root layout: <html lang="fa" dir="rtl">, Vazirmatn, DesktopGate
+  globals.css          Tailwind v4 + design tokens
+  error.tsx global-error.tsx not-found.tsx loading.tsx   Persian failure screens
+  robots.ts            Disallows all crawlers until launch
+  (auth)/              login, signup
+  (dashboard)/         Organizer shell: events, customers, finance, marketing,
+                       promotions, checkin, notifications, profile, settings,
+                       tickets/customize, workspaces/new
+  admin/               Internal staff: venue designer, payout queue
+  events/              Explore, public event page, checkout
+  feed/ me/ orders/ pages/ w/[slug]   Attendee surfaces and organizer pages
+  tickets/create/      The 3-step creation wizard
+  api/                 Route Handlers — the backend (see backend-architecture.md)
+
 components/
-  Header.tsx        # Sticky, transparent header; blurred surface on scroll (client)
-  Hero.tsx          # Centered hero; staggered reveal (client)
-  HeroButtons.tsx   # Primary + disabled "coming soon" CTA (client)
-  HeroIllustration.tsx  # Abstract CSS/Tailwind illustration with gentle float (client)
-  Footer.tsx        # Minimal footer (server)
-  Logo.tsx          # Brand wordmark (server)
-  ui/
-    button.tsx      # Design-system button (cva variants)
-    badge.tsx       # Design-system badge (cva variants)
+  AppShell AppChrome AppTopBar AppBottomNav   The mobile shell
+  PublicHeader Header Footer DesktopGate ErrorScreen Logo
+  ui/          Thin HeroUI wrappers + button-variants.ts (non-client, for RSC)
+  admin/ analytics/ auth/ checkin/ checkout/ create/ dashboard/ events/
+  feed/ finance/ landing/ marketing/ me/ seatmap/ skeletons/ tickets/
+  workspace/   WorkspaceAvatar, WorkspaceBanner, FollowChip
+
 lib/
-  utils.ts          # cn() class merger
-  motion.ts         # Shared Framer Motion variants
+  client/      api.ts (apiFetch/useApi), upload.ts, session.tsx
+  create/ events/ tickets/ venues/ checkin/ wizard/ geo/
+  motion.ts    Shared Framer Motion variants
+  utils.ts     cn() class merger
+  flags.ts     NEXT_PUBLIC_* feature flags
+  format.ts    Persian numerals, Jalali dates, Asia/Tehran times
 ```
+
+## Data fetching
+
+Client screens go through `lib/client/api.ts`: `useApi<T>(path)` for reads
+(returning `{ data, error, loading, reload }`, rendered by
+`components/ui/async-state.tsx`) and `apiFetch<T>` for writes. Both unwrap the
+`ApiResponse` envelope and raise `ApiCallError`, which carries the envelope's
+code so callers can branch on `SOLD_OUT` rather than on a message. A dead
+session is signed out and bounced to `/login` once, from there — not reported
+as text on a screen the reader cannot act on.
+
+Skeletons are shaped like the page they stand in for (`components/skeletons/`,
+asserted by `tests/loading-shape.test.ts`); a shimmer that promises a layout
+the page does not have is worse than none.
+
+## The active workspace
+
+An organiser may belong to several. Which one the dashboard is acting on lives
+in **one place**: `components/dashboard/ActiveWorkspace.tsx`, a context seeded
+by the shell and backed by a cookie — a cookie rather than `localStorage`
+because the dashboard renders on the server and the API routes resolve the same
+choice there, re-checking it against real memberships.
+
+Every consumer reads `useWorkspaceSwitcher()` / `useActiveWorkspace()`. Do not
+keep a second copy. The switcher moved off `localStorage` and the profile card
+and its edit form did not, so the two could disagree — and the edit form would
+then save to a workspace the rest of the dashboard was not showing.
+
+## Images
+
+Posters, ticket art and workspace logos are uploaded from the browser straight
+to Vercel Blob through `lib/client/upload.ts`; `/api/uploads` only signs the
+request. Stored fields hold a **URL**, never base64 — a data URL travels in the
+SSR payload of every page that reads the row.
+
+They render as plain `<img>`, not `next/image`: the host is a Blob domain only
+known at runtime. Server-side, `isStoredImage` (`lib/uploads.ts`) is what keeps
+an image field from becoming a pointer at any host on the internet.
 
 ## Motion
 
-Framer Motion powers entrance and micro-interactions. Shared variants live in
-`lib/motion.ts`:
-
-- `staggerContainer` / `fadeUpItem` drive the hero's sequenced reveal.
-- The header entrance and the illustration's gentle float are local to their
-  components.
-
-All motion is restrained and honors `prefers-reduced-motion`: the illustration
-disables its float loop, and `app/globals.css` collapses transitions globally
-under reduced motion. Scroll state in the header is read via Framer Motion's
-`useScroll` + `useMotionValueEvent` rather than a manual scroll listener, so the
-component only re-renders when the blur threshold is crossed.
+Shared variants live in `lib/motion.ts` (`staggerContainer` / `fadeUpItem`).
+Motion is restrained — opacity and small transforms, easing `[0.16, 1, 0.3, 1]`,
+no bounce. `app/globals.css` collapses transitions under
+`prefers-reduced-motion` and components honour it too.
 
 ## Accessibility
 
-- Semantic landmarks: `<header>`, `<main>`, `<footer>`.
-- Visible focus rings on every interactive element (`focus-visible:ring-*`).
-- The disabled "view events" CTA is a real `button[disabled]` with
-  `aria-disabled` and a descriptive `aria-label`; the decorative illustration is
-  `aria-hidden`.
-- Color pairings meet WCAG AA (4.5:1 for text, 3:1 for control boundaries and
-  the focus ring), verified against the tokens rather than by eye. The app is
-  **light-only today** — there is no dark token set, so the earlier claim of
-  "light and dark" was aspirational. See `docs/design-system.md`.
-
-## Routing and future surfaces
-
-The primary CTA routes to `/tickets/create` (the 3-step ticket-creation wizard,
-documented in `docs/information-architecture.md`). Component conventions here are
-designed to extend to future route groups (for example a `(dashboard)` group)
-without rework: shared primitives in `components/ui`, tokens in `globals.css`,
-and motion variants in `lib/motion.ts`.
+- Semantic landmarks; visible focus rings on `--ring` for every interactive
+  element; ARIA only where native semantics cannot reach.
+- WCAG AA contrast is **verified, not assumed** — `tests/contrast.test.ts` and
+  `tests/token-contrast.test.ts` assert the token ratios, and changes have been
+  rejected for dropping one below 4.5:1. The audit is in
+  `docs/design-system.md`.
+- Touch targets follow WCAG 2.2 SC 2.5.8 (24×24 floor; seat buttons are 44×44,
+  because a mis-tap there costs a sale).
+- Persian needs more size than Latin: 11px is the floor, 12px comfortable.
 
 ## Responsiveness
 
-Mobile-first. The hero text column is capped near 700px and scales its type from
-`text-4xl` up to `text-5xl`; the illustration's floating cards use responsive
-offsets and hide the least important card on the smallest screens. Layout uses
-`min-h-[100dvh]` (never `h-screen`) to avoid mobile viewport jumps.
+Mobile-first, one-handed. Layout uses `min-h-[100dvh]`, never `h-screen`. Wide
+content scrolls inside its own container — `html` sets `overflow-x: hidden` so
+the page body never scrolls sideways.

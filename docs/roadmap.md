@@ -1,12 +1,30 @@
 # Roadmap
 
-A phased plan from the current landing page to the full Event CRM. Phases are
-sequenced by dependency: each builds on the system of record established by the
-one before it. Scope within a phase can ship incrementally; the ordering between
-phases is the load-bearing part.
+A phased plan to the full Event CRM. Phases are sequenced by dependency: each
+builds on the system of record established by the one before it. Scope within a
+phase can ship incrementally; the ordering between phases is the load-bearing
+part.
 
-Today's scope is Phase 0 (landing page and brand) plus the ticket-creation
-wizard from Phase 1. Everything past that is forward-looking.
+**Where this stands: Phases 0–5 have all shipped in substance.** The plan is
+kept because the *ordering* is still the argument for what to build next, and
+because each phase's "key features" list is the checklist against which the
+remaining gaps below are honest.
+
+| Phase | State |
+| --- | --- |
+| 0 Landing and brand | Shipped. The landing page moved to `/hosts`; `/` is explore. |
+| 1 Wizard, event page, checkout | Shipped, plus assigned seating and Zarinpal. |
+| 2 Dashboard and CRM | Shipped. Contacts, tags, segments, workspaces. |
+| 3 Operations | Shipped. QR tickets, `BarcodeDetector` scanning, roles. |
+| 4 Marketing and analytics | Partial — SMS campaigns ship; **email does not exist**, and analytics is per-event rather than a surface of its own. |
+| 5 Finance | Partial — payments, refunds, commission and the payout queue ship; **the transfer itself is a bank action taken outside the product**, recorded here rather than executed. |
+
+Still open, and deliberately so: desktop (every viewport ≥1024px is behind
+`DesktopGate`), SSE for live seat availability (polling instead — see
+`docs/venue-architecture.md` §10), curved seating bowls, and per-seat nudging in
+the venue designer. Everything the product does *not* do is listed with its
+reason in `docs/backend-architecture.md` § Known limits and
+`docs/venue-architecture.md` §14.
 
 ## Phase 0 - Landing and brand
 
@@ -16,9 +34,9 @@ Poster is to prospective organizers.
 **Key features:**
 
 - Public landing page: header, hero, feature and segment sections, footer.
-- Brand foundation: Vazirmatn typography, monochrome palette (blue reserved for
-  logo and semantic Info), RTL layout, light and dark themes.
-- Design tokens and base component primitives (`Button`, `Badge`).
+- Brand foundation: Vazirmatn typography, the paper-and-neon palette (one hot
+  pink against violet-tinted neutrals), RTL layout, light theme only.
+- Design tokens, and HeroUI wired to read them.
 
 **Dependencies:** none. This is the starting point.
 
@@ -30,11 +48,11 @@ attendee buy one. This is the first end-to-end value loop.
 **Key features:**
 
 - Ticket-creation wizard at `/tickets/create` (Step 1 Event Information,
-  Step 2 Schedule & Availability, Step 3 Ticket Types). The wizard is in scope
-  today.
-- One-time and recurring schedule handling.
+  Step 2 Schedule & Availability, Step 3 Ticket Types).
+- One-time, multi-session (سانس) and recurring schedule handling. Recurring is
+  behind `NEXT_PUBLIC_CALENDAR_MODE` and hidden site-wide while off.
 - Unlimited ticket types with price, capacity, and sales windows.
-- Public event page (`/e/[slug]`) rendering the published event.
+- Public event page (`/events/{id}`) rendering the published event.
 - Attendee checkout that records the buyer as a contact.
 
 **Dependencies:** Phase 0 (design system and shell). Checkout depends on at
@@ -48,7 +66,7 @@ managed audience. This establishes the attendee-as-asset system of record.
 
 **Key features:**
 
-- Dashboard shell and overview (`/dashboard`).
+- Dashboard shell and overview (`/dashboard/events`).
 - Event and ticket management surfaces (list, edit, templates, venues).
 - CRM: attendee profiles and history, contacts, custom fields, notes.
 - Tags and segments for organizing the audience.
@@ -77,7 +95,8 @@ the dashboard to manage staff and view attendance against).
 
 **Key features:**
 
-- SMS and email campaigns targeted by segment.
+- SMS campaigns targeted by segment. **Email is not implemented** and no
+  variable configures it — see the README.
 - Referrals and promotional codes.
 - Marketing landing pages.
 - Analytics: revenue, ticket sales, attendance, conversion funnel, and

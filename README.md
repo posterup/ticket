@@ -1,8 +1,15 @@
 # پوستر - Event CRM & Ticketing Platform
 
 A Persian-first (RTL) Event CRM and ticketing SaaS for organizations. This
-repository currently contains the marketing **landing page** plus the
-scaffolding that anticipates the future dashboard and API surface.
+repository holds the whole product: attendee discovery, public event pages,
+checkout with assigned seating, the ticket wallet, the organizer dashboard and
+CRM, door check-in, finance and payouts, an internal venue designer, and the
+HTTP API all of it runs on.
+
+**Pre-launch.** There are no real organisers, events or transactions —
+everything visible is fixtures from `prisma/seed-data.ts`. Every viewport at or
+above `1024px` is behind a "desktop is not ready" notice; the product is mobile
+web today.
 
 > **Note:** All product-facing copy is Persian and the app renders
 > right-to-left (`<html lang="fa" dir="rtl">`). English appears only in code
@@ -108,7 +115,7 @@ schema), read from `DATABASE_URL` in `.env`. The generated client is written to
 `generated/` and is git-ignored.
 
 Without `DATABASE_URL` the suite still passes: the suites that need a database
-skip themselves rather than failing (100 tests run, 91 skip). With one, all 191
+skip themselves rather than failing (413 tests run, 439 skip). With one, all 852
 run — seed the database first, since they assert against the fixtures.
 
 ## Messaging (SMS)
@@ -195,6 +202,13 @@ Required in production:
 Optional: `APP_URL` (gateway return origin — defaults to the request origin),
 `KAVENEGAR_*` and `SMSIR_*` (messaging; features report "not configured" until
 set), `NEXT_PUBLIC_CALENDAR_MODE` (feature flag).
+
+> **`OTP_PHONE_FALLBACK=1` is insecure by design and must be off at launch.**
+> It makes the one-time code the last six digits of the caller's own phone
+> number, so anyone who knows a number can sign in as its owner. It exists so a
+> pre-launch deployment with no messaging contract is usable at all, and it
+> applies only while *no* operator is configured — once real credentials and an
+> approved template exist, real codes are sent and the flag is dead regardless.
 
 ### Applying migrations
 
