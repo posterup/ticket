@@ -11,7 +11,7 @@
 # driver adapter (`@prisma/adapter-pg`), so the query path is plain JS with no
 # native engine to install. Only the CLI in `migrator` needs an engine binary.
 
-ARG NODE_VERSION=22-alpine
+ARG NODE_VERSION=24-alpine
 
 # ───────────────────────────── dependencies ─────────────────────────────
 FROM node:${NODE_VERSION} AS deps

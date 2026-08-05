@@ -42,7 +42,9 @@ dashboard and API. Product rationale: `docs/product-vision.md`.
 
 ## Commands
 
-Node **22.x** (see `package.json` `engines`).
+Node **24.x** (see `package.json` `engines`) — matched to the Vercel project's
+configured runtime; a mismatch there surfaces as "Configuration Settings in the
+current Production deployment differ from your current Project Settings".
 
 | Task | Command |
 | --- | --- |
