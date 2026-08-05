@@ -99,11 +99,6 @@ model OtpCode {
 
 // ───────────────────────────── organisation ─────────────────────────────
 
-enum WorkspaceType {
-  PERSONAL @map("personal")
-  BUSINESS @map("business")
-}
-
 enum WorkspaceRole {
   OWNER @map("owner")
   ADMIN @map("admin")
@@ -114,7 +109,6 @@ model Workspace {
   id       String        @id @default(uuid())
   slug     String        @unique
   name     String
-  type     WorkspaceType
   bio      String?
   /// 1–2 character initials.
   avatar   String

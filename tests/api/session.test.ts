@@ -119,7 +119,7 @@ describeApi("POST /api/auth/register", () => {
       ),
     );
     expect(parsed.status).toBe(201);
-    expect(data(parsed).workspace.type).toBe("business");
+    expect(data(parsed).workspace.name).toBeTruthy();
 
     const after = data(
       await parse<{ memberships: { role: string }[] }>(await ME()),

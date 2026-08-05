@@ -27,7 +27,6 @@ import type {
   TicketCategory,
   TicketStatus,
   WorkspaceRole,
-  WorkspaceType,
 } from "@/types";
 
 /** Invert a domain→Prisma map into a Prisma→domain lookup. */
@@ -133,12 +132,6 @@ export const COLLABORATOR_STATUS_TO_DB: Record<
   revoked: P.CollaboratorStatus.REVOKED,
 };
 export const COLLABORATOR_STATUS_FROM_DB = invert(COLLABORATOR_STATUS_TO_DB);
-
-export const WORKSPACE_TYPE_TO_DB: Record<WorkspaceType, P.WorkspaceType> = {
-  personal: P.WorkspaceType.PERSONAL,
-  business: P.WorkspaceType.BUSINESS,
-};
-export const WORKSPACE_TYPE_FROM_DB = invert(WORKSPACE_TYPE_TO_DB);
 
 export const WORKSPACE_ROLE_TO_DB: Record<WorkspaceRole, P.WorkspaceRole> = {
   owner: P.WorkspaceRole.OWNER,

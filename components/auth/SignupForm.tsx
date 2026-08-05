@@ -8,8 +8,6 @@ import { PhoneOtpForm } from "@/components/auth/PhoneOtpForm";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import type { WorkspaceType } from "@/types";
 
 /**
  * Becoming an organizer, in two steps.
@@ -24,7 +22,6 @@ export function SignupForm() {
   const [step, setStep] = useState<"identity" | "workspace">("identity");
   const [fullName, setFullName] = useState("");
   const [workspace, setWorkspace] = useState("");
-  const [type, setType] = useState<WorkspaceType>("personal");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -46,7 +43,6 @@ export function SignupForm() {
         body: JSON.stringify({
           fullName: fullName.trim(),
           workspaceName: workspace.trim(),
-          workspaceType: type,
         }),
       });
       const json = await res.json();
@@ -129,30 +125,6 @@ export function SignupForm() {
             onChange={(e) => setWorkspace(e.target.value)}
           />
         </Field>
-
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium text-foreground">
-            نوع فضای کاری
-          </legend>
-          <div className="flex gap-2">
-            {(["personal", "business"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={type === option}
-                onClick={() => setType(option)}
-                className={cn(
-                  "flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors",
-                  type === option
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border text-muted hover:text-foreground",
-                )}
-              >
-                {option === "personal" ? "شخصی" : "کسب‌وکار"}
-              </button>
-            ))}
-          </div>
-        </fieldset>
 
         {error ? (
           <p role="alert" className="text-sm text-danger-text">

@@ -2,7 +2,6 @@
 
 import { z } from "zod";
 
-import type { WorkspaceType } from "@/types";
 
 import { atLeastOneField, nonEmpty } from "./common";
 
@@ -25,7 +24,6 @@ export const otpVerifySchema = z.object({
 export const registerSchema = z.object({
   fullName: nonEmpty.max(120),
   workspaceName: nonEmpty.max(120),
-  workspaceType: z.enum(["personal", "business"] satisfies readonly WorkspaceType[]),
 });
 
 /**

@@ -40,9 +40,6 @@ export function WorkspaceSwitcher() {
     setOpen(false);
   }
 
-  const typeLabel = (w: Workspace) =>
-    w.type === "business" ? "کسب‌وکار" : "شخصی";
-
   return (
     <div ref={ref} className="relative">
       <button
@@ -57,7 +54,6 @@ export function WorkspaceSwitcher() {
           <p className="truncate text-sm font-medium text-foreground">
             {active.name}
           </p>
-          <p className="truncate text-xs text-muted">{typeLabel(active)}</p>
         </div>
         <ChevronsUpDown className="size-4 shrink-0 text-faint" aria-hidden />
       </button>
@@ -82,7 +78,6 @@ export function WorkspaceSwitcher() {
                 <span className="block truncate text-sm text-foreground">
                   {w.name}
                 </span>
-                <span className="block text-xs text-muted">{typeLabel(w)}</span>
               </span>
               {w.id === active.id ? (
                 <Check className="size-4 shrink-0 text-foreground" aria-hidden />

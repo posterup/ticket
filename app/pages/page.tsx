@@ -62,7 +62,6 @@ function WorkspaceCard({
   following: boolean;
   signedIn: boolean;
 }) {
-  const typeLabel = w.type === "business" ? "کسب‌وکار" : "شخصی";
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
       <div className="flex items-start gap-3">
@@ -86,9 +85,6 @@ function WorkspaceCard({
               />
             ) : null}
           </Link>
-          <span className="mt-1 inline-flex rounded-full border border-border bg-subtle px-2 py-0.5 text-[0.6875rem] text-muted">
-            {typeLabel}
-          </span>
         </div>
       </div>
 

@@ -44,7 +44,6 @@ export default function FeedPage() {
     slug: w.slug,
     name: w.name,
     avatar: w.avatar,
-    type: w.type,
   }));
 
   return (

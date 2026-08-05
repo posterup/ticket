@@ -1,8 +1,5 @@
 import type { IsoDateTime } from "./api";
 
-/** A workspace is an organizer's page: personal or a business. */
-export type WorkspaceType = "personal" | "business";
-
 /**
  * A member's standing in a workspace. There is deliberately no global role on
  * a user — holding any membership at all is what makes someone an event
@@ -24,7 +21,6 @@ export interface Workspace {
   /** URL slug, e.g. `ava-events` -> `/w/ava-events`. */
   slug: string;
   name: string;
-  type: WorkspaceType;
   bio?: string;
   /** 1-2 character avatar initials. */
   avatar: string;

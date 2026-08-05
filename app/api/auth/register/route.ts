@@ -26,7 +26,6 @@ export const POST = handler(async (request: Request) => {
   const workspace = await createWorkspace({
     userId: user.id,
     name: input.workspaceName,
-    type: input.workspaceType,
   });
 
   return ok({ workspace }, 201);

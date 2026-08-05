@@ -45,7 +45,6 @@ import {
   REGISTRATION_STATUS_TO_DB,
   SESSION_AVAILABILITY_TO_DB,
   TICKET_CATEGORY_TO_DB,
-  WORKSPACE_TYPE_TO_DB,
 } from "../lib/server/mappers/enums";
 import { seedVenueLayouts } from "./seed-venues";
 
@@ -123,8 +122,7 @@ async function main(): Promise<void> {
         id: w.id,
         slug: w.slug,
         name: w.name,
-        type: WORKSPACE_TYPE_TO_DB[w.type],
-        bio: w.bio,
+          bio: w.bio,
         avatar: w.avatar,
         banner: w.banner,
         verified: w.verified ?? false,

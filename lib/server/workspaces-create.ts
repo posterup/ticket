@@ -6,8 +6,7 @@
 
 import { db } from "./db";
 import { toWorkspace } from "./mappers";
-import { WORKSPACE_TYPE_TO_DB } from "./mappers/enums";
-import type { Workspace, WorkspaceType } from "@/types";
+import type { Workspace } from "@/types";
 
 /**
  * A URL-safe slug from a workspace name.
@@ -57,7 +56,6 @@ function initials(name: string): string {
 export async function createWorkspace(input: {
   userId: string;
   name: string;
-  type: WorkspaceType;
   /** Optional public blurb. The column existed; nothing ever wrote to it. */
   bio?: string;
 }): Promise<Workspace> {
@@ -65,7 +63,6 @@ export async function createWorkspace(input: {
     data: {
       slug: await uniqueSlug(slugify(input.name)),
       name: input.name,
-      type: WORKSPACE_TYPE_TO_DB[input.type],
       ...(input.bio ? { bio: input.bio } : {}),
       avatar: initials(input.name) || "؟",
       members: { create: { userId: input.userId, role: "OWNER" } },

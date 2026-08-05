@@ -40,7 +40,6 @@ import {
   REGISTRATION_STATUS_FROM_DB,
   SESSION_AVAILABILITY_FROM_DB,
   TICKET_CATEGORY_FROM_DB,
-  WORKSPACE_TYPE_FROM_DB,
 } from "./enums";
 
 /** `null` → absent, so optional fields stay optional in the JSON. */
@@ -166,7 +165,6 @@ export function toWorkspace(row: Row.Workspace): Workspace {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    type: WORKSPACE_TYPE_FROM_DB[row.type],
     bio: opt(row.bio),
     avatar: row.avatar,
     banner: opt(row.banner),

@@ -9,9 +9,6 @@ import type { Workspace } from "@/types";
 // Shared with WorkspaceSwitcher so the active workspace stays in sync app-wide.
 const STORAGE_KEY = "poster-active-workspace";
 
-const typeLabel = (w: Workspace) =>
-  w.type === "business" ? "کسب‌وکار" : "شخصی";
-
 /**
  * Profile card: the active workspace's logo + name (tap to view the public
  * profile as a visitor sees it) with a control to switch between workspaces.
@@ -60,7 +57,7 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
             {active.name}
           </p>
           <p className="mt-0.5 text-sm text-muted">
-            {typeLabel(active)} · مشاهده پروفایل
+            مشاهده پروفایل
           </p>
         </div>
         <ChevronLeft className="size-5 shrink-0 text-faint" aria-hidden />
@@ -104,7 +101,6 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
                   <span className="block truncate text-sm text-foreground">
                     {w.name}
                   </span>
-                  <span className="block text-xs text-muted">{typeLabel(w)}</span>
                 </span>
                 {w.id === active.id ? (
                   <Check className="size-4 shrink-0 text-foreground" aria-hidden />

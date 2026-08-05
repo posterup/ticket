@@ -27,7 +27,6 @@ export interface FeedWorkspace {
   slug: string;
   name: string;
   avatar: string;
-  type: "personal" | "business";
 }
 
 export function FeedClient({
@@ -157,9 +156,6 @@ function EmptyState({
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-foreground">
                     {w.name}
-                  </span>
-                  <span className="block text-xs text-muted">
-                    {w.type === "business" ? "کسب‌وکار" : "شخصی"}
                   </span>
                 </span>
               </Link>
