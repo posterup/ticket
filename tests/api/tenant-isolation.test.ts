@@ -23,6 +23,7 @@ import {
 } from "@/app/api/workspaces/[slug]/bank-accounts/[accountId]/route";
 import { POST as WITHDRAW } from "@/app/api/workspaces/[slug]/withdrawals/route";
 import { GET as WS_ATTENDEES } from "@/app/api/workspaces/[slug]/attendees/route";
+import { PATCH as WS_EDIT } from "@/app/api/workspaces/[slug]/route";
 import { GET as DISCOUNTS } from "@/app/api/discounts/route";
 import { GET as ADMIN_PAYOUTS } from "@/app/api/admin/payouts/route";
 
@@ -142,6 +143,45 @@ describeApi("one organiser reaching for another's data", () => {
       ctx({ slug: THEIRS_SLUG }),
     );
     denied(res.status);
+  });
+
+  it("cannot rename their workspace", async () => {
+    const res = await WS_EDIT(
+      req("PATCH", "/", { name: "مال من است" }),
+      ctx({ slug: THEIRS_SLUG }),
+    );
+    denied(res.status);
+  });
+
+  it("cannot hang an arbitrary image off their profile", async () => {
+    // The avatar is rendered in every visitor's browser, so the field takes
+    // our own Blob host and nothing else — even from the rightful owner.
+    const res = await WS_EDIT(
+      req("PATCH", "/", { avatar: "https://evil.example/logo.png" }),
+      ctx({ slug: MY_SLUG }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("edits its own profile, and the change persists", async () => {
+    const name = `نگار کریمی ${Date.now()}`;
+    const res = await WS_EDIT(
+      req("PATCH", "/", { name, avatar: null }),
+      ctx({ slug: MY_SLUG }),
+    );
+    expect(res.status).toBe(200);
+    const { db } = await import("@/lib/server/db");
+    const row = await db.workspace.findUniqueOrThrow({
+      where: { slug: MY_SLUG },
+      select: { name: true, avatar: true },
+    });
+    expect(row.name).toBe(name);
+    expect(row.avatar).toBeNull();
+    // Leave the seed as it was — other suites assert against this name.
+    await db.workspace.update({
+      where: { slug: MY_SLUG },
+      data: { name: "نگار کریمی" },
+    });
   });
 
   it("cannot read their CRM contacts", async () => {

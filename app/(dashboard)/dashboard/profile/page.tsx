@@ -2,12 +2,8 @@
 
 import { ProfileCard } from "@/components/dashboard/ProfileCard";
 import { AccountMenu } from "@/components/dashboard/AccountMenu";
-import { useWorkspaceSwitcher } from "@/components/dashboard/ActiveWorkspace";
 
 export default function ProfilePage() {
-  // From the shell, which already loaded the caller's own workspaces.
-  const { workspaces } = useWorkspaceSwitcher();
-
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
       <div>
@@ -19,7 +15,7 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <ProfileCard workspaces={workspaces} />
+      <ProfileCard />
       <AccountMenu />
     </div>
   );

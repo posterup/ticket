@@ -7,6 +7,7 @@ import { Check, ChevronsUpDown, Plus, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspaceSwitcher } from "@/components/dashboard/ActiveWorkspace";
 import type { Workspace } from "@/types";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 /**
  * Switch between the user's workspaces.
@@ -117,13 +118,9 @@ function Avatar({
   small?: boolean;
 }) {
   return (
-    <span
-      className={cn(
-        "grid shrink-0 place-items-center rounded-md bg-foreground font-bold text-background",
-        small ? "size-7 text-xs" : "size-8 text-sm",
-      )}
-    >
-      {workspace.avatar}
-    </span>
+    <WorkspaceAvatar
+      src={workspace.avatar}
+      className={cn("rounded-md", small ? "size-7" : "size-8")}
+    />
   );
 }

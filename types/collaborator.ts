@@ -29,7 +29,7 @@ export interface EventCollaborator {
   sub: string;
   /** Workspace slug when `channel === "workspace"`. */
   workspaceSlug?: string;
-  /** Workspace avatar initials when applicable. */
+  /** The invitee workspace's logo image URL, when it has one. */
   avatar?: string;
   /** What an accepted collaborator may do. */
   role: EventCollabRole;

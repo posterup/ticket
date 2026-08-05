@@ -19,7 +19,8 @@ export const addCollaboratorSchema = z.object({
   /** Display hint (`@slug` for a workspace). Defaults to empty. */
   sub: z.string().catch(""),
   workspaceSlug: z.string().optional(),
-  avatar: z.string().optional(),
+  // No `avatar`: it is now an image URL that other people's browsers load, and
+  // the server can read the real one off the invitee workspace it resolves.
 });
 
 /**

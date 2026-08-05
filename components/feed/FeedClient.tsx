@@ -6,6 +6,7 @@ import { CalendarDays, MapPin, BadgeCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FollowChip } from "@/components/workspace/FollowChip";
 import { EventCover } from "@/components/events/EventCover";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 export interface FeedEvent {
   id: string;
@@ -19,14 +20,14 @@ export interface FeedEvent {
   tags: string[];
   wsSlug: string;
   wsName: string;
-  wsAvatar: string;
+  wsAvatar?: string;
   wsVerified: boolean;
 }
 
 export interface FeedWorkspace {
   slug: string;
   name: string;
-  avatar: string;
+  avatar?: string;
 }
 
 export function FeedClient({
@@ -59,9 +60,7 @@ export function FeedClient({
               href={`/w/${e.wsSlug}`}
               className="flex items-center gap-2 text-sm font-medium text-foreground hover:underline"
             >
-              <span className="grid size-8 place-items-center rounded-full bg-foreground text-xs font-bold text-background">
-                {e.wsAvatar}
-              </span>
+              <WorkspaceAvatar src={e.wsAvatar} className="size-8 rounded-full" />
               <span className="flex items-center gap-1">
                 {e.wsName}
                 {e.wsVerified ? (
@@ -150,9 +149,7 @@ function EmptyState({
                 href={`/w/${w.slug}`}
                 className="flex min-w-0 items-center gap-2.5"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-sm font-bold text-background">
-                  {w.avatar}
-                </span>
+                <WorkspaceAvatar src={w.avatar} className="size-9 rounded-full" />
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-foreground">
                     {w.name}

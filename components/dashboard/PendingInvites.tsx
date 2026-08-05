@@ -22,6 +22,7 @@ import { formatJalaliDate } from "@/lib/format";
 import { AsyncState } from "@/components/ui/async-state";
 import { Button } from "@/components/ui/button";
 import type { EventCollaborator, EventCollabRole } from "@/types";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 const ROLE_LABEL: Record<EventCollabRole, string> = {
   "co-host": "میزبان همکار",
@@ -89,9 +90,13 @@ export function PendingInvites() {
             className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"
           >
             <div className="flex items-start gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-bold text-accent-text">
-                {invite.avatar ?? <Mail className="size-4" aria-hidden />}
-              </span>
+              {invite.avatar ? (
+                <WorkspaceAvatar src={invite.avatar} className="size-9 rounded-full" />
+              ) : (
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-text">
+                  <Mail className="size-4" aria-hidden />
+                </span>
+              )}
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">
                   {invite.label}

@@ -109,7 +109,7 @@ interface DashboardData {
   holders: Holder[];
   checked: string[];
   audienceTags: { label: string; count: number }[];
-  collabWorkspaces: { slug: string; name: string; avatar: string }[];
+  collabWorkspaces: { slug: string; name: string; avatar?: string }[];
 }
 
 export default function EventDetailPage({ params }: Params) {

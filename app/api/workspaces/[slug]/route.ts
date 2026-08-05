@@ -1,7 +1,15 @@
-import { getWorkspaceBySlug, listEventsByWorkspace } from "@/lib/server";
-import { getCurrentUser } from "@/lib/server/auth/guards";
+import {
+  getWorkspaceBySlug,
+  listEventsByWorkspace,
+  updateWorkspace,
+} from "@/lib/server";
+import {
+  getCurrentUser,
+  requireWorkspaceAccess,
+} from "@/lib/server/auth/guards";
 import { listFollowedSlugs } from "@/lib/server";
-import { handler, notFound, ok } from "@/lib/server/http";
+import { handler, notFound, ok, readJson } from "@/lib/server/http";
+import { updateWorkspaceSchema } from "@/lib/server/schemas/workspace";
 
 type Context = { params: Promise<{ slug: string }> };
 
@@ -27,4 +35,21 @@ export const GET = handler(async (_r: Request, { params }: Context) => {
     following,
     signedIn: user !== null,
   });
+});
+
+/**
+ * PATCH /api/workspaces/:slug — edit the public profile.
+ *
+ * The edit form used to be a mock: it validated, set a boolean, rendered
+ * «ذخیره شد» and persisted nothing. Anyone who renamed their workspace lost the
+ * change on reload and had been told otherwise.
+ */
+export const PATCH = handler(async (request: Request, { params }: Context) => {
+  const { slug } = await params;
+  const workspace = await getWorkspaceBySlug(slug);
+  if (!workspace) throw notFound("فضای کاری یافت نشد.");
+
+  await requireWorkspaceAccess(workspace.id, "workspace:edit");
+  const patch = await readJson(request, updateWorkspaceSchema);
+  return ok(await updateWorkspace(workspace.id, patch));
 });

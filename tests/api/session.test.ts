@@ -128,21 +128,27 @@ describeApi("POST /api/auth/register", () => {
     expect(after.memberships[0].role).toBe("owner");
   });
 
-  it("gives a second workspace of the same name a distinct slug", async () => {
-    const first = data(
-      await parse<{ workspace: Workspace }>(
-        await REGISTER(
-          req("POST", "/", {
-            fullName: "مدیر تازه",
-            workspaceName: "Fresh Studio",
-            workspaceType: "personal",
-          }),
+  it("gives two workspaces of the same name distinct, name-free slugs", async () => {
+    const register = async () =>
+      data(
+        await parse<{ workspace: Workspace }>(
+          await REGISTER(
+            req("POST", "/", {
+              fullName: "مدیر تازه",
+              workspaceName: "Fresh Studio",
+              workspaceType: "personal",
+            }),
+          ),
         ),
-      ),
-    );
+      ).workspace.slug;
+
+    const [first, second] = [await register(), await register()];
     // Slugs are URLs; a collision would silently point at someone else's page.
-    expect(first.workspace.slug).not.toBe("fresh-studio");
-    expect(first.workspace.slug).toMatch(/^fresh-studio-\d+$/);
+    expect(first).not.toBe(second);
+    // And they are random rather than derived: a name-based slug made every
+    // Persian workspace `workspace-2`, `workspace-3`, … publishing a count.
+    expect(first).toMatch(/^[a-z2-9]{12}$/);
+    expect(second).toMatch(/^[a-z2-9]{12}$/);
   });
 
   it("rejects an empty workspace name", async () => {

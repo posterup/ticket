@@ -7,6 +7,7 @@ import { useApi } from "@/lib/client/api";
 import type { DiscoverEvent } from "@/components/events/EventsExplorer";
 import { formatNumber } from "@/lib/format";
 import { EventCover } from "@/components/events/EventCover";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 /**
  * Landing discovery strip: a few upcoming events, each tied to the organizer
@@ -56,9 +57,7 @@ export function FeaturedEvents() {
               <div className="flex flex-1 flex-col p-5">
               {organizer ? (
                 <span className="mb-3 flex items-center gap-2 text-xs text-muted">
-                  <span className="grid size-6 place-items-center rounded-full bg-foreground text-[0.625rem] font-bold text-background">
-                    {organizer.avatar}
-                  </span>
+                  <WorkspaceAvatar src={organizer.avatar} className="size-6 rounded-full" />
                   <span className="flex items-center gap-1 truncate">
                     {organizer.name}
                     {organizer.verified ? (

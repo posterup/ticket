@@ -1,7 +1,6 @@
 /** Request schemas for the event, venue and session endpoints. */
 
 import { z } from "zod";
-import { isStoredImage } from "@/lib/uploads";
 
 import {
   atLeastOneField,
@@ -13,6 +12,7 @@ import {
   looseIsoDateTime,
   nonEmpty,
   sessionAvailability,
+  storedImage,
   weekDay,
 } from "./common";
 
@@ -39,23 +39,6 @@ const scheduleSlot = z
  * or malformed `endDate` falls back to `startDate`, and malformed `exceptions`
  * degrade to an empty list rather than failing the whole request.
  */
-/**
- * An image the product itself stored — a Blob URL, or a legacy data URL.
- *
- * Uploads go to Blob now, so what arrives is a reference rather than the bytes.
- * A reference has to be *checked*: an unvalidated URL field accepts a pointer at
- * any host on the internet, and this one is rendered in other people's browsers
- * and printed onto tickets. `isStoredImage` allows exactly our Blob host.
- *
- * Data URLs stay valid because rows written before this still contain them, and
- * `512_000` keeps the old ceiling for those — a Blob URL is a couple of hundred
- * bytes and never approaches it.
- */
-const storedImage = z
-  .string()
-  .max(512_000, "تصویر باید کوچک‌تر از ۵۰۰ کیلوبایت باشد.")
-  .refine(isStoredImage, "آدرس تصویر نامعتبر است.");
-
 export const recurrenceScheduleSchema = z
   .object({
     startDate: calendarDate,

@@ -4,25 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeftRight, Check, ChevronLeft, Plus } from "lucide-react";
 
-import type { Workspace } from "@/types";
-
-// Shared with WorkspaceSwitcher so the active workspace stays in sync app-wide.
-const STORAGE_KEY = "poster-active-workspace";
+import { useWorkspaceSwitcher } from "@/components/dashboard/ActiveWorkspace";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 /**
  * Profile card: the active workspace's logo + name (tap to view the public
  * profile as a visitor sees it) with a control to switch between workspaces.
  * Editing lives in its own menu entry (see {@link AccountMenu}).
+ *
+ * The choice comes from {@link useWorkspaceSwitcher}, the same cookie-backed
+ * context the shell's switcher uses. This card kept its own `localStorage` copy
+ * after the switcher moved off it, so the two could disagree — and then the
+ * edit form, which read the same stale key, would edit a workspace the rest of
+ * the dashboard was not showing.
  */
-export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
-  const [activeId, setActiveId] = useState(workspaces[0]?.id ?? "");
+export function ProfileCard() {
+  const { workspaces, active, select } = useWorkspaceSwitcher();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && workspaces.some((w) => w.id === saved)) setActiveId(saved);
-  }, [workspaces]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -32,12 +31,10 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const active = workspaces.find((w) => w.id === activeId) ?? workspaces[0];
   if (!active) return null;
 
-  function select(id: string) {
-    setActiveId(id);
-    localStorage.setItem(STORAGE_KEY, id);
+  function choose(id: string) {
+    select(id);
     setOpen(false);
   }
 
@@ -49,9 +46,7 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
         href={`/w/${active.slug}`}
         className="flex items-center gap-4 rounded-t-lg p-5 outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
       >
-        <span className="grid size-14 shrink-0 place-items-center rounded-full bg-foreground text-lg font-bold text-background">
-          {active.avatar}
-        </span>
+        <WorkspaceAvatar src={active.avatar} className="size-14 rounded-full" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-semibold text-foreground">
             {active.name}
@@ -76,7 +71,7 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
           <span className="flex-1 text-sm font-medium text-foreground">
             تغییر فضای کاری
           </span>
-          <span className="text-xs text-faint">{active.avatar}</span>
+          <span className="truncate text-xs text-faint">{active.name}</span>
         </button>
 
         {open ? (
@@ -91,12 +86,10 @@ export function ProfileCard({ workspaces }: { workspaces: Workspace[] }) {
                 type="button"
                 role="menuitemradio"
                 aria-checked={w.id === active.id}
-                onClick={() => select(w.id)}
+                onClick={() => choose(w.id)}
                 className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-start outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
               >
-                <span className="grid size-7 shrink-0 place-items-center rounded-md bg-foreground text-xs font-bold text-background">
-                  {w.avatar}
-                </span>
+                <WorkspaceAvatar src={w.avatar} className="size-7 rounded-md" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-foreground">
                     {w.name}

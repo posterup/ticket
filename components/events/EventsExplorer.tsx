@@ -23,7 +23,7 @@ export interface DiscoverEvent {
   poster: string | null;
   tags: string[];
   categories: string[];
-  org: { slug: string; name: string; avatar: string; verified: boolean } | null;
+  org: { slug: string; name: string; avatar?: string; verified: boolean } | null;
 }
 
 const ALL_CITIES = "همه شهرها";

@@ -110,8 +110,9 @@ model Workspace {
   slug     String        @unique
   name     String
   bio      String?
-  /// 1–2 character initials.
-  avatar   String
+  /// Logo image URL. Absent means the UI draws its default icon — there is no
+  /// initials fallback, which is what «سس» used to be.
+  avatar   String?
   banner   String?
   verified Boolean       @default(false)
 
