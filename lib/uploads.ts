@@ -28,16 +28,20 @@ export const IMAGE_TYPES = [
  */
 export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
-/** The two things a user can attach, kept apart so limits can differ. */
-export type UploadKind = "poster" | "ticket-art";
+/** The things a user can attach, kept apart so limits can differ. */
+export type UploadKind = "poster" | "ticket-art" | "workspace";
 
 export const UPLOAD_PREFIX: Record<UploadKind, string> = {
   poster: "posters",
   "ticket-art": "ticket-art",
+  // Logo and banner share a folder: both are workspace artwork with the same
+  // limits, and splitting them would buy nothing but two constants.
+  workspace: "workspaces",
 };
 
 export function isUploadKind(value: unknown): value is UploadKind {
-  return value === "poster" || value === "ticket-art";
+  // `Object.hasOwn`, not `in`: `"constructor" in UPLOAD_PREFIX` is true.
+  return typeof value === "string" && Object.hasOwn(UPLOAD_PREFIX, value);
 }
 
 /** Human-readable refusal, or `undefined` when the file is acceptable. */

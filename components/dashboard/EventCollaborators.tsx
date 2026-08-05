@@ -6,11 +6,12 @@ import { Handshake, Phone, AtSign, Clock, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { EventCollaborator } from "@/types";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 export interface WorkspaceLite {
   slug: string;
   name: string;
-  avatar: string;
+  avatar?: string;
 }
 
 type Channel = "workspace" | "phone" | "username";
@@ -93,7 +94,6 @@ export function EventCollaborators({
           label: payload.label,
           sub: payload.sub,
           workspaceSlug: payload.workspaceSlug,
-          avatar: payload.avatar,
         }),
       });
       const json = await res.json();
@@ -177,9 +177,7 @@ export function EventCollaborators({
                 onClick={() => addWorkspace(w)}
                 className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-start outline-none transition-colors hover:bg-subtle focus-visible:bg-subtle"
               >
-                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-foreground text-xs font-bold text-background">
-                  {w.avatar}
-                </span>
+                <WorkspaceAvatar src={w.avatar} className="size-8 rounded-md" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-foreground">{w.name}</span>
                   <span className="block text-xs text-muted" dir="ltr">
@@ -226,11 +224,7 @@ export function EventCollaborators({
 
 function Leading({ row }: { row: Row }) {
   if (row.channel === "workspace") {
-    return (
-      <span className="grid size-8 shrink-0 place-items-center rounded-md bg-foreground text-xs font-bold text-background">
-        {row.avatar}
-      </span>
-    );
+    return <WorkspaceAvatar src={row.avatar} className="size-8 rounded-md" />;
   }
   const Icon = row.channel === "phone" ? Phone : AtSign;
   return (

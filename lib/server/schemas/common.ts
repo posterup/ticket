@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 
+import { isStoredImage } from "@/lib/uploads";
 import type {
   EventMode,
   EventStatus,
@@ -45,6 +46,23 @@ export const clockTime = z.string().regex(/^\d{2}:\d{2}$/, {
 
 /** A non-empty string, trimmed. */
 export const nonEmpty = z.string().trim().min(1);
+
+/**
+ * An image the product itself stored — a Blob URL, or a legacy data URL.
+ *
+ * Uploads go to Blob now, so what arrives is a reference rather than the bytes.
+ * A reference has to be *checked*: an unvalidated URL field accepts a pointer at
+ * any host on the internet, and this one is rendered in other people's browsers
+ * and printed onto tickets. `isStoredImage` allows exactly our Blob host.
+ *
+ * Data URLs stay valid because rows written before this still contain them, and
+ * `512_000` keeps the old ceiling for those — a Blob URL is a couple of hundred
+ * bytes and never approaches it.
+ */
+export const storedImage = z
+  .string()
+  .max(512_000, "تصویر باید کوچک‌تر از ۵۰۰ کیلوبایت باشد.")
+  .refine(isStoredImage, "آدرس تصویر نامعتبر است.");
 
 /** Integer amount in Toman. Never negative. */
 export const money = z.number().int().min(0);

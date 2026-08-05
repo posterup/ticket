@@ -50,6 +50,34 @@ export async function getWorkspaceBySlug(
   return row ? toWorkspace(row) : undefined;
 }
 
+/**
+ * Update a workspace's public profile.
+ *
+ * The caller has already been authorised on `workspace:edit`; this only writes
+ * the fields that were actually sent. `null` clears an image, which is why the
+ * patch type is three-valued (absent / value / null) rather than optional.
+ */
+export async function updateWorkspace(
+  id: string,
+  patch: {
+    name?: string;
+    bio?: string | null;
+    avatar?: string | null;
+    banner?: string | null;
+  },
+): Promise<Workspace> {
+  const row = await db.workspace.update({
+    where: { id },
+    data: {
+      name: patch.name,
+      bio: patch.bio,
+      avatar: patch.avatar,
+      banner: patch.banner,
+    },
+  });
+  return toWorkspace(row);
+}
+
 /** Events owned by a workspace (by slug). */
 export async function listEventsByWorkspace(slug: string): Promise<Event[]> {
   const rows = await db.event.findMany({

@@ -599,7 +599,10 @@ return seats to sale immediately rather than waiting out the hold TTL.
   session detail, and three admin routes behind `requirePlatformAdmin()`.
 - Customer UI: `components/seatmap/*` — SVG overview, Canvas 2D section
   renderer, accessible `SeatList`, LRU section cache, prefetch on intent.
-  Page at `/sessions/{id}/seats`.
+  It has **no route of its own**: `SeatMap` renders inside
+  `/events/{id}/checkout`, because picking a seat and paying for it are one
+  decision and a separate page would take a hold before the buyer had committed
+  to anything.
 - Admin UI: `/admin/venues` and the designer at `/admin/venues/{venueId}` —
   add/select/move sections, rotate, scale, mirror, duplicate, delete, full
   row-generator and numbering inspector, undo/redo, save draft, publish.

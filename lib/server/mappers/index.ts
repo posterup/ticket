@@ -166,7 +166,7 @@ export function toWorkspace(row: Row.Workspace): Workspace {
     slug: row.slug,
     name: row.name,
     bio: opt(row.bio),
-    avatar: row.avatar,
+    avatar: opt(row.avatar),
     banner: opt(row.banner),
     // Seeded baseline plus, later, the real Follow rows.
     followers: row.seedFollowers,

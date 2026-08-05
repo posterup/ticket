@@ -6,11 +6,11 @@ import { BadgeCheck } from "lucide-react";
 import { useApi } from "@/lib/client/api";
 import { AsyncState } from "@/components/ui/async-state";
 import { formatNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { FollowChip } from "@/components/workspace/FollowChip";
 import type { Workspace } from "@/types";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 export default function PagesDirectory() {
   const { data, error, loading, reload } = useApi<Workspace[]>("/api/workspaces");
@@ -65,13 +65,7 @@ function WorkspaceCard({
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
       <div className="flex items-start gap-3">
-        <span
-          className={cn(
-            "grid size-11 shrink-0 place-items-center rounded-full bg-foreground text-base font-bold text-background",
-          )}
-        >
-          {w.avatar}
-        </span>
+        <WorkspaceAvatar src={w.avatar} className="size-11 rounded-full" />
         <div className="min-w-0 flex-1">
           <Link
             href={`/w/${w.slug}`}

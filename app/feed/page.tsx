@@ -35,7 +35,7 @@ export default function FeedPage() {
       tags: e.tags,
       wsSlug: d?.org?.slug ?? "",
       wsName: d?.org?.name ?? "",
-      wsAvatar: d?.org?.avatar ?? "",
+      wsAvatar: d?.org?.avatar,
       wsVerified: Boolean(d?.org?.verified),
     };
   });

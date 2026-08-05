@@ -7,6 +7,7 @@ import { useApi } from "@/lib/client/api";
 import type { Workspace } from "@/types";
 import { formatNumber } from "@/lib/format";
 import { FollowChip } from "@/components/workspace/FollowChip";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 /**
  * Landing social strip: organizer/person pages to follow, reinforcing the
@@ -59,9 +60,7 @@ export function FollowPages() {
                 href={`/w/${w.slug}`}
                 className="flex min-w-0 items-center gap-3"
               >
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-foreground text-base font-bold text-background">
-                  {w.avatar}
-                </span>
+                <WorkspaceAvatar src={w.avatar} className="size-11 rounded-full" />
                 <span className="min-w-0">
                   <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
                     <span className="truncate">{w.name}</span>

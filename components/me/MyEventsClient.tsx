@@ -17,6 +17,7 @@ import { formatNumber } from "@/lib/format";
 import { EventCover } from "@/components/events/EventCover";
 import { MyTicketsSection } from "@/components/me/MyTicketsSection";
 import { useSession } from "@/lib/client/session";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 export interface MeEvent {
   id: string;
@@ -28,7 +29,7 @@ export interface MeEvent {
   /** Cover image URL, or null for the generated gradient. */
   poster: string | null;
   tags: string[];
-  org: { name: string; avatar: string; verified: boolean } | null;
+  org: { name: string; avatar?: string; verified: boolean } | null;
 }
 
 export function MyEventsClient({
@@ -164,9 +165,7 @@ function Group({
             <div className="flex flex-1 flex-col p-5">
             {e.org ? (
               <span className="mb-3 flex items-center gap-2 text-xs text-muted">
-                <span className="grid size-6 place-items-center rounded-full bg-foreground text-[0.625rem] font-bold text-background">
-                  {e.org.avatar}
-                </span>
+                <WorkspaceAvatar src={e.org.avatar} className="size-6 rounded-full" />
                 <span className="flex items-center gap-1 truncate">
                   {e.org.name}
                   {e.org.verified ? (

@@ -35,6 +35,7 @@ import type {
   Workspace,
 } from "@/types";
 import { resolveBuyState } from "@/lib/events/buy-state";
+import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -133,9 +134,7 @@ export default function PublicEventDetail({ params }: Params) {
                   aria-label={`صفحهٔ برگزارکننده: ${organizer.name}`}
                   className="group mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pe-2.5 ps-1 outline-none transition-colors hover:border-border-strong hover:bg-subtle focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
-                    {organizer.avatar}
-                  </span>
+                  <WorkspaceAvatar src={organizer.avatar} className="size-7 rounded-full" />
                   <span className="shrink-0 text-xs text-muted">برگزارکننده</span>
                   <span className="flex min-w-0 items-center gap-1 text-sm font-semibold text-foreground">
                     <span className="truncate">{organizer.name}</span>
@@ -453,7 +452,7 @@ function Hosts({
           <HostRow
             key={c.id}
             href={c.workspaceSlug ? `/w/${c.workspaceSlug}` : undefined}
-            avatar={c.avatar ?? "؟"}
+            avatar={c.avatar}
             name={c.label}
             role="همکار"
           />
@@ -474,16 +473,14 @@ function HostRow({
   verified,
 }: {
   href?: string;
-  avatar: string;
+  avatar?: string;
   name: string;
   role: string;
   verified?: boolean;
 }) {
   const inner = (
     <>
-      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-foreground text-sm font-bold text-background">
-        {avatar}
-      </span>
+      <WorkspaceAvatar src={avatar} className="size-10 rounded-lg" />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1 text-sm font-medium text-foreground">
           <span className="truncate">{name}</span>

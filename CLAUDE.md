@@ -10,9 +10,20 @@ these facts.
 
 **پوستر (Poster)** — a Persian-first (RTL) Event **CRM & ticketing** SaaS for
 organizations. It is a *CRM for events* (the attendee, not the ticket, is the
-asset), **not** an event marketplace. The repository today contains the marketing
-**landing page** plus the scaffolding that anticipates the future organizer
-dashboard and API. Product rationale: `docs/product-vision.md`.
+asset), **not** an event marketplace.
+
+The repository holds the whole product: attendee discovery, public event pages,
+checkout with assigned seating, the ticket wallet, the organizer dashboard and
+CRM, door check-in, finance and payouts, an internal venue designer, and the
+HTTP API all of it runs on. **Pre-launch** — no real organisers, events or
+transactions, and search engines are blocked deliberately (`app/robots.ts`).
+
+**Mobile web only, for now.** `components/DesktopGate.tsx` closes every viewport
+at or above `1024px` behind a notice. The `lg:` branches are unfinished desktop
+work, not dead code — keep writing both.
+
+Product rationale: `PRODUCT.md` (the authoritative product record) and
+`docs/product-vision.md`.
 
 ## Tech stack
 
@@ -33,6 +44,10 @@ dashboard and API. Product rationale: `docs/product-vision.md`.
   component variants
 - **Leaflet** / **react-leaflet** (maps), **react-multi-date-picker** (Jalali
   dates), **html-to-image** (ticket PNG export)
+- **Prisma 7** over **Postgres**, with **zod** validating every request body
+- **Vercel Blob** — posters, ticket art and workspace logos upload from the
+  browser directly to Blob; `/api/uploads` only signs the request. Stored fields
+  hold a URL, never base64.
 - **qrcode** — ticket QR codes. Imported **lazily and client-side only**
   (`components/tickets/TicketQr.tsx`): a ticket must render at a venue door with
   no signal, so the code is drawn from the token already in hand rather than
@@ -68,12 +83,18 @@ frontend, `docs/backend-architecture.md` for the backend):
 
 ```
 app/            App Router routes + root layout (frontend shell)
+  (auth)/       login, signup
+  (dashboard)/  Organizer surfaces
+  admin/        Internal staff: venue designer, payout queue
   api/          Route Handlers — the backend HTTP surface (route.ts files)
 components/     UI components
-  ui/           Owned, shadcn-style design-system primitives
+  ui/           Thin HeroUI wrappers kept for backward-compatible APIs
 lib/            Shared utilities
+  client/       Browser-side API client and uploads
   server/       Backend data-access layer
+prisma/         Schema, migrations, seed fixtures
 types/          Shared domain types — import from "@/types"
+tests/          Vitest; tests/api/ imports route handlers directly
 docs/           Product, design, frontend & backend docs
 ```
 
@@ -187,7 +208,8 @@ before merging.
 | `docs/venue-architecture.md` | Seat maps: layout templates, progressive rendering, seat holds, the admin designer |
 | `DESIGN.md` | Authoritative brand & design spec (raw palette, principles) |
 | `docs/design-system.md` | Implemented tokens (CSS vars → Tailwind), primitive specs |
-| `docs/roadmap.md` | Phased delivery plan |
+| `docs/roadmap.md` | Phased delivery plan and where it actually stands |
+| `PRODUCT.md` | Authoritative product record: users, positioning, constraints, principles |
 | `README.md` | Getting started, messaging/env config, Vercel deploy |
 </content>
 </invoke>

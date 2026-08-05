@@ -3,7 +3,7 @@ import { it, expect, beforeAll, vi } from "vitest";
 import { POST as REQUEST_OTP } from "@/app/api/auth/otp/request/route";
 import { POST as VERIFY_OTP } from "@/app/api/auth/otp/verify/route";
 import { OTP_RESEND_SEC } from "@/lib/server/auth/otp";
-import { slugify } from "@/lib/server/workspaces-create";
+import { randomSlug } from "@/lib/server/workspaces-create";
 
 import { data, describeApi, errorCode, parse, req } from "./helpers";
 
@@ -185,14 +185,11 @@ describeApi("POST /api/auth/otp/verify", () => {
 });
 
 describeApi("workspace slugs", () => {
-  it("slugifies ASCII names", () => {
-    expect(slugify("Ava Events")).toBe("ava-events");
-    expect(slugify("  Chef   Collective!  ")).toBe("chef-collective");
-  });
-
-  it("falls back rather than producing an empty slug for Persian names", () => {
-    // Persian transliterates to nothing here, so a stable fallback is used and
-    // the uniqueness suffix does the rest.
-    expect(slugify("استودیو رویداد آوا")).toBe("workspace");
+  it("are URL-safe, fixed-length and unguessable", () => {
+    const slugs = Array.from({ length: 200 }, () => randomSlug());
+    for (const slug of slugs) expect(slug).toMatch(/^[a-z2-9]{12}$/);
+    // Name-derived slugs collapsed every Persian workspace to workspace-2,
+    // workspace-3 …; these must not repeat.
+    expect(new Set(slugs).size).toBe(slugs.length);
   });
 });

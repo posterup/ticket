@@ -22,8 +22,8 @@ export interface Workspace {
   slug: string;
   name: string;
   bio?: string;
-  /** 1-2 character avatar initials. */
-  avatar: string;
+  /** Optional logo image URL; a default icon is shown when absent. */
+  avatar?: string;
   /** Optional banner/cover image URL; a seeded gradient is shown when absent. */
   banner?: string;
   followers: number;

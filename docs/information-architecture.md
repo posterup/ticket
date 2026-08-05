@@ -16,42 +16,67 @@ This document describes the surfaces of the Poster platform and their status.
 
 ## Route tree
 
+Every path below exists. Nothing here is aspirational.
+
 ```
+--- Public / attendee ---
+
 /                         Redirects to /events — the front door is explore
 /events                   Explore: browse and filter public events
-/sessions/{id}/seats      Seat selection for one showing (assigned seating)
-/me/tickets               The buyer's issued tickets and entry codes
-/admin/venues             Venue designer — internal staff only
+/events/{id}              Public event page
+/events/{id}/checkout     Checkout — سانس, seat picker or ticket type + quantity
+/orders/{code}            Order result, by tracking code
+/feed                     Events from the workspaces you follow
+/pages                    Directory of organizer pages
+/w/{slug}                 One organizer's public page
 /hosts                    Organizer landing page (marketing)
-  header                    Brand, primary nav, call to action
-  hero                      Value proposition + primary CTA
-  (sections)                Features, segments, social proof
-  footer                    Secondary nav, legal, contact
+/me                       The buyer's home — leads with their tickets
+/me/tickets               Issued tickets, QR codes, .ics download
+/me/orders                Order history
 
-/tickets/create           Ticket-creation wizard (3 steps)
+/login  /signup           Phone OTP sign-in and registration
+
+--- Organizer ---
+
+/tickets/create           Creation wizard (3 steps), the canonical creation flow
   step 1                    Event Information
   step 2                    Schedule & Availability
   step 3                    Ticket Types
 
---- Organizer dashboard ---
+/dashboard/events         Home — my events
+/dashboard/events/{id}    Manage one event: sessions, tickets, seat map,
+                          collaborators, guests, registrations, refunds,
+                          discounts, ticket design, link
+/dashboard/customers      CRM — attendee profiles, notes, tags, segments
+/dashboard/checkin        Door check-in: QR scan or typed code
+/dashboard/finance        Sales, commission, refunds, bank accounts, payouts
+/dashboard/marketing      SMS campaigns
+/dashboard/promotions     Discount codes
+/dashboard/notifications  Notifications and pending co-host invites
+/dashboard/profile        Account and workspace switcher
+/dashboard/profile/edit   Workspace public profile: logo, banner, name, bio
+/dashboard/tickets/customize   Ticket design («قالب بلیت»)
+/dashboard/settings       Organization and team
+/dashboard/workspaces/new Create a workspace — asks for the name, nothing else
 
-/dashboard/events         Organizer home (my events)
-/dashboard/events         Event Management (list, create, templates, venues)
-/dashboard/tickets        Ticketing (types, categories, discount codes, pricing)
-/dashboard/contacts       CRM (attendee profiles, notes, tags, segments, orgs)
-/dashboard/marketing      Campaigns (SMS/email), referrals, promos, landing pages
-/dashboard/operations     QR check-in, gate scanning, staff, entry permissions
-/dashboard/analytics      Revenue, sales, attendance, funnel, marketing performance
-/dashboard/finance        Payments, refunds, settlement, financial dashboard
-/dashboard/settings       Organization, team, roles, billing
+--- Internal staff ---
 
-/events/{id}              Public event page
-/events/{id}/checkout     Checkout — seat picker or ticket type + quantity
-/orders/{code}            Order result, by tracking code
+/admin                    Platform admin home
+/admin/venues             Venue list
+/admin/venues/{venueId}   Seat-map designer
+/admin/payouts            Withdrawal queue — every organiser's IBAN, so
+                          `requirePlatformAdmin()` and nothing less
 ```
 
-Some `/dashboard/*` paths above are directional rather than built — see
-`components/dashboard/nav.ts` for what actually ships in the sidebar.
+Two notes on things that are easy to look for and not find:
+
+- **Seat selection has no route of its own.** It renders inside
+  `/events/{id}/checkout` (`components/seatmap/SeatMap.tsx`), because picking a
+  seat and paying for it are one decision and a separate page would take a hold
+  before the buyer had committed to anything.
+- The sidebar ships four destinations plus the profile — see
+  `components/dashboard/nav.ts`. The rest of `/dashboard/*` is reached from the
+  event page or the profile area, not from a top-level nav.
 
 ## Public surface (Now)
 
@@ -135,10 +160,19 @@ flowchart TD
 
 ## Dashboard
 
-The route groups above map one-to-one to the capability areas in
-`product-vision.md`: Event Management, Ticketing, CRM, Marketing,
-Operations, Analytics, and Finance. The dashboard is the daily workspace where
-the organizer manages the audience the wizard and checkout help them acquire.
+The dashboard is the daily workspace where the organizer manages the audience
+the wizard and checkout help them acquire. Its shape is deliberately *not* one
+top-level section per capability area: most work happens against **one event**,
+so event management, ticketing, seating, guests, refunds and discounts all live
+inside `/dashboard/events/{id}` rather than as siblings in a sidebar. Only the
+things that outlive a single event — contacts, finance, campaigns, the door —
+get their own destination.
+
+A workspace's slug is **random and permanent**. It is the address of every
+organizer page and of every link an attendee was ever sent, so renaming the
+workspace does not move it, and nothing in it is derived from the name — a
+name-derived slug turned every Persian workspace into `workspace-2`,
+`workspace-3`, publishing a count of the platform's workspaces in a URL.
 
 ## The buy box states
 

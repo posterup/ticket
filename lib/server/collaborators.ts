@@ -57,7 +57,6 @@ export interface AddCollaboratorInput {
   label: string;
   sub: string;
   workspaceSlug?: string;
-  avatar?: string;
 }
 
 /** Add a collaboration request; returns the stored record. */
@@ -67,10 +66,12 @@ export async function addCollaborator(
 ): Promise<EventCollaborator> {
   // Resolve the invitee now when it names a workspace, so accepting it later
   // is a status change rather than a lookup that might no longer match.
+  // `avatar` comes from here rather than from the request: it is an image URL
+  // rendered in other people's browsers, and the caller does not get to pick it.
   const invitee = input.workspaceSlug
     ? await db.workspace.findUnique({
         where: { slug: input.workspaceSlug },
-        select: { id: true },
+        select: { id: true, avatar: true },
       })
     : null;
 
@@ -82,7 +83,7 @@ export async function addCollaborator(
       label: input.label,
       sub: input.sub,
       workspaceSlug: input.workspaceSlug,
-      avatar: input.avatar,
+      avatar: invitee?.avatar,
       inviteeWorkspaceId: invitee?.id,
     },
   });

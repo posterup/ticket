@@ -1,52 +1,75 @@
 # Design System
 
-The Poster design language is calm, professional, and monochrome. The reference
-points are Linear, Notion, Vercel, Stripe Dashboard, and Apple: minimal
-surfaces, generous whitespace, and confident typography. `DESIGN.md` at the
-repository root is the authoritative brand and design specification; this
-document maps that system onto the implemented tokens in `app/globals.css` and
-is the working reference for building future dashboard pages.
+**Paper and neon.** Every surface is cool violet-tinted paper; against it there
+is exactly one light source, a hot pink that glows. `DESIGN.md` at the
+repository root is the authoritative brand specification; this document maps it
+onto the implemented tokens in `app/globals.css` and records the contrast audits
+that constrain any change to them.
 
-The brand is monochrome (black/white plus a neutral gray scale). Color is
-reserved for meaning: blue (`#2563EB`, the semantic "Info") is used only for the
-logo mark and informational states, and success/warning/danger communicate
-state. Never use a semantic color as a brand fill. Light is the default; dark
-mode inverts the neutral scale via `prefers-color-scheme`.
+The restraint is what makes it read as professional rather than as an
+entertainment site. Hierarchy comes from weight, size and space; colour is
+reserved for meaning — the accent for action, three semantic hues for
+succeeded / needs attention / failed.
+
+**Light theme only.** There is no dark token set. Earlier revisions of this file
+described a monochrome black-and-white palette with an Info-blue accent and a
+`prefers-color-scheme` dark mode; none of that is in `app/globals.css` and none
+of it ever shipped.
+
+**Two audiences, one brand.** Organiser surfaces (dashboard, CRM, wizard,
+finance, check-in, admin) spend the accent sparingly and lean on the paper.
+Attendee surfaces (event page, checkout, order, ticket wallet) let the neon and
+real imagery carry more. Same tokens, same accessibility floor; what differs is
+how much accent gets spent.
 
 ## Color roles
 
-Every color is exposed as a CSS custom property and mapped to a Tailwind color
-via `@theme inline` (for example `--color-background` -> `bg-background`).
+Every color is a CSS custom property. The ones the owned primitives use are
+mapped to Tailwind via `@theme inline` (`--color-background` → `bg-background`);
+HeroUI reads its own set of raw variables from the same block, which is what
+carries the brand into every HeroUI component without per-component theming.
 
-| Role | Token | Light | Dark |
-| --- | --- | --- | --- |
-| Page background | `--background` | `#FFFFFF` | `#0A0A0A` |
-| Foreground (primary text) | `--foreground` | `#111111` | `#FAFAFA` |
-| Secondary text | `--muted` | `#525252` | `#A3A3A3` |
-| Muted text / captions | `--faint` | `#A3A3A3` | `#737373` |
-| Subtle surface | `--subtle` | `#F5F5F5` | `#1F1F1F` |
-| Border | `--border` | `#E5E5E5` | `#2F2F2F` |
-| Border (strong / hover) | `--border-strong` | `#D4D4D4` | `#404040` |
-| Card surface | `--card` | `#FFFFFF` | `#111111` |
-| Info / logo accent | `--accent` | `#2563EB` | `#3B82F6` |
-| Success | `--success` | `#16A34A` | `#22C55E` |
-| Warning | `--warning` | `#D97706` | `#F59E0B` |
-| Danger | `--danger` | `#DC2626` | `#EF4444` |
-| Focus ring | `--ring` | `#111111` | `#FAFAFA` |
+| Role | Token | Value |
+| --- | --- | --- |
+| Page background (Cool Paper) | `--background` | `#fdfcff` |
+| Foreground (Violet Ink) | `--foreground` | `#14101f` |
+| Secondary text (Dusk Gray) | `--muted` | `#5b5470` |
+| Captions (Lilac Gray) | `--faint` | `#71688d` |
+| Subtle surface (Lavender Wash) | `--subtle` | `#f4f1fb` |
+| Border (Lilac Rule) | `--border` | `#e8e3f2` |
+| Border strong / hover | `--border-strong` | `#d3cce6` |
+| Card surface (Glass) | `--card` | `rgba(255,255,255,0.72)` |
+| Brand fill (Marquee Pink) | `--accent` | `#e10e7c` |
+| Accent as text | `--accent-text` | `#cf0c73` |
+| Accent surface (Blush Wash) | `--accent-soft` | `#ffe6f4` |
+| Success / warning / danger | `--success` `--warning` `--danger` | `#08845a` `#a76607` `#e02328` |
+| The same, as text | `--success-text` `--warning-text` `--danger-text` | `#077550` `#935a06` `#c51f23` |
+| Focus ring | `--ring` | `#e10e7c` |
+| Glow | `--glow` | `0 0 24px -6px var(--accent)` |
+| Field surface / edge | `--field-background` `--field-border` | `#ffffff` `#9e89c8` |
+
+HeroUI-only tokens mapped to the brand in the same file: `--surface`,
+`--overlay`, `--default`, `--segment`, `--separator`, `--focus`, `--radius`, and
+the `--field-*` set.
 
 Usage notes:
 
-- **Monochrome brand.** Primary actions and emphasis are carried by
-  `foreground`/`background` (near-black and white), not by color.
-- **Blue is semantic, not brand.** `--accent` (Info blue) appears only on the
-  logo mark and to mark informational state. `--accent-soft` is its
-  low-emphasis tint for info backgrounds.
-- **Semantic colors communicate meaning only** (`success`, `warning`,
-  `danger`) - for example an active status dot or a positive-change indicator.
-- **`muted`** is secondary text, **`faint`** is captions and metadata; keep body
-  copy on `foreground`.
-- **`subtle`** is the quiet fill for panels and grouped areas that sit on the
-  page background without a full card.
+- **Pink is the brand, and it is a light source.** Primary buttons, the focus
+  ring, selected states. Always with its glow; never as body-size text.
+- **Fill tones and text tones are different values.** `--accent` for fills,
+  rings and indicators; `--accent-text` for words. Same split for the three
+  semantic hues — see *Status colours as text* below for the measurements that
+  forced it.
+- **Neutrals are violet-tinted, never pure gray**, and the page is `#fdfcff`
+  rather than `#ffffff` — the difference is what stops a large surface reading
+  as clinical.
+- **`muted`** is secondary text, **`faint`** is captions; body copy stays on
+  `foreground`.
+- **Depth is glow and hairline borders, not drop shadow.** Cards are
+  translucent so the page's glow shows through: they sit *in* the surface
+  rather than on top of it.
+- **Inputs are the one opaque white surface**, with a distinctly stronger
+  border, because an editable region must read as editable at a glance.
 
 ## Typography
 
@@ -95,14 +118,13 @@ primary tool for the premium feel, not an afterthought.
 Corners are soft. Pair rounded surfaces with the soft `border` token rather than
 hard, high-contrast outlines.
 
-## Elevation and shadow
+## Elevation and depth
 
-Elevation is quiet. Prefer flat surfaces separated by the `border` token and
-`subtle`/`card` fills over heavy drop shadows. When a shadow is needed (raised
-cards, popovers, menus), use a soft, low-opacity shadow tinted toward the slate
-neutral rather than neutral black. The goal is gentle depth, not drama. Stacking
-order should read as: page background -> `subtle` panels -> `card` surfaces ->
-elevated overlays.
+Depth is carried by the glow and by hairline borders, not by drop shadow.
+Stacking reads as: page background → `subtle` panels → translucent `card`
+surfaces → opaque overlays. Popovers, menus and modals go opaque (`--overlay`)
+rather than glass, because readability beats atmosphere the moment text lands on
+top of arbitrary content.
 
 ## Motion
 
@@ -130,45 +152,36 @@ elevated overlays.
 - **ARIA:** add ARIA only to fill gaps native semantics cannot, for example
   wizard step state, live regions for async status, and labels for icon-only
   controls. Prefer native semantics first.
-- **Contrast:** the `foreground` on `background` pairing, and the inverted
-  primary button (`background` on `foreground`), are chosen for readable
-  contrast in both themes. Verify any new pairing meets WCAG AA, especially text
-  on `muted`/`faint` and on `accent-soft`.
+- **Contrast:** every pairing below is computed from the tokens rather than
+  judged by eye, and asserted by `tests/contrast.test.ts` and
+  `tests/token-contrast.test.ts`. Verify any new pairing, especially text on
+  `muted`/`faint` and on `accent-soft`.
 - **RTL:** mirror layout, not glyphs that must stay stable (for example logos
   and Persian numerals). Test every view in RTL as the primary case.
 
-## Component primitives
+## Components
 
-These are the base primitives future pages compose from. They are owned
-components (shadcn-style) styled with the tokens above and merged with the `cn`
-helper (`lib/utils.ts`).
+**HeroUI is the component library.** Buttons, inputs, selects, modals, tabs,
+tables, cards, chips, tooltips and menus all come from `@heroui/react`; do not
+hand-roll a styled `<div>`/`<button>` for something it already covers, and do
+not add new files under `components/ui`.
 
-### Button
+`components/ui` holds **thin wrappers only** — they exist so existing call sites
+keep a native-style API (`onClick`, `e.target.value`, `disabled`) over HeroUI's
+React Aria handlers (`onPress`, value-based `onChange`, `isDisabled`). Pure
+helpers that a Server Component needs live in a separate non-client module;
+`components/ui/button-variants.ts` is the example.
 
-Variants:
+The button recipe is three variants — **primary** (accent fill with its glow,
+one per view), **secondary** (glass surface with a border), **ghost**
+(transparent, subtle hover fill) — at **sm / md / lg** (36 / 44 / 52 px), all on
+`--radius-md` with a focus ring on `--ring`.
 
-- **primary** - solid `foreground` fill with `background` text (near-black in
-  light, white in dark). The single most important action on a view.
-- **secondary** - `card` surface with a `border` and `foreground` text; the
-  border darkens to `border-strong` on hover. Standard, non-primary actions.
-- **ghost** - transparent, `foreground` text, subtle hover fill. Low-emphasis
-  and toolbar actions.
-
-Sizes: **sm**, **md** (default), **lg**. All sizes use `--radius-md`, show a
-visible focus ring on `--ring`, and expose a disabled state at reduced opacity.
-
-### Badge
-
-Variants:
-
-- **accent** - `accent-soft` background with Info-blue text, for informational
-  status only. Used sparingly, never as branding.
-- **neutral** - `subtle` background with `muted` or `foreground` text and a
-  hairline border. Quiet labels, metadata, and "coming soon" tags.
-
-Badges use `--radius-sm`, `text-xs`, medium weight, and compact padding. Use
-them for ticket-type tags (for example عمومی, وی‌آی‌پی, دانشجویی), statuses, and
-counts, never as buttons.
+Two brand-specific components sit outside HeroUI because they encode a product
+decision rather than a control: `components/workspace/WorkspaceAvatar.tsx`
+(uploaded logo, or a default icon — deliberately **no initials fallback**, which
+produced «سس» for a two-word Persian name) and `WorkspaceBanner.tsx` (uploaded
+cover, or an on-brand gradient seeded deterministically by the slug).
 
 ## Contrast (audited)
 
