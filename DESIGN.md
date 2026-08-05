@@ -8,7 +8,37 @@
 
 ---
 
+# Two audiences, one brand
+
+**This document describes the organiser surfaces.** Everything below — the
+monochrome palette, the Linear/Stripe reference points, the instruction to avoid
+looking like a consumer ticketing app — governs the dashboard, the CRM, the
+wizard, finance, check-in, and admin. That is where an operator works every day,
+and calm is the correct answer there.
+
+**It does not govern the attendee surfaces.** The public event page, checkout,
+the order confirmation, and the ticket wallet are used once, by someone deciding
+whether to spend money on a night out. They get the warm reading of the brand:
+the hot-pink `--accent` on the primary action, poster-first composition, real
+imagery, and a seat map that looks like a seat map. A person about to spend
+eleven million Toman on a concert is not doing data entry, and an interface that
+treats them as though they were reads as indifference rather than professionalism.
+
+Both worlds draw on the same tokens, the same Vazirmatn, the same spacing scale,
+and the same accessibility floor. What differs is how much of the accent gets
+spent and how loud the imagery is allowed to be.
+
+**Why this section exists.** Without it, the rule "avoid consumer-focused
+ticketing apps" was read as applying everywhere, and the result was visible at
+the seam: the event page committed to the warm world while the checkout it hands
+off to reverted to flat CRM cards — same purchase, two identities, and the brand
+dying at the exact moment the buyer was asked to pay.
+
+---
+
 # Design Philosophy
+
+> Applies to the **organiser** surfaces. See "Two audiences, one brand" above.
 
 The product should feel like software professionals use every day.
 

@@ -51,18 +51,40 @@ interface MeResponse {
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { data, loading } = useApi<MeResponse>("/api/auth/me");
+  const user = data?.user ?? null;
 
   return (
     <SessionContext.Provider
       value={{
-        user: data?.user ?? null,
+        user,
         memberships: data?.memberships ?? [],
         // `loading` alone flickers back to true on a reload; the reader is not
         // un-signed-in while it refreshes, so treat "answered once" as settled.
         loading: loading && !data,
       }}
     >
-      {children}
+      {/*
+        The same answer, for CSS.
+
+        `globals.css` hides any header marked `.auth-mobile-hide` below `lg`
+        when `[data-auth="in"]` is set on an ancestor — because a signed-in
+        reader already has `AppChrome`'s fixed top bar, and a page that draws
+        its own header would stack a second one under it. Nothing ever set the
+        attribute, so the rule never matched and every signed-in mobile page
+        carried two headers: the shell's, and its own.
+
+        An element rather than an effect on `document.documentElement`. An
+        effect resolves a frame *after* `AppShell` renders the chrome from this
+        very context, and that frame is exactly the one with both headers in it
+        — the bug, briefly, on every navigation. Rendering it here means the
+        attribute and the chrome come from one value in one commit.
+
+        `display: contents` so this generates no box: it is an ancestor for the
+        selector and nothing at all for layout.
+      */}
+      <div data-auth={user ? "in" : "out"} className="contents">
+        {children}
+      </div>
     </SessionContext.Provider>
   );
 }
