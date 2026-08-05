@@ -177,22 +177,45 @@ Required in production:
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | Postgres connection string. The build runs `prisma migrate deploy` against it, so the schema is applied automatically. |
+| `DATABASE_URL` | **Pooled** Postgres connection string. What the running app uses. |
+| `DATABASE_URL_UNPOOLED` | **Direct** (unpooled) connection string, used only by `prisma migrate`. Neon and the Vercel Postgres integration both set this name for you. See the warning below — this is the one that is easy to miss and expensive to miss. |
 | `AUTH_SECRET` | Peppers the one-time-code hashes. Generate with `openssl rand -base64 32`. Sign-in throws without it. |
 | `PAYMENT_PROVIDER` | `zarinpal`, `zarinpal-sandbox`, or an explicit `mock`. Production **refuses to fall back** — the mock settles orders without taking money. |
 | `ZARINPAL_MERCHANT_ID` | Required when `PAYMENT_PROVIDER=zarinpal`. |
+| `BLOB_READ_WRITE_TOKEN` | Signs browser uploads of posters and images to Vercel Blob. Injected automatically once a Blob store is linked (**Storage → Blob → Connect**); uploads fail at runtime without it. |
+
+> **Migrate on the direct URL, never the pooled one.** `prisma.config.ts` reads
+> `DATABASE_URL_UNPOOLED ?? DATABASE_URL`, so leaving the first unset silently
+> runs migrations through the pooler. DDL depends on session state — advisory
+> locks, `SET`s, prepared statements — that a pooler in transaction mode does
+> not keep, so the migration fails or, worse, half-applies and leaves a schema
+> no later migration expects. The fallback exists for a plain local Postgres,
+> which has no pooler in front of it. It is not a production configuration.
 
 Optional: `APP_URL` (gateway return origin — defaults to the request origin),
 `KAVENEGAR_*` and `SMSIR_*` (messaging; features report "not configured" until
 set), `NEXT_PUBLIC_CALENDAR_MODE` (feature flag).
 
-`vercel.json` sets the build command to `prisma migrate deploy && next build`,
-and `postinstall` runs `prisma generate`, so no manual database step is needed
-per deploy.
+### Applying migrations
+
+`postinstall` runs `prisma generate`, so a build never needs a database.
+Migrations are a **separate, deliberate step**:
+
+```bash
+vercel env pull .env.local   # brings DATABASE_URL_UNPOOLED down; gitignored
+npm run db:deploy            # prisma migrate deploy
+```
+
+They used to run inside `vercel.json`'s build command. That made every build a
+migration — including preview builds, which meant opening a pull request could
+migrate whatever database that environment pointed at, and a rolled-back deploy
+left a schema that had already moved on. Worse, a build that failed halfway
+left the schema ahead of the code that shipped. Deploys and schema changes have
+different blast radii and now have different triggers: migrate first, confirm,
+then deploy.
 
 Vercel builds `main` for production and creates a preview deployment for every
-pull request automatically. Note that previews run the same migration step, so
-point them at a non-production database.
+pull request automatically.
 
 **Before going public:** the site is currently withheld from search engines —
 `app/robots.ts` disallows all crawlers and the root layout sets
