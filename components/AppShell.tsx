@@ -2,13 +2,17 @@
 
 import { useSession } from "@/lib/client/session";
 import { AppChrome } from "@/components/AppChrome";
+import { AppBottomNav } from "@/components/AppBottomNav";
 
 /**
- * Logged-in mobile shell. When signed in, the route-aware AppChrome renders the
- * top bar + bottom nav on main tabs, or a back button (no bottom nav) on
- * second-level pages. Signed out, it renders nothing but the page — so the
- * bottom nav never appears for logged-out visitors. Desktop (`lg`) keeps its
- * own chrome, so the bars hide there.
+ * The mobile shell.
+ *
+ * Signed in, the route-aware `AppChrome` renders the top bar plus the tab bar
+ * on main destinations, or a back button on second-level pages. Signed out,
+ * the tab bar still appears — `PublicHeader` supplies the top bar for that
+ * reader, and without the tabs there is no navigation at all below `sm`.
+ *
+ * Desktop (`lg`) keeps its own chrome, so both bars hide there.
  */
 export function AppShell({
   children,
@@ -21,9 +25,28 @@ export function AppShell({
   const { user } = useSession();
   const loggedIn = Boolean(user);
 
-  // Until it resolves, render the logged-out chrome: it is the smaller shell,
-  // so the page does not jump when a signed-in visitor's session arrives.
-  if (!loggedIn) return <>{children}</>;
+  /**
+   * Signed out still gets a tab bar — just not a top bar.
+   *
+   * This returned the bare page, and `PublicHeader`'s links are `hidden
+   * sm:flex`, so below 640px a logged-out visitor had a logo, «ورود», and no
+   * navigation of any kind. On a product that ships mobile-only and sends `/`
+   * to discovery, that is every visitor who has not signed in yet.
+   *
+   * `AppBottomNav` alone rather than the whole of `AppChrome`: the top bar in
+   * there is the signed-in one, and `PublicHeader` is already doing that job
+   * for this reader. The spacer matches the one `AppChrome` uses, so the bar
+   * never covers the end of a page.
+   */
+  if (!loggedIn) {
+    return (
+      <>
+        {children}
+        <div className="h-16 lg:hidden" aria-hidden />
+        <AppBottomNav />
+      </>
+    );
+  }
 
   return <AppChrome>{children}</AppChrome>;
 }

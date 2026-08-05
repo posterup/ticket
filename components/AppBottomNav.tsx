@@ -10,6 +10,8 @@ import {
   Compass,
   Heart,
   Ticket,
+  LogIn,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,6 +52,26 @@ const ORGANISER_ITEMS: NavItem[] = [
   { href: "/dashboard/profile", label: "پروفایل", icon: User },
 ];
 
+/**
+ * Signed out, on a phone, there was no navigation whatsoever.
+ *
+ * `AppShell` mounted the tab bar only for a session, and `PublicHeader`'s links
+ * are `hidden sm:flex` — so below 640px a visitor had a logo, «ورود», and no
+ * way to reach anything else. On a product that ships mobile-only and whose
+ * front door is discovery, that is the entire navigation missing for everyone
+ * who has not signed in yet.
+ *
+ * Three tabs, not four: «دنبال‌شده‌ها» and «بلیت‌های من» need an account, and
+ * the rule here is the same as for the organiser tabs — do not offer a control
+ * that answers by refusing. Signing in is different from being refused, so it
+ * gets a tab of its own.
+ */
+const GUEST_ITEMS: NavItem[] = [
+  { href: "/events", label: "رویدادها", icon: Compass },
+  { href: "/pages", label: "برگزارکنندگان", icon: Store },
+  { href: "/login", label: "ورود", icon: LogIn, accent: true },
+];
+
 /** RTL order (right→left): explore · following · my tickets · me. */
 const ATTENDEE_ITEMS: NavItem[] = [
   { href: "/events", label: "رویدادها", icon: Compass },
@@ -64,16 +86,25 @@ function isActive(pathname: string, href: string): boolean {
 
 export function AppBottomNav() {
   const pathname = usePathname();
-  const { memberships } = useSession();
+  const { user, memberships } = useSession();
   // Belonging to any workspace is what opens the dashboard, in any role.
-  const items = memberships.length > 0 ? ORGANISER_ITEMS : ATTENDEE_ITEMS;
+  const items = !user
+    ? GUEST_ITEMS
+    : memberships.length > 0
+      ? ORGANISER_ITEMS
+      : ATTENDEE_ITEMS;
 
   return (
     <nav
       aria-label="ناوبری اصلی"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/90 backdrop-blur-lg lg:hidden"
     >
-      <div className="mx-auto grid max-w-md grid-cols-4 items-center px-2 py-2.5">
+      <div
+        className="mx-auto grid max-w-md items-center px-2 py-2.5"
+        // Column count follows the list; the guest bar has three tabs and a
+        // hardcoded `grid-cols-4` would leave a gap where a fourth was.
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
         {items.map((item) => (
           <NavTab key={item.href} item={item} active={isActive(pathname, item.href)} />
         ))}
