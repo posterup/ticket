@@ -5,6 +5,7 @@ import { AsyncState } from "@/components/ui/async-state";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
 import { MyEventsClient, type MeEvent } from "@/components/me/MyEventsClient";
+import { MeSkeleton } from "@/components/skeletons/MeSkeleton";
 import type { DiscoverEvent } from "@/components/events/EventsExplorer";
 import type { RsvpState } from "@/lib/rsvp";
 import type { Event, Workspace } from "@/types";
@@ -66,7 +67,8 @@ export default function MePage() {
             loading={bookmarks.loading}
             error={bookmarks.error}
             onRetry={bookmarks.reload}
-          variant="list" rows={3} />
+            placeholder={<MeSkeleton />}
+          />
         )}
       </main>
       <Footer />

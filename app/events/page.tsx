@@ -8,6 +8,7 @@ import {
   EventsExplorer,
   type DiscoverEvent,
 } from "@/components/events/EventsExplorer";
+import { EventsListSkeleton } from "@/components/skeletons/EventsListSkeleton";
 
 export default function PublicEventsPage() {
   const { data, error, loading, reload } =
@@ -25,7 +26,14 @@ export default function PublicEventsPage() {
         {data ? (
           <EventsExplorer events={data} defaultCity={defaultCity} />
         ) : (
-          <AsyncState loading={loading} error={error} onRetry={reload} variant="cards" rows={6} />
+          // The same skeleton `loading.tsx` just drew, so hydration does not
+          // swap one placeholder shape for another before the data lands.
+          <AsyncState
+            loading={loading}
+            error={error}
+            onRetry={reload}
+            placeholder={<EventsListSkeleton />}
+          />
         )}
       </main>
       <Footer />

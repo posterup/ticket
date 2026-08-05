@@ -18,6 +18,7 @@ export function AsyncState({
   offlineHint,
   variant = "list",
   rows,
+  placeholder,
 }: {
   loading: boolean;
   error: ApiCallError | null;
@@ -37,8 +38,23 @@ export function AsyncState({
   /** Shape the placeholder like the section it stands in for. */
   variant?: SkeletonVariant;
   rows?: number;
+  /**
+   * An exact placeholder, for pages that have one.
+   *
+   * The `variant`s are generic on purpose — a list, a grid, a form — and that
+   * is the right trade for the twenty-odd sections that fetch a list of
+   * something. It is the wrong trade for a whole route, whose real layout is
+   * known and is nothing like a stack of identical cards: standing in for the
+   * event page with «title, paragraph, box» is not a smaller shift than showing
+   * nothing, it is a different layout that then has to be replaced.
+   *
+   * Routes with a `loading.tsx` pass the very component that file renders, so
+   * the shape holds from the first paint through to the data.
+   */
+  placeholder?: React.ReactNode;
 }) {
   if (loading) {
+    if (placeholder) return <>{placeholder}</>;
     /**
      * A shimmer, not the words «در حال بارگذاری…».
      *
@@ -67,7 +83,11 @@ export function AsyncState({
      * true.
      */
     if (error.code === "UNAUTHENTICATED") {
-      return <SkeletonBlock variant={variant} rows={rows ?? 3} />;
+      return placeholder ? (
+        <>{placeholder}</>
+      ) : (
+        <SkeletonBlock variant={variant} rows={rows ?? 3} />
+      );
     }
     return (
       <div role="alert" className="py-10 text-center">

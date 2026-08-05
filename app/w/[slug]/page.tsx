@@ -5,6 +5,7 @@ import { BadgeCheck } from "lucide-react";
 
 import { useApi } from "@/lib/client/api";
 import { AsyncState } from "@/components/ui/async-state";
+import { WorkspaceSkeleton } from "@/components/skeletons/WorkspaceSkeleton";
 import { formatJalaliDate } from "@/lib/format";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Footer } from "@/components/Footer";
@@ -37,8 +38,16 @@ export default function WorkspacePage({
     return (
       <div className="flex min-h-[100dvh] flex-col">
         <PublicHeader />
-        <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
-          <AsyncState loading={loading} error={error} onRetry={reload} variant="page" rows={1} />
+        {/* `pb-12` with no top padding, matching the loaded branch below —
+            the `py-10` that was here dropped the banner 40px and then lifted
+            it back the moment the page arrived. */}
+        <main className="mx-auto w-full max-w-4xl flex-1 px-4 pb-12 sm:px-6">
+          <AsyncState
+            loading={loading}
+            error={error}
+            onRetry={reload}
+            placeholder={<WorkspaceSkeleton />}
+          />
         </main>
         <Footer />
       </div>

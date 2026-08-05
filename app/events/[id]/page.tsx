@@ -4,6 +4,7 @@ import { use } from "react";
 
 import { useApi } from "@/lib/client/api";
 import { AsyncState } from "@/components/ui/async-state";
+import { EventDetailSkeleton } from "@/components/skeletons/EventDetailSkeleton";
 import Link from "next/link";
 
 import {
@@ -61,8 +62,15 @@ export default function PublicEventDetail({ params }: Params) {
     return (
       <div className="flex min-h-[100dvh] flex-col">
         <PublicHeader />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
-          <AsyncState loading={loading} error={error} onRetry={reload} variant="page" rows={1} />
+        {/* Same container and same skeleton as `loading.tsx` — the loaded
+            branch below uses these exact classes, so nothing moves. */}
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+          <AsyncState
+            loading={loading}
+            error={error}
+            onRetry={reload}
+            placeholder={<EventDetailSkeleton />}
+          />
         </main>
         <Footer />
       </div>
