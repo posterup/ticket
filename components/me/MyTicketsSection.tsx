@@ -12,6 +12,7 @@ import {
   formatTime,
   relativeDay,
 } from "@/lib/format";
+import { AsyncState } from "@/components/ui/async-state";
 import { Skeleton, SkeletonGroup } from "@/components/ui/skeleton";
 import type { IssuedTicket } from "@/types";
 
@@ -38,7 +39,18 @@ import type { IssuedTicket } from "@/types";
 const PREVIEW = 3;
 
 export function MyTicketsSection() {
-  const { data, loading } = useApi<IssuedTicket[]>("/api/me/tickets");
+  /*
+    `error` and `reload`, not just `data` and `loading`.
+
+    Dropping them meant a failed request produced `data === null`,
+    `loading === false`, an empty list — and therefore «هنوز بلیتی ندارید»,
+    telling someone holding a ticket for tonight that they own nothing, with a
+    cheerful invitation to go buy one. "We could not ask" and "there are none"
+    are different answers, and this is the page a buyer opens at a venue door,
+    where the difference is the whole point.
+  */
+  const { data, error, loading, reload } =
+    useApi<IssuedTicket[]>("/api/me/tickets");
 
   /*
     Live and cancelled tickets only, soonest first. A cancelled showing still
@@ -95,6 +107,20 @@ export function MyTicketsSection() {
             </div>
           ))}
         </SkeletonGroup>
+      ) : error ? (
+        /*
+          The same offline hint the ticket page uses. Someone reaching this at a
+          door has no signal, and «تلاش دوباره» is the thing that just failed —
+          so tell them the code is accepted by hand instead.
+        */
+        <div className="rounded-xl border border-border bg-card">
+          <AsyncState
+            loading={false}
+            error={error}
+            onRetry={reload}
+            offlineHint="کد پیگیری در پیامک تأیید شماست و در ورودی با همان هم پذیرفته می‌شود."
+          />
+        </div>
       ) : shown.length === 0 ? (
         <EmptySlot />
       ) : (

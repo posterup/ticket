@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, toAsciiDigits } from "@/lib/format";
 import type { RegistrationStatus } from "@/types";
 
 export interface RegistrationItem {
@@ -24,7 +24,7 @@ export interface RegistrationItem {
   status: RegistrationStatus;
 }
 
-const digits = (v: string) => v.replace(/\D/g, "");
+const digits = (v: string) => toAsciiDigits(v).replace(/\D/g, "");
 
 /**
  * Accept list for invite-only («ثبت‌نام با تأیید») events — the whole content of

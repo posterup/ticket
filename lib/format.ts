@@ -136,6 +136,27 @@ export function faDigits(text: string): string {
 }
 
 /**
+ * The other direction: what a Persian keyboard types, as ASCII.
+ *
+ * The counterpart to {@link faDigits}, and the one that was missing at the
+ * edges. `\D` matches «۰»–«۹» — they are not ASCII digits — so
+ * `"۰۹۱۲۳۴۵۶۷۸۹".replace(/\D/g, "")` returns the empty string. Every input
+ * that sanitised itself that way silently discarded Persian numerals, which on
+ * a Persian-first product meant the sign-in code field rejected the digits
+ * printed in the user's own SMS and gave no reason.
+ *
+ * Arabic-Indic («٠»–«٩») is folded too: iOS Arabic keyboards emit that range,
+ * and a phone number typed on one is the same phone number.
+ *
+ * Normalise at the edge, then validate. Never validate the raw value.
+ */
+export function toAsciiDigits(text: string): string {
+  return text
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+}
+
+/**
  * A seat, written out once.
  *
  * Five places spelled this sentence themselves — the wallet card, the ticket,

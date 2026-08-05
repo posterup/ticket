@@ -42,3 +42,4 @@ yarn-error.log*
 # sidecar — design authority that tooling reads — and belongs in the repo.
 /.impeccable/critique/
 /.impeccable/live/
+.env*

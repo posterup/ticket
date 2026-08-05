@@ -69,9 +69,27 @@ export function ErrorScreen({
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
+      {/*
+        Visible first, animated second.
+
+        This used to be `initial={{ opacity: 0, y: 12 }}`, which React renders
+        into the *server* HTML as `style="opacity:0"`. Framer Motion then
+        animates it in on hydration — and if hydration never happens, the copy
+        never appears. Verified in the served markup: the recovery text was in
+        the DOM, readable by a screen reader, and invisible to everyone else.
+
+        That is the wrong failure mode anywhere and an absurd one here. This is
+        the screen that exists *because* something else broke — a missing chunk,
+        a slow Iranian mobile connection, an earlier JS throw — and it was the
+        one screen that required JavaScript to be legible.
+
+        So the resting state is now the visible one. `y` is the only animated
+        property, and only for readers who want motion; no state of this
+        component can hide its own text.
+      */}
       <motion.div
-        initial={still ? false : { opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={still ? false : { y: 12 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: EASE_OUT }}
         className="flex flex-col items-center"
       >
