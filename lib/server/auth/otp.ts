@@ -12,10 +12,22 @@
 
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 
+import { faDigits } from "@/lib/format";
 import { db } from "../db";
 import { normalizeMobile, smsGateway } from "../sms";
 
-export const OTP_TTL_SEC = 120;
+/**
+ * How long a code stays valid.
+ *
+ * Two minutes was too short to type. It began when the code was *issued*, not
+ * when it arrived, so an SMS that took twenty seconds to land left a hundred to
+ * read it, switch apps and enter it — and in `OTP_PHONE_FALLBACK` mode the
+ * reader also has to parse a hint and work out their own last six digits. Five
+ * minutes is the ordinary range for this, and none of what actually protects
+ * the code changes: single-use, five attempts, and rate limits per phone and
+ * per IP.
+ */
+export const OTP_TTL_SEC = 300;
 export const OTP_RESEND_SEC = 60;
 
 /** Digits in a code, whether random or derived. */
@@ -212,7 +224,7 @@ export async function requestOtp(
       );
       return {
         ...base,
-        hint: `کد ورود، ${OTP_LENGTH} رقم آخر شمارهٔ خودتان است.`,
+        hint: `کد ورود، ${faDigits(String(OTP_LENGTH))} رقم آخر شمارهٔ خودتان است.`,
       };
     }
 
