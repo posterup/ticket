@@ -70,12 +70,12 @@ export function RequestToJoin({
       });
       const json = await res.json();
       if (!res.ok || !("data" in json)) {
-        setErrors({ form: json?.error?.message ?? "ثبت درخواست ناموفق بود." });
+        setErrors({ form: json?.error?.message ?? "ثبت درخواست انجام نشد. دوباره تلاش کنید." });
         return;
       }
       setSent(true);
     } catch {
-      setErrors({ form: "ارتباط برقرار نشد. دوباره تلاش کنید." });
+      setErrors({ form: "ارتباط با سرور برقرار نشد. دوباره تلاش کنید." });
     } finally {
       setSubmitting(false);
     }

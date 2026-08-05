@@ -51,7 +51,7 @@ export async function joinWaitlist(input: {
     throw new HttpError(
       409,
       "CONFLICT",
-      "برای این رویداد فهرست انتظار فعال نیست.",
+      "برای این رویداد لیست انتظار فعال نیست.",
     );
   }
 

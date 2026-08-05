@@ -270,7 +270,7 @@ export default function EventDetailPage({ params }: Params) {
             ? [
                 {
                   id: "waitlist",
-                  label: "فهرست انتظار",
+                  label: "لیست انتظار",
                   content: <EventWaitlist eventId={event.id} />,
                 },
               ]
