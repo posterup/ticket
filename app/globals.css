@@ -489,6 +489,76 @@ body::before {
   box-shadow: var(--glow) !important;
 }
 
+/*
+  The *popover* calendar on a phone — `poster-cal` without `poster-cal-full`.
+
+  Everything above this point in the react-multi-date-picker block sets colour
+  and nothing else, so the popover kept the library's own geometry: roughly
+  28px day cells at 12px type. That is fine beside a mouse and far too small on
+  the surface where it is used most — a سانس row in the ticket-creation wizard,
+  where an organiser adds one date per سانس on a phone. It is also under half
+  the 44px minimum touch target, so the misses that made it *feel* broken were
+  real misses, not clumsiness.
+
+  The inline range calendar already solved this: `poster-cal-full` stretches to
+  its container and flexes each day. The same treatment, applied to the popover
+  and only below `sm`, since the desktop popover is fine as it is.
+
+  `:not(.poster-cal-full)` matters — the range calendar carries **both**
+  classes, and pinning a width on it here would undo the full-bleed layout it
+  exists for.
+*/
+@media (max-width: 639px) {
+  .poster-cal:not(.poster-cal-full) {
+    /* Nearly the full viewport, minus a thumb's worth of margin, so the grid
+       has room to be finger-sized instead of squeezing into a 250px box. */
+    width: calc(100vw - 2rem) !important;
+    max-width: 22rem !important;
+  }
+  .poster-cal:not(.poster-cal-full) .rmdp-calendar,
+  .poster-cal:not(.poster-cal-full) .rmdp-day-picker,
+  .poster-cal:not(.poster-cal-full) .rmdp-day-picker > div,
+  .poster-cal:not(.poster-cal-full) .rmdp-header,
+  .poster-cal:not(.poster-cal-full) .rmdp-week {
+    width: 100% !important;
+  }
+  .poster-cal:not(.poster-cal-full) .rmdp-week {
+    display: flex !important;
+    justify-content: space-between;
+  }
+  .poster-cal:not(.poster-cal-full) .rmdp-day,
+  .poster-cal:not(.poster-cal-full) .rmdp-week-day {
+    flex: 1 1 0 !important;
+    width: auto !important;
+  }
+  /* 44px: the WCAG 2.5.8 target minimum, and the reason this was reported. */
+  .poster-cal:not(.poster-cal-full) .rmdp-day {
+    height: 2.75rem !important;
+  }
+  .poster-cal:not(.poster-cal-full) .rmdp-day span,
+  .poster-cal:not(.poster-cal-full) .rmdp-week-day {
+    font-size: 0.875rem !important;
+  }
+  /* The circular highlight is centred in the taller cell rather than stretched
+     into an oval — the same shape correction `poster-cal-full` makes. */
+  .poster-cal:not(.poster-cal-full) .rmdp-day span {
+    position: static !important;
+    inset: auto !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    margin: 0 auto !important;
+    border-radius: 999px !important;
+  }
+  /* Month/year pickers share the popover and would otherwise stay narrow. */
+  .poster-cal:not(.poster-cal-full) .rmdp-month-picker,
+  .poster-cal:not(.poster-cal-full) .rmdp-year-picker {
+    width: 100% !important;
+  }
+}
+
 /* Light, softly desaturated map tiles (Leaflet) to match the clean theme. */
 .poster-map .leaflet-tile-pane {
   filter: grayscale(0.25) brightness(1.03) contrast(0.96);
