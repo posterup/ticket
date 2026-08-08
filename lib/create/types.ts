@@ -199,6 +199,32 @@ export function emptySlot(id: string): TimeSlot {
 }
 
 /**
+ * The next سانس, carrying over everything but the day.
+ *
+ * A run of سانس‌ها is nearly always the same show on different dates — the
+ * organiser adding the fourth one had to re-enter «۱۸:۰۰» and «۹۰» they had
+ * already typed three times. Copying the previous سانس leaves exactly one field
+ * to fill, which is the field that actually differs.
+ *
+ * The date is deliberately **not** carried: two سانس‌ها on one date is the rare
+ * case, and inheriting it would silently produce a duplicate the organiser has
+ * to notice and clear. `EventSession` is unique on `(eventId, startAt)`, so a
+ * copied date *and* time would additionally collide on save.
+ *
+ * With no previous سانس to copy there is nothing to inherit and this is
+ * `emptySlot`.
+ */
+export function nextSlot(id: string, previous?: TimeSlot): TimeSlot {
+  if (!previous) return emptySlot(id);
+  return {
+    id,
+    date: "",
+    startTime: previous.startTime,
+    durationMin: previous.durationMin,
+  };
+}
+
+/**
  * The shape a سانس takes once stored — `RecurrenceSchedule.slots`, and the
  * `HH:mm` pair the dashboard reads back off an `EventSession`.
  *

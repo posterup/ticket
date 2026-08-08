@@ -9,7 +9,7 @@ import { formatJalaliDate } from "@/lib/format";
 import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "@/lib/wizard/labels";
 import { SessionsEditor } from "@/components/create/SessionsEditor";
 import {
-  emptySlot,
+  nextSlot,
   expandSchedule,
   slotLabel,
   slotToStored,
@@ -56,7 +56,10 @@ export function RecurrenceEditor({ eventId, schedule: initial }: Props) {
   const scheduleChange = (p: Partial<ScheduleDraft>) =>
     setSchedule((s) => ({ ...s, ...p, calendar: true }));
   const addSlot = () =>
-    setSchedule((s) => ({ ...s, slots: [...s.slots, emptySlot(crypto.randomUUID())] }));
+    setSchedule((s) => ({
+      ...s,
+      slots: [...s.slots, nextSlot(crypto.randomUUID(), s.slots.at(-1))],
+    }));
   const removeSlot = (id: string) =>
     setSchedule((s) => ({
       ...s,
@@ -80,7 +83,7 @@ export function RecurrenceEditor({ eventId, schedule: initial }: Props) {
       daySlots: { ...s.daySlots, [day]: fn(s.daySlots[day] ?? []) },
     }));
   const addDaySlot = (day: WeekDay) =>
-    patchDaySlots(day, (s) => [...s, emptySlot(crypto.randomUUID())]);
+    patchDaySlots(day, (s) => [...s, nextSlot(crypto.randomUUID(), s.at(-1))]);
   const removeDaySlot = (day: WeekDay, id: string) =>
     patchDaySlots(day, (s) => s.filter((x) => x.id !== id));
   const daySlotChange = (day: WeekDay, id: string, p: Partial<TimeSlot>) =>
