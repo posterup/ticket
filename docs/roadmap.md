@@ -19,8 +19,9 @@ remaining gaps below are honest.
 | 4 Marketing and analytics | Partial — SMS campaigns ship; **email does not exist**, and analytics is per-event rather than a surface of its own. |
 | 5 Finance | Partial — payments, refunds, commission and the payout queue ship; **the transfer itself is a bank action taken outside the product**, recorded here rather than executed. |
 
-Still open, and deliberately so: desktop (every viewport ≥1024px is behind
-`DesktopGate`), SSE for live seat availability (polling instead — see
+Still open, and deliberately so: desktop layouts (reachable now that the ≥1024px
+gate is gone, but unfinished in places), SSE for live seat availability (polling
+instead — see
 `docs/venue-architecture.md` §10), curved seating bowls, and per-seat nudging in
 the venue designer. Everything the product does *not* do is listed with its
 reason in `docs/backend-architecture.md` § Known limits and

@@ -10,8 +10,8 @@
  * least composed at exactly the moment a reader is deciding whether it works.
  *
  * The status code is a small legible chip, not the giant background numeral
- * every error page reaches for. That was built and cut: this product ships
- * mobile-only (`DesktopGate`), and at 390px there is no margin for a decorative
+ * every error page reaches for. That was built and cut: this product is designed
+ * phone-first, and at 390px there is no margin for a decorative
  * glyph — it either gets sheared by `overflow-hidden` or sits directly behind
  * the paragraph a worried reader is trying to read. As a chip the same digits
  * cost two lines of layout, survive every width, and actually tell someone what

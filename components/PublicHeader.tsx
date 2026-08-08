@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
@@ -120,18 +121,18 @@ function Avatar({
   }
 
   /*
-    Initial, or a fallback glyph. `fullName` is optional — an account is created
-    from a phone number and a name is asked for later — so a slice of it is not
-    always available, and a slice of a phone number is not an identity.
+    A neutral person glyph, the same one for everybody without a picture — the
+    same call `WorkspaceAvatar` makes for a workspace with no logo. The initial
+    that used to sit here came from `fullName`, which is optional (an account is
+    created from a phone number and a name is asked for later), so it fell
+    through to «؟» often enough to read as an error rather than an empty slot.
   */
-  const initial = user.fullName?.trim().slice(0, 1);
-
   return (
     <span
       aria-hidden
-      className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-sm font-bold text-background"
+      className="grid size-9 shrink-0 place-items-center rounded-full bg-subtle text-muted"
     >
-      {initial || "؟"}
+      <User className="size-1/2" />
     </span>
   );
 }

@@ -6,7 +6,6 @@ import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 
 import { AppShell } from "@/components/AppShell";
-import { DesktopGate } from "@/components/DesktopGate";
 import { SessionProvider } from "@/lib/client/session";
 
 export const metadata: Metadata = {
@@ -43,10 +42,6 @@ export default function RootLayout({
         <SessionProvider>
           <AppShell>{children}</AppShell>
         </SessionProvider>
-        {/* Last child, so it paints over everything without needing to know
-            what any page below it stacks. Invisible under `lg` — see the
-            component for why this is CSS and not a width listener. */}
-        <DesktopGate />
       </body>
     </html>
   );
