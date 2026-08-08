@@ -338,8 +338,8 @@ export async function persistEvent(
             verificationScore: verification.score,
             verificationErrors: verification.errors,
             verifiedAt: now,
-            priceMin: e.price.min,
-            priceMax: e.price.max,
+            priceMin: asInt(e.price.min),
+            priceMax: asInt(e.price.max),
             priceCurrency: e.price.currency,
             isFree: e.price.isFree,
             priceText: e.price.text,
@@ -429,8 +429,8 @@ export async function persistEvent(
           verificationScore: verification.score,
           verificationErrors: verification.errors,
           verifiedAt: now,
-          priceMin: e.price.min,
-          priceMax: e.price.max,
+          priceMin: asInt(e.price.min),
+          priceMax: asInt(e.price.max),
           priceCurrency: e.price.currency,
           isFree: e.price.isFree,
           priceText: e.price.text,
@@ -454,6 +454,13 @@ export async function persistEvent(
     }
     throw error;
   }
+}
+
+/** Last-resort guard: EventSource price columns are Int4. */
+function asInt(v: number | null): number | null {
+  return v !== null && Number.isSafeInteger(v) && v >= 0 && v < 2_147_483_647
+    ? v
+    : null;
 }
 
 function sourceStatusFor(lifecycle: Lifecycle): P.SourceStatus {

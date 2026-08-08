@@ -118,29 +118,53 @@ export function parsePrice(input: string | null | undefined): PriceInfo {
   const ascii = digitsToAscii(original);
   const currency = /تومان/.test(ascii) ? "تومان" : /ریال/.test(ascii) ? "ریال" : null;
 
-  // Numbers with optional word multipliers immediately after.
+  // Free text is full of numbers that are NOT prices — phone numbers, dates,
+  // times, capacities. A number only counts when a multiplier word follows it
+  // or a currency word sits within a few characters after it. In a Persian
+  // range («۲۰۰ تا ۴۵۰ هزار تومان») the first number elides the unit shared
+  // with the second, so an eligible number lends its multiplier to a bare
+  // number right before «تا».
   const amounts: number[] = [];
-  const numRe = /(\d[\d,]*(?:\.\d+)?)\s*(هزار|میلیون|میلیارد)?/g;
+  const numRe =
+    /(\d[\d,]*(?:\.\d+)?)\s*(هزار|میلیون|میلیارد)?(\s*(?:تومان|ریال))?/g;
+  const MULT: Record<string, number> = {
+    "هزار": 1_000,
+    "میلیون": 1_000_000,
+    "میلیارد": 1_000_000_000,
+  };
   for (const m of ascii.matchAll(numRe)) {
+    const hasCurrencyNear =
+      Boolean(m[3]) ||
+      /^\s*(?:تومان|ریال)/.test(ascii.slice(m.index + m[0].length, m.index + m[0].length + 8));
+    if (!m[2] && !hasCurrencyNear) continue;
     const base = Number(m[1].replace(/,/g, ""));
-    if (!Number.isFinite(base)) continue;
-    const mult =
-      m[2] === "هزار" ? 1_000
-      : m[2] === "میلیون" ? 1_000_000
-      : m[2] === "میلیارد" ? 1_000_000_000
-      : 1;
+    if (!Number.isFinite(base) || base <= 0) continue;
+    const mult = m[2] ? MULT[m[2]] : 1;
     amounts.push(Math.round(base * mult));
-  }
-  if (amounts.length === 0) return none;
 
-  const min = Math.min(...amounts);
-  const max = Math.max(...amounts);
-  const openEnded = /(^|\s)از\s/.test(ascii) && amounts.length === 1;
+    // Shared-unit range: «X تا <this match>».
+    const before = ascii.slice(Math.max(0, m.index - 24), m.index);
+    const range = /(\d[\d,]*)\s*تا\s*$/.exec(before);
+    if (range) {
+      const first = Number(range[1].replace(/,/g, ""));
+      if (Number.isFinite(first) && first > 0) {
+        amounts.push(Math.round(first * mult));
+      }
+    }
+  }
+  // Anything that cannot be a real Toman/Rial price (or fit an Int column)
+  // means the text was not a price statement — keep the words, not numbers.
+  const plausible = amounts.filter((a) => a < 2_000_000_000);
+  if (plausible.length === 0 || plausible.length !== amounts.length) return none;
+
+  const min = Math.min(...plausible);
+  const max = Math.max(...plausible);
+  const openEnded = /(^|\s)از\s/.test(ascii) && plausible.length === 1;
   return {
     min,
     max: openEnded ? null : max,
     currency,
-    isFree: min === 0 && max === 0,
+    isFree: false,
     text: original,
   };
 }

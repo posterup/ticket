@@ -74,10 +74,25 @@ describe("parsePrice", () => {
     expect(parsePrice("رایگان")).toMatchObject({ min: 0, max: 0, isFree: true });
   });
 
-  it("handles ranges", () => {
+  it("handles ranges with a shared elided unit", () => {
     const p = parsePrice("۲۰۰ تا ۴۵۰ هزار تومان");
-    expect(p.min).toBe(200);
+    expect(p.min).toBe(200_000);
     expect(p.max).toBe(450_000);
+  });
+
+  it("ignores phone numbers and other non-price digits", () => {
+    // Live regression: a reservation phone number overflowed the Int column.
+    const p = parsePrice("رزرو: 09379540594");
+    expect(p).toMatchObject({ min: null, max: null, currency: null });
+    const q = parsePrice("ورودی ۱۵۰ هزار تومان — رزرو ۰۹۱۲۳۴۵۶۷۸۹");
+    expect(q.min).toBe(150_000);
+    expect(q.max).toBe(150_000);
+  });
+
+  it("ignores dates, times, and capacities in mixed text", () => {
+    const p = parsePrice("تاریخ ۱۴۰۵/۰۵/۱۸ ساعت ۱۸:۳۰ ظرفیت ۳۰ نفر ورودی ۲۰۰ هزار تومان");
+    expect(p.min).toBe(200_000);
+    expect(p.max).toBe(200_000);
   });
 
   it("refuses to invent numbers from contact-the-organizer text", () => {
@@ -86,8 +101,9 @@ describe("parsePrice", () => {
     expect(p.text).toContain("دایرکت");
   });
 
-  it("does not assume a currency when none is named", () => {
-    expect(parsePrice("۵۰۰").currency).toBeNull();
+  it("treats a bare number with no currency or multiplier as not-a-price", () => {
+    const p = parsePrice("۵۰۰");
+    expect(p).toMatchObject({ min: null, max: null, currency: null });
   });
 });
 
