@@ -307,8 +307,16 @@ describeDb("persistEvent", () => {
     const first = await persistEvent(e, verified, OPTS);
     created.push(first.eventId!);
 
+    // Everything except the target counts as seen — the dev database is
+    // shared, and this test must never mark real imports missing.
+    const others = await db.eventSource.findMany({
+      where: { sourceEventId: { not: e.sourceEventId } },
+      select: { sourceEventId: true },
+    });
+    const seen = new Set(others.map((o) => o.sourceEventId));
+
     for (let run = 1; run <= 3; run++) {
-      await reconcileMissing("davvvat", new Set(), { dryRun: false, healthy: true });
+      await reconcileMissing("davvvat", seen, { dryRun: false, healthy: true });
       const event = await db.event.findUnique({ where: { id: first.eventId } });
       if (run < 3) expect(event?.status).toBe(P.EventStatus.PUBLISHED);
       else expect(event?.status).toBe(P.EventStatus.DRAFT);
@@ -322,6 +330,31 @@ describeDb("persistEvent", () => {
       },
     });
     expect(row?.sourceStatus).toBe(P.SourceStatus.MISSING);
+  });
+
+  it("resurrects a missing event that reappears unchanged", async () => {
+    const e = makeEvent();
+    const first = await persistEvent(e, verified, OPTS);
+    created.push(first.eventId!);
+
+    // Simulate the missing-runs policy having fired.
+    await db.event.update({
+      where: { id: first.eventId },
+      data: { status: P.EventStatus.DRAFT },
+    });
+    await db.eventSource.updateMany({
+      where: { eventId: first.eventId },
+      data: { sourceStatus: P.SourceStatus.MISSING, consecutiveMissingRuns: 3 },
+    });
+
+    const out = await persistEvent(e, verified, OPTS);
+    expect(out.action).toBe("updated");
+    expect(out.note).toContain("resurrected");
+    const event = await db.event.findUnique({ where: { id: first.eventId } });
+    expect(event?.status).toBe(P.EventStatus.PUBLISHED);
+    const row = await db.eventSource.findFirst({ where: { eventId: first.eventId } });
+    expect(row?.sourceStatus).toBe(P.SourceStatus.ACTIVE);
+    expect(row?.consecutiveMissingRuns).toBe(0);
   });
 
   it("unhealthy runs never count as missing", async () => {

@@ -251,13 +251,37 @@ export async function persistEvent(
   // ── Existing row: unchanged → touch; changed → update + history. ──
   if (existing) {
     if (existing.contentHash === hash && isCurrentlyRelevant(lifecycle)) {
+      // A row previously marked missing (or demoted) that reappears with
+      // identical content is resurrected, not just touched — sources flicker.
+      const demoted =
+        existing.sourceStatus !== P.SourceStatus.ACTIVE ||
+        existing.event.status === P.EventStatus.DRAFT;
+      const resurrect =
+        demoted && verification.status === "verified";
       if (!dryRun) {
-        await db.eventSource.update({
-          where: { id: existing.id },
-          data: { lastSeenAt: now, consecutiveMissingRuns: 0 },
+        await db.$transaction(async (tx) => {
+          await tx.eventSource.update({
+            where: { id: existing.id },
+            data: {
+              lastSeenAt: now,
+              consecutiveMissingRuns: 0,
+              ...(resurrect ? { sourceStatus: P.SourceStatus.ACTIVE } : {}),
+            },
+          });
+          if (resurrect) {
+            await tx.event.update({
+              where: { id: existing.eventId },
+              data: { status: P.EventStatus.PUBLISHED },
+            });
+          }
         });
       }
-      return { action: "unchanged", lifecycle, eventId: existing.eventId };
+      return {
+        action: resurrect ? "updated" : "unchanged",
+        lifecycle,
+        eventId: existing.eventId,
+        note: resurrect ? "resurrected after missing" : undefined,
+      };
     }
 
     if (!dryRun) {
