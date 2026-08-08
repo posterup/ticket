@@ -6,6 +6,7 @@ import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 
 import { AppShell } from "@/components/AppShell";
+import { LocaleProvider } from "@/components/LocaleProvider";
 import { SessionProvider } from "@/lib/client/session";
 
 export const metadata: Metadata = {
@@ -37,11 +38,15 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body>
-        {/* Above `AppShell`, because the header a page draws for itself needs
-            the same answer the shell does — one fetch, one moment. */}
-        <SessionProvider>
-          <AppShell>{children}</AppShell>
-        </SessionProvider>
+        {/* Outermost, because HeroUI controls appear on both sides of the
+            session boundary and all of them have to count in Persian. */}
+        <LocaleProvider>
+          {/* Above `AppShell`, because the header a page draws for itself needs
+              the same answer the shell does — one fetch, one moment. */}
+          <SessionProvider>
+            <AppShell>{children}</AppShell>
+          </SessionProvider>
+        </LocaleProvider>
       </body>
     </html>
   );
