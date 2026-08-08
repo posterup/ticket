@@ -36,7 +36,7 @@ import {
 } from "@/lib/create/labels";
 import {
   UNLIMITED_CAPACITY,
-  emptySlot,
+  nextSlot,
   emptyTicket,
   expandSessions,
   initialDraft,
@@ -165,7 +165,10 @@ export function EventComposer({
       ...d,
       schedule: {
         ...d.schedule,
-        slots: [...d.schedule.slots, emptySlot(crypto.randomUUID())],
+        slots: [
+          ...d.schedule.slots,
+          nextSlot(crypto.randomUUID(), d.schedule.slots.at(-1)),
+        ],
       },
     }));
   const removeSlot = (id: string) =>
@@ -216,7 +219,7 @@ export function EventComposer({
       },
     }));
   const addDaySlot = (day: WeekDay) =>
-    patchDaySlots(day, (s) => [...s, emptySlot(crypto.randomUUID())]);
+    patchDaySlots(day, (s) => [...s, nextSlot(crypto.randomUUID(), s.at(-1))]);
   const removeDaySlot = (day: WeekDay, id: string) =>
     patchDaySlots(day, (s) => s.filter((x) => x.id !== id));
   const daySlotChange = (day: WeekDay, id: string, p: Partial<TimeSlot>) =>

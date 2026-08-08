@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 
 import {
   DEFAULT_DURATION_MIN,
+  emptySlot,
   initialDraft,
   emptyTicket,
+  nextSlot,
   expandSessions,
   sessionInstants,
   slotFromStored,
@@ -107,6 +109,31 @@ describe("expandSessions", () => {
       daySlots: { SA: [{ id: "sa-extra", date: "", startTime: "21:00", durationMin: "120" }] },
     });
     expect(expandSessions(draft({ schedule: s }))).toHaveLength(2); // global + extra
+  });
+});
+
+describe("nextSlot", () => {
+  const previous = {
+    id: "a",
+    date: "2026-09-01",
+    startTime: "18:00",
+    durationMin: "90",
+  };
+
+  it("carries the time and length over to the next سانس", () => {
+    const next = nextSlot("b", previous);
+    expect(next.startTime).toBe("18:00");
+    expect(next.durationMin).toBe("90");
+  });
+
+  it("leaves the date empty — that is the field that differs", () => {
+    // Inheriting it would hand back a duplicate to notice and clear, and a
+    // copied date *and* time collides on `EventSession`'s (eventId, startAt).
+    expect(nextSlot("b", previous).date).toBe("");
+  });
+
+  it("is a blank سانس when there is nothing to copy", () => {
+    expect(nextSlot("b")).toEqual(emptySlot("b"));
   });
 });
 
