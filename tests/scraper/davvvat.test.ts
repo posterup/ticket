@@ -48,6 +48,60 @@ describe("parseDavvvat", () => {
     ).toBe("end-before-start");
   });
 
+  it("combines midnight stamps with explicit HH:mm fields (live shape)", () => {
+    // Real doc shape: startDate/endDate at fake-Z midnight, times separate.
+    const { event } = parseDavvvat({
+      ...realDoc,
+      startDate: "2026-08-08T00:00:00.000Z",
+      startTime: "17:00",
+      endDate: "2026-08-08T00:00:00.000Z",
+      endTime: "19:00",
+    });
+    const s = event!.sessions[0];
+    expect(tehranParts(s.startAt)).toMatchObject({ day: 8, hour: 17, minute: 0 });
+    expect(tehranParts(s.endAt!)).toMatchObject({ day: 8, hour: 19, minute: 0 });
+    expect(s.dateOnly).toBe(false);
+  });
+
+  it("explicit time field beats the stamp's own clock", () => {
+    const { event } = parseDavvvat({
+      ...realDoc,
+      startDate: "2026-08-07T11:30:00.000Z",
+      startTime: "16:00",
+      endDate: "2026-08-18T11:30:00.000Z",
+      endTime: "20:00",
+    });
+    const s = event!.sessions[0];
+    expect(tehranParts(s.startAt)).toMatchObject({ day: 7, hour: 16 });
+    expect(tehranParts(s.endAt!)).toMatchObject({ day: 18, hour: 20 });
+  });
+
+  it("start time without end time yields no invented end", () => {
+    const { event } = parseDavvvat({
+      ...realDoc,
+      startDate: "2026-08-08T00:00:00.000Z",
+      startTime: "20:00",
+      endDate: "2026-08-08T00:00:00.000Z",
+      endTime: null,
+    });
+    const s = event!.sessions[0];
+    expect(tehranParts(s.startAt)).toMatchObject({ hour: 20 });
+    expect(s.endAt).toBeNull();
+  });
+
+  it("an end clock before the start clock crosses midnight", () => {
+    const { event } = parseDavvvat({
+      ...realDoc,
+      startDate: "2026-08-08T00:00:00.000Z",
+      startTime: "23:00",
+      endDate: "2026-08-08T00:00:00.000Z",
+      endTime: "01:00",
+    });
+    const s = event!.sessions[0];
+    expect(s.endAt!.getTime()).toBeGreaterThan(s.startAt.getTime());
+    expect(tehranParts(s.endAt!)).toMatchObject({ day: 9, hour: 1 });
+  });
+
   it("treats explicit midnight with no startTime as date-only", () => {
     const { event } = parseDavvvat({
       ...realDoc,

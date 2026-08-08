@@ -75,6 +75,33 @@ export function eventUrl(slug: string): string {
   return `${BASE}/event/${slug}`;
 }
 
+const DATE_PART = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/;
+
+function sameDatePart(a: string, b: string): boolean {
+  return a.slice(0, 10) === b.slice(0, 10);
+}
+
+/**
+ * Combine a fake-Z date stamp with an optional explicit "HH:mm" field into a
+ * UTC instant. The explicit field always wins over the stamp's own clock;
+ * `dateOnly` marks a midnight stamp with no field.
+ */
+function combineWall(
+  dateIso: string,
+  time: string | null | undefined,
+): { at: Date; dateOnly: boolean } | null {
+  const d = DATE_PART.exec(dateIso);
+  if (!d) return null;
+  const clock = /^(\d{1,2}):(\d{2})/.exec(time?.trim() ?? "");
+  const hour = clock ? Number(clock[1]) : Number(d[4]);
+  const minute = clock ? Number(clock[2]) : Number(d[5]);
+  const base = fakeZTehranToUtc(`${d[1]}-${d[2]}-${d[3]}T00:00:00.000Z`);
+  return {
+    at: new Date(base.getTime() + hour * 3_600_000 + minute * 60_000),
+    dateOnly: !clock && hour === 0 && minute === 0,
+  };
+}
+
 /** Enumerate every event doc via the API. Returns raw docs keyed for reuse. */
 export async function discoverDavvvat(limit?: number): Promise<DavvvatDoc[]> {
   const docs: DavvvatDoc[] = [];
@@ -147,23 +174,45 @@ export function parseDavvvat(
   if (!title) return { event: null, skip: "no-title" };
   if (!doc.startDate) return { event: null, skip: "no-date" };
 
-  // Fake-Z Tehran wall time. A midnight timestamp with no explicit startTime
-  // is a date-only listing; a separate "HH:mm" startTime fills a midnight date.
-  let startAt = fakeZTehranToUtc(doc.startDate);
-  const clock = /^(\d{1,2}):(\d{2})/.exec(doc.startTime ?? "");
-  if (clock && /T00:00:00/.test(doc.startDate)) {
-    startAt = new Date(
-      startAt.getTime() + Number(clock[1]) * 3_600_000 + Number(clock[2]) * 60_000,
-    );
+  // Davvvat date shapes, all fake-Z Tehran wall time (verified live):
+  //  - time in the date stamp, startTime null   → stamp is the wall time
+  //  - midnight stamp + separate "HH:mm" fields → the explicit field wins
+  //  - both a non-midnight stamp AND a field    → the explicit field wins
+  //  - midnight stamp, no field                 → date-only listing
+  const start = combineWall(doc.startDate, doc.startTime);
+  if (!start) return { event: null, skip: "bad-date" };
+  const startAt = start.at;
+
+  let endAt: Date | null = null;
+  if (doc.endDate) {
+    const end = combineWall(doc.endDate, doc.endTime);
+    if (end) {
+      if (end.dateOnly && sameDatePart(doc.startDate, doc.endDate)) {
+        // start === end with no end time means "no stated end".
+        endAt = null;
+      } else if (end.dateOnly) {
+        // A date-only range ("runs until the 21st") ends when its last
+        // Tehran day does.
+        endAt = new Date(end.at.getTime() + 86_400_000);
+      } else {
+        endAt = end.at;
+      }
+      if (endAt && endAt.getTime() === startAt.getTime()) endAt = null;
+      // An end clock earlier than the start clock on the same day crosses
+      // midnight (e.g. 23:00 → 01:00).
+      if (
+        endAt &&
+        endAt.getTime() < startAt.getTime() &&
+        sameDatePart(doc.startDate, doc.endDate)
+      ) {
+        endAt = new Date(endAt.getTime() + 86_400_000);
+      }
+    }
   }
-  const startIsMidnight = /T00:00:00/.test(doc.startDate) && !clock;
-  const rawEnd = doc.endDate ? fakeZTehranToUtc(doc.endDate) : null;
-  // startDate === endDate means "no real end", not a zero-length event.
-  const endAt =
-    rawEnd && rawEnd.getTime() !== startAt.getTime() ? rawEnd : null;
   if (endAt && endAt.getTime() < startAt.getTime()) {
     return { event: null, skip: "end-before-start" };
   }
+  const startIsMidnight = start.dateOnly;
 
   const session: CanonicalSession = {
     startAt,
