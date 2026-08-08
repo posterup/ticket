@@ -6,11 +6,10 @@ organizer dashboard, and an internal admin surface. For the tech stack and
 cross-cutting conventions see `CLAUDE.md`; for the route tree and what each
 surface is for, `docs/information-architecture.md`.
 
-**Mobile web only, for now.** `components/DesktopGate.tsx`, wired at
-`app/layout.tsx`, closes every viewport at or above `1024px` behind a notice.
-The `lg:` branches throughout the codebase are unfinished desktop work rather
-than dead code — keep writing both, while knowing only the mobile branch is
-presently reachable. Rationale: `PRODUCT.md`.
+**Mobile-first, desktop open.** The gate that closed every viewport at or above
+`1024px` behind a notice has been removed. The `lg:` branches throughout the
+codebase are still unfinished in places — keep writing both, and expect a laptop
+visitor to reach them. Rationale: `PRODUCT.md`.
 
 ## Principles
 
@@ -31,7 +30,7 @@ presently reachable. Rationale: `PRODUCT.md`.
 
 ```
 app/
-  layout.tsx           Root layout: <html lang="fa" dir="rtl">, Vazirmatn, DesktopGate
+  layout.tsx           Root layout: <html lang="fa" dir="rtl">, Vazirmatn, SessionProvider
   globals.css          Tailwind v4 + design tokens
   error.tsx global-error.tsx not-found.tsx loading.tsx   Persian failure screens
   robots.ts            Disallows all crawlers until launch
@@ -47,7 +46,7 @@ app/
 
 components/
   AppShell AppChrome AppTopBar AppBottomNav   The mobile shell
-  PublicHeader Header Footer DesktopGate ErrorScreen Logo
+  PublicHeader Header Footer ErrorScreen Logo
   ui/          Thin HeroUI wrappers + button-variants.ts (non-client, for RSC)
   admin/ analytics/ auth/ checkin/ checkout/ create/ dashboard/ events/
   feed/ finance/ landing/ marketing/ me/ seatmap/ skeletons/ tickets/

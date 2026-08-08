@@ -18,9 +18,9 @@ CRM, door check-in, finance and payouts, an internal venue designer, and the
 HTTP API all of it runs on. **Pre-launch** — no real organisers, events or
 transactions, and search engines are blocked deliberately (`app/robots.ts`).
 
-**Mobile web only, for now.** `components/DesktopGate.tsx` closes every viewport
-at or above `1024px` behind a notice. The `lg:` branches are unfinished desktop
-work, not dead code — keep writing both.
+**Mobile-first, desktop open.** The `lg:` branches are still unfinished desktop
+work in places — keep writing both, and expect a laptop visitor to reach them.
+The gate that used to close every viewport at or above `1024px` is gone.
 
 Product rationale: `PRODUCT.md` (the authoritative product record) and
 `docs/product-vision.md`.

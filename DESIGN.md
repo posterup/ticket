@@ -256,10 +256,9 @@ they tick.
 
 ## Layout
 
-Mobile-first and, for now, mobile-only: `components/DesktopGate.tsx` closes
-every viewport at `1024px` and above. The `lg:` branches throughout the codebase
-are unfinished desktop work rather than dead code, so build both and expect only
-the narrow one to be reachable today.
+Mobile-first, and desktop is reachable — the gate that closed every viewport at
+`1024px` and above is gone. The `lg:` branches throughout the codebase are still
+unfinished in places, so build both and expect a laptop visitor to land on them.
 
 **Containers.** `max-w-6xl` for wide surfaces (discovery, checkout), `max-w-3xl`
 for reading, `max-w-lg` for single-column moments (error screens, order

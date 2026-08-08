@@ -6,14 +6,14 @@
 
 web
 
-Mobile web. `components/DesktopGate.tsx` (wired at `app/layout.tsx`) closes every
-viewport at or above `1024px` behind «نسخهٔ دسکتاپ هنوز آماده نیست», so the only
-experience anyone can currently reach is a phone-width one.
+Mobile web, designed phone-first. Desktop is reachable: the gate that closed
+every viewport at or above `1024px` behind «نسخهٔ دسکتاپ هنوز آماده نیست» has
+been removed.
 
-**This is a launch constraint, not the product.** Desktop is planned. The `lg:`
-branches throughout `app/` and `components/` are unfinished desktop work, not
-dead code, and future work must keep building both — while knowing that only the
-mobile branch is presently reachable or testable.
+**Phone-first remains the priority.** The `lg:` branches throughout `app/` and
+`components/` are still unfinished in places, and future work must keep building
+both — but a laptop visitor now lands on the real page, so those branches are
+what they will see.
 
 ## Users
 
