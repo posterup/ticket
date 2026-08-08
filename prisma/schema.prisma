@@ -263,6 +263,7 @@ model Event {
   notifySubscriptions NotifySubscription[]
   sectionPricing      SessionSectionPricing[]
   waitlistEntries     WaitlistEntry[]
+  importSources       EventSource[]
 
   @@index([workspaceId, status])
   @@index([status, visibility])
@@ -954,6 +955,131 @@ enum SeatKind {
   COMPANION  @map("companion")
   OBSTRUCTED @map("obstructed")
   HOUSE      @map("house")
+}
+
+// ───────────────────────── imported events (scraper) ─────────────────────────
+//
+// Events collected from external sources PosterUp has permission to republish
+// (see docs/scraper.md). An imported event is a normal Event row owned by a
+// per-source workspace; everything scraper-specific — provenance, verification,
+// pricing display, missing-run bookkeeping — lives here so the core event model
+// stays untouched. `@@unique([source, sourceEventId])` is the idempotency
+// anchor: application dedup can be wrong, this cannot.
+
+enum ScrapeSource {
+  DAVVVAT    @map("davvvat")
+  FIDIBO_ART @map("fidibo-art")
+}
+
+enum SourceVerification {
+  PENDING  @map("pending")
+  VERIFIED @map("verified")
+  CONFLICT @map("conflict")
+  REJECTED @map("rejected")
+}
+
+enum SourceStatus {
+  ACTIVE    @map("active")
+  MISSING   @map("missing")
+  FINISHED  @map("finished")
+  CANCELLED @map("cancelled")
+}
+
+model EventSource {
+  id            String       @id @default(uuid())
+  eventId       String
+  source        ScrapeSource
+  /// The source's own id for the event (Davvvat slug, Fidibo numeric id).
+  sourceEventId String
+  sourceUrl     String
+  /// Last structured payload as fetched, pre-normalization — for auditing,
+  /// reprocessing, and diagnosing bad imports. Read and written whole.
+  rawData       Json
+  /// SHA-256 over the normalized meaningful fields. Unchanged hash → only
+  /// lastSeenAt moves, no Event write.
+  contentHash   String
+  sourceStatus  SourceStatus @default(ACTIVE)
+
+  verificationStatus SourceVerification @default(PENDING)
+  /// Deterministic 0–100 quality score; below the import floor → REJECTED.
+  verificationScore  Int                @default(0)
+  verificationErrors Json               @default("[]")
+  verifiedAt         DateTime?
+
+  // Display pricing. Sale happens on the source site, so these never touch
+  // TicketType. Null means the source did not say — never fabricated.
+  priceMin          Int?
+  priceMax          Int?
+  /// "تومان" | "ریال" — stored as the source stated it.
+  priceCurrency     String?
+  isFree            Boolean?
+  priceText         String?
+  externalTicketUrl String?
+
+  /// Sync runs in a row that failed to discover this event. Unpublish only
+  /// past MISSING_RUNS_BEFORE_UNPUBLISH — one bad crawl must not empty the
+  /// catalog.
+  consecutiveMissingRuns Int      @default(0)
+  firstSeenAt            DateTime @default(now())
+  lastSeenAt             DateTime @default(now())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  event   Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  changes EventSourceChange[]
+
+  @@unique([source, sourceEventId])
+  @@index([eventId])
+  @@index([source, sourceStatus])
+}
+
+/// Field-level history of meaningful changes (date, venue, price, status…).
+model EventSourceChange {
+  id            String   @id @default(uuid())
+  eventSourceId String
+  field         String
+  oldValue      String?
+  newValue      String?
+  createdAt     DateTime @default(now())
+
+  eventSource EventSource @relation(fields: [eventSourceId], references: [id], onDelete: Cascade)
+
+  @@index([eventSourceId, createdAt])
+}
+
+/// One row per sync/lifecycle run — the audit log, and the baseline the next
+/// run's health check compares against ("Davvvat suddenly returned 0 events"
+/// fails the run instead of wiping the catalog).
+model ScrapeRun {
+  id         String       @id @default(uuid())
+  source     ScrapeSource
+  dryRun     Boolean      @default(false)
+  /// "running" | "ok" | "unhealthy" | "failed" — string like Campaign.status.
+  status     String       @default("running")
+  /// Counters: discovered, new, updated, unchanged, finished, cancelled,
+  /// rejected, duplicates, conflicts, missing, unpublished…
+  counters   Json         @default("{}")
+  /// Per-event errors: { sourceEventId, url, stage, error, at }.
+  errors     Json         @default("[]")
+  startedAt  DateTime     @default(now())
+  finishedAt DateTime?
+
+  @@index([source, startedAt])
+}
+
+/// Manual review queue: uncertain duplicates, listing/detail conflicts,
+/// ambiguous dates — anything the pipeline refuses to guess about.
+model ReviewItem {
+  id         String    @id @default(uuid())
+  /// "possible-duplicate" | "conflict" | "ambiguous-date" | "missing-field" | …
+  kind       String
+  payload    Json
+  /// "pending" | "approved" | "rejected".
+  status     String    @default("pending")
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
 }
 
 /// A real queue for a sold-out event, distinct from NotifySubscription.
