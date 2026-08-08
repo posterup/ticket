@@ -2,6 +2,8 @@
 
 import { use } from "react";
 
+import { Disclosure } from "@heroui/react";
+
 import { useApi } from "@/lib/client/api";
 import { AsyncState } from "@/components/ui/async-state";
 import { EventDetailSkeleton } from "@/components/skeletons/EventDetailSkeleton";
@@ -17,7 +19,7 @@ import {
   Video,
 } from "lucide-react";
 
-import { formatJalaliDate, formatTime } from "@/lib/format";
+import { formatJalaliDate, formatNumber, formatTime } from "@/lib/format";
 import { cityCoords } from "@/lib/geo/iran";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -35,6 +37,7 @@ import type {
   Workspace,
 } from "@/types";
 import { resolveBuyState } from "@/lib/events/buy-state";
+import { summariseSessions } from "@/lib/events/session-summary";
 import { WorkspaceAvatar } from "@/components/workspace/WorkspaceAvatar";
 
 interface Params {
@@ -88,6 +91,7 @@ export default function PublicEventDetail({ params }: Params) {
   const sessions = [...event.sessions].sort((a, b) =>
     a.startAt.localeCompare(b.startAt),
   );
+  const sessionLines = summariseSessions(sessions);
 
   const online = Boolean(event.venue.onlineUrl);
   const pin =
@@ -171,22 +175,32 @@ export default function PublicEventDetail({ params }: Params) {
                   </span>
                 </p>
 
-                {/* sessions */}
-                {sessions.map((s) => (
+                {/*
+                  سانس‌ها, summarised.
+
+                  A seven-day run drew seven near-identical rows on a phone —
+                  «۱۴ مرداد · ۱۶:۰۰ تا ۲۲:۰۰», then the fifteenth, then the
+                  sixteenth — and the date was the only thing that differed.
+                  `summariseSessions` ranges over exactly that, one line per
+                  clock window. The individual dates stay one tap away rather
+                  than gone, because a buyer choosing between a Thursday and a
+                  Friday should not have to reach checkout to see them.
+                */}
+                {sessionLines.map((line) => (
                   <p
-                    key={s.id}
+                    key={line.id}
                     className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted"
                   >
                     <Clock className="size-4 shrink-0 text-faint" aria-hidden />
                     <span>
-                      {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)} تا{" "}
-                      {formatTime(s.endAt)}
+                      {line.dates}
+                      {line.qualifier ? ` · ${line.qualifier}` : ""} {line.time}
                     </span>
-                    {s.cancelled ? (
+                    {line.sessions[0].cancelled ? (
                       <span className="rounded-md bg-subtle px-1.5 py-0.5 text-xs text-danger-text">
                         لغو شده
                       </span>
-                    ) : s.layoutVersionId ? (
+                    ) : line.sessions[0].layoutVersionId ? (
                       // Reserved seating changes what the buyer is about to be
                       // asked to do, so it is said up front rather than sprung
                       // on them at checkout.
@@ -197,6 +211,37 @@ export default function PublicEventDetail({ params }: Params) {
                     ) : null}
                   </p>
                 ))}
+
+                {/* Only worth offering when it actually reveals something the
+                    lines above did not already say. */}
+                {sessions.length > sessionLines.length ? (
+                  <Disclosure className="mt-0.5">
+                    <Disclosure.Heading>
+                      <Disclosure.Trigger className="flex items-center gap-1 rounded-md text-xs font-medium text-accent-text outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                        مشاهدهٔ همهٔ سانس‌ها ({formatNumber(sessions.length)})
+                        <Disclosure.Indicator className="size-3.5" />
+                      </Disclosure.Trigger>
+                    </Disclosure.Heading>
+                    <Disclosure.Content>
+                      <Disclosure.Body className="mt-1.5 flex flex-col gap-1 border-s border-border ps-3">
+                        {sessions.map((s) => (
+                          <span
+                            key={s.id}
+                            className="text-xs text-muted"
+                          >
+                            {formatJalaliDate(s.startAt)} · {formatTime(s.startAt)}{" "}
+                            تا {formatTime(s.endAt)}
+                            {s.cancelled ? (
+                              <span className="ms-1.5 text-danger-text">
+                                لغو شده
+                              </span>
+                            ) : null}
+                          </span>
+                        ))}
+                      </Disclosure.Body>
+                    </Disclosure.Content>
+                  </Disclosure>
+                ) : null}
               </div>
             </div>
 
