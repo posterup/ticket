@@ -1,17 +1,30 @@
+"use client";
+
 import * as React from "react";
+import { Input as HeroInput } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
+export type InputProps = React.ComponentPropsWithRef<typeof HeroInput>;
 
 /**
- * Text input primitive — a native <input> styled with the brand tokens (48px
- * tall, 12px radius, hairline border). Kept native (not HeroUI's React-Aria
- * Input) so controlled `value`/`onChange` typing stays instant and reliable.
+ * Text input primitive.
+ *
+ * HeroUI's `Input` is React Aria's `Input` — a real `<input>` that picks up
+ * focus/hover/invalid state from whatever React Aria field context it sits in,
+ * and falls back to behaving like a plain input when there is none. That is why
+ * this swap is transparent: native `value` / `onChange={e => …}` still work, so
+ * none of the twenty call sites changed. The old comment here claimed HeroUI
+ * would make controlled typing unreliable; that is true of the *composed*
+ * `TextField`, not of this primitive.
+ *
+ * The brand classes stay explicit rather than leaning on HeroUI's variants,
+ * because the 48px height and hairline `--field-border` are ours and are shared
+ * with `TimeField` and `NumberField`, which are differently-shaped components.
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = "text", ...props }, ref) => (
-    <input
+    <HeroInput
       ref={ref}
       type={type}
       className={cn(

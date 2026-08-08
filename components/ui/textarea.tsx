@@ -1,17 +1,22 @@
+"use client";
+
 import * as React from "react";
+import { TextArea } from "@heroui/react";
 
 import { cn } from "@/lib/utils";
 
-export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+export type TextareaProps = React.ComponentPropsWithRef<typeof TextArea>;
 
 /**
- * Multi-line text input primitive — a native <textarea> styled with the brand
- * tokens. Kept native (not HeroUI's React-Aria TextArea) so controlled typing
- * stays instant and reliable.
+ * Multi-line text input primitive.
+ *
+ * HeroUI's `TextArea`, which is React Aria's `TextArea` primitive — a real
+ * `<textarea>`, so native `value` / `onChange` are unchanged and all five call
+ * sites are untouched. See `input.tsx` for why the brand classes stay explicit.
  */
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, rows = 4, ...props }, ref) => (
-    <textarea
+    <TextArea
       ref={ref}
       rows={rows}
       className={cn(
