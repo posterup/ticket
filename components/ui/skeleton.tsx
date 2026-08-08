@@ -1,8 +1,27 @@
+"use client";
+
+import { Skeleton as HeroSkeleton } from "@heroui/react";
+
 import { cn } from "@/lib/utils";
 
-/** Shimmering placeholder block for loading states. */
+/**
+ * Shimmering placeholder block for loading states.
+ *
+ * HeroUI's `Skeleton` with `animationType="none"`, because the shimmer is the
+ * brand's: the `.shimmer` class in `globals.css` sweeps a gradient built from
+ * `--subtle`, and HeroUI's own pulse would either fight it or replace it with a
+ * grey that is not one of our tokens. What the swap buys is the component's
+ * `aria-hidden`/`role` handling and a single place to change the placeholder
+ * shape, rather than a hand-rolled div.
+ */
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("shimmer rounded-md", className)} aria-hidden />;
+  return (
+    <HeroSkeleton
+      animationType="none"
+      className={cn("shimmer rounded-md", className)}
+      aria-hidden
+    />
+  );
 }
 
 /**

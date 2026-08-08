@@ -12,6 +12,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { DateField } from "@/components/ui/date-field";
 import { TimeField } from "@/components/ui/time-field";
+import { DurationField } from "@/components/ui/duration-field";
 import {
   formatJalaliDate,
   formatNumber,
@@ -23,7 +24,20 @@ import {
   SESSION_AVAILABILITY_LABELS,
   SESSION_AVAILABILITY_ORDER,
 } from "@/lib/events/labels";
+import { DEFAULT_DURATION_MIN } from "@/lib/create/types";
 import type { EventSession, SessionAvailability } from "@/types";
+
+/**
+ * A stored سانس's length, for the duration field.
+ *
+ * Measured between the two instants rather than between their clock faces: a
+ * سانس that runs 23:00→01:00 is two hours, and subtracting «01:00» from
+ * «23:00» says minus twenty-two.
+ */
+function sessionMinutes(s: EventSession): string {
+  const ms = Date.parse(s.endAt) - Date.parse(s.startAt);
+  return ms > 0 ? String(Math.round(ms / 60_000)) : DEFAULT_DURATION_MIN;
+}
 
 /** Recombine a date + `HH:mm` into the stored ISO form used across the app. */
 /**
@@ -220,7 +234,7 @@ export function SessionsManager({
                 initial={{
                   date: venueParts(s.startAt).date,
                   startTime: venueParts(s.startAt).time,
-                  endTime: venueParts(s.endAt).time,
+                  durationMin: sessionMinutes(s),
                   availability: s.availability ?? "available",
                 }}
                 busy={busyId === s.id}
@@ -361,7 +375,7 @@ export function SessionsManager({
             initial={{
               date: "",
               startTime: "",
-              endTime: "",
+              durationMin: DEFAULT_DURATION_MIN,
               availability: "available",
             }}
             busy={busyId === "new"}
@@ -400,7 +414,7 @@ function SessionEditor({
   initial: {
     date: string;
     startTime: string;
-    endTime: string;
+    durationMin: string;
     availability: SessionAvailability;
   };
   busy: boolean;
@@ -414,22 +428,29 @@ function SessionEditor({
 }) {
   const [date, setDate] = useState(initial.date);
   const [startTime, setStartTime] = useState(initial.startTime);
-  const [endTime, setEndTime] = useState(initial.endTime);
+  const [durationMin, setDurationMin] = useState(initial.durationMin);
   const [availability, setAvailability] = useState<SessionAvailability>(
     initial.availability,
   );
   const [localError, setLocalError] = useState("");
 
   function submit() {
-    if (!date || !startTime || !endTime) {
-      setLocalError("تاریخ و ساعت شروع و پایان را کامل کنید.");
+    const minutes = Number(durationMin);
+    if (!date || !startTime) {
+      setLocalError("تاریخ و ساعت شروع را کامل کنید.");
       return;
     }
-    if (endTime < startTime) {
-      setLocalError("ساعت پایان نباید پیش از ساعت شروع باشد.");
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      setLocalError("مدت برگزاری را به دقیقه وارد کنید.");
       return;
     }
-    onSave(toIso(date, startTime), toIso(date, endTime), availability);
+    // The end is the start *instant* plus the minutes, so a سانس running past
+    // midnight lands on the next day. Pairing the derived clock back with
+    // `date` would put it before its own start — the shape the old
+    // «ساعت پایان نباید پیش از ساعت شروع باشد» check existed to refuse.
+    const startAt = toIso(date, startTime);
+    const endAt = new Date(Date.parse(startAt) + minutes * 60_000).toISOString();
+    onSave(startAt, endAt, availability);
   }
 
   return (
@@ -445,8 +466,12 @@ function SessionEditor({
             onChange={setStartTime}
           />
         </Field>
-        <Field id={`end-${idKey}`} label="پایان">
-          <TimeField id={`end-${idKey}`} value={endTime} onChange={setEndTime} />
+        <Field id={`duration-${idKey}`} label="مدت (دقیقه)">
+          <DurationField
+            id={`duration-${idKey}`}
+            value={durationMin}
+            onChange={setDurationMin}
+          />
         </Field>
         {hideStatus ? null : (
           <Field id={`availability-${idKey}`} label="وضعیت">

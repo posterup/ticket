@@ -1,8 +1,7 @@
 "use client";
 
-import DatePicker, { DateObject } from "react-multi-date-picker";
-import TimePicker from "react-multi-date-picker/plugins/time_picker";
-import { Clock } from "lucide-react";
+import { TimeField as HeroTimeField } from "@heroui/react";
+import { Time } from "@internationalized/date";
 
 import { cn } from "@/lib/utils";
 
@@ -14,47 +13,74 @@ interface TimeFieldProps {
   invalid?: boolean;
 }
 
-function toDisplayValue(value: string): DateObject | "" {
-  if (!value) return "";
-  const [hour, minute] = value.split(":").map((n) => Number.parseInt(n, 10));
-  return new DateObject().set({
-    hour: hour || 0,
-    minute: minute || 0,
-    second: 0,
-  });
+/** `"18:30"` → a React Aria `Time`, or `null` while the field is empty. */
+function toTime(value: string): Time | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(value);
+  if (!m) return null;
+  const hour = Number(m[1]);
+  const minute = Number(m[2]);
+  if (hour > 23 || minute > 59) return null;
+  return new Time(hour, minute);
 }
 
-/** 24-hour time picker (hour/minute), styled to match the other controls. */
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * 24-hour time entry, as two typeable segments.
+ *
+ * **Why this is not a popover.** It was one: a `react-multi-date-picker`
+ * time-picker plugin behind a button, whose only affordance was a stacked pair
+ * of ˄/˅ arrows. There was no way to *type* a time, so setting 18:30 from a
+ * default of 10:50 cost twenty-eight clicks on ~20px targets — on a product
+ * that is mobile-first. HeroUI's `TimeField` is React Aria's segmented field:
+ * type `1830` straight through, arrow keys adjust the focused segment, and the
+ * value is legible without opening anything, which matters in a form that
+ * stacks one of these per سانس.
+ *
+ * **The clock format comes from locale**, pinned in
+ * `components/LocaleProvider.tsx` — React Aria reads the browser's locale, not
+ * `<html lang="fa">`, so without that provider this renders `6:30 PM` for a
+ * reader whose Chrome is English. `hourCycle` is still passed explicitly: the
+ * locale happens to imply 24-hour today, and a سانس list where one row reads
+ * «۱۸:۳۰» and another «۶:۳۰ ب.ظ» is not a thing to leave to a CLDR default.
+ *
+ * Digits here are **Latin**, and that is the one place this product is not
+ * Persian-first. Under Persian numbering these segments accept only `۰-۹`, so
+ * a Latin numpad typed into them does nothing and says nothing. Displayed
+ * times — chips, the preview — go through `formatClock` and stay Persian; see
+ * `LocaleProvider` for the full reasoning.
+ *
+ * The `HH:mm` string API is unchanged from the old component, so every call
+ * site — `SessionsEditor`, `SessionsManager`, `DateRangeFields` — is untouched.
+ */
 export function TimeField({ id, value, onChange, invalid }: TimeFieldProps) {
   return (
-    <DatePicker
-      disableDayPicker
-      format="HH:mm"
-      value={toDisplayValue(value)}
-      className="poster-cal"
-      plugins={[<TimePicker key="tp" hideSeconds />]}
-      onChange={(date) => {
-        const obj = Array.isArray(date) ? date[0] : date;
-        onChange(obj ? obj.format("HH:mm") : "");
-      }}
-      render={(displayValue, openCalendar) => (
-        <button
-          id={id}
-          type="button"
-          onClick={openCalendar}
-          aria-invalid={invalid}
-          className={cn(
-            "flex h-12 w-full items-center justify-between gap-2 rounded-md border bg-card px-3.5 text-start text-sm outline-none transition-colors",
-            "hover:border-foreground/50 focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15",
-            invalid ? "border-danger" : "border-field-border",
-          )}
-        >
-          <span className={displayValue ? "text-foreground" : "text-faint"}>
-            {displayValue || "--:--"}
-          </span>
-          <Clock className="size-4 shrink-0 text-faint" aria-hidden />
-        </button>
-      )}
-    />
+    <HeroTimeField
+      id={id}
+      aria-label="ساعت"
+      hourCycle={24}
+      granularity="minute"
+      isInvalid={invalid}
+      value={toTime(value)}
+      onChange={(time) =>
+        onChange(time ? `${pad(time.hour)}:${pad(time.minute)}` : "")
+      }
+      fullWidth
+    >
+      {/* `dir="ltr"`: a clock reads hour-then-minute in every locale, including
+          this one. Left to the document's `rtl` the segments swap and 18:30
+          renders as 30:18. */}
+      <HeroTimeField.Group
+        dir="ltr"
+        className={cn(
+          "h-12 rounded-md border bg-card px-3.5 text-sm tabular-nums",
+          invalid ? "border-danger" : "border-field-border",
+        )}
+      >
+        <HeroTimeField.Input>
+          {(segment) => <HeroTimeField.Segment segment={segment} />}
+        </HeroTimeField.Input>
+      </HeroTimeField.Group>
+    </HeroTimeField>
   );
 }

@@ -192,10 +192,13 @@ Full endpoint table and request/response samples: `docs/backend-architecture.md`
 
 ## Git workflow
 
-Commit and push to a **new branch**, never `main`; open a PR and merge with
-`gh pr merge <n> --merge --delete-branch`. `bun.lock` is tracked — commit it when
-it changes; `.idea/` is gitignored. Verify `npx tsc --noEmit` and `npm test`
-before merging.
+**`git pull` on `main` before you start anything**, then branch — never commit
+to `main`. Open a PR and merge with `gh pr merge <n> --merge --delete-branch`.
+`bun.lock` is tracked — commit it when it changes; `.idea/` is gitignored.
+Verify `npx tsc --noEmit` and `npm test` (against a seeded database) before
+merging.
+
+Full contributor workflow, for humans and agents: `CONTRIBUTING.md`.
 
 ## Docs map (deeper detail)
 
@@ -211,5 +214,4 @@ before merging.
 | `docs/roadmap.md` | Phased delivery plan and where it actually stands |
 | `PRODUCT.md` | Authoritative product record: users, positioning, constraints, principles |
 | `README.md` | Getting started, messaging/env config, Vercel deploy |
-</content>
-</invoke>
+| `CONTRIBUTING.md` | Branch/PR workflow, verification steps, commit messages |

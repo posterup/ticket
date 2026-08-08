@@ -1,12 +1,17 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  DEFAULT_DURATION_MIN,
   initialDraft,
   emptyTicket,
   expandSessions,
+  sessionInstants,
+  slotFromStored,
+  slotToStored,
   type CreateDraft,
   type ScheduleDraft,
 } from "@/lib/create/types";
+import { addMinutes, minutesBetween } from "@/lib/format";
 import { validateDraft } from "@/lib/create/validation";
 
 function draft(overrides: Partial<CreateDraft> = {}): CreateDraft {
@@ -19,7 +24,7 @@ function schedule(o: Partial<ScheduleDraft> = {}): ScheduleDraft {
     startDate: "",
     endDate: "",
     byDay: [],
-    slots: [{ id: "slot-1", date: "2026-09-01", startTime: "18:00", endTime: "20:00" }],
+    slots: [{ id: "slot-1", date: "2026-09-01", startTime: "18:00", durationMin: "120" }],
     daySlots: {},
     exceptions: [],
     ...o,
@@ -31,7 +36,7 @@ function calSchedule(o: Partial<ScheduleDraft> = {}): ScheduleDraft {
   return schedule({
     calendar: true,
     startDate: "2026-09-01",
-    slots: [{ id: "slot-1", date: "", startTime: "18:00", endTime: "20:00" }],
+    slots: [{ id: "slot-1", date: "", startTime: "18:00", durationMin: "120" }],
     ...o,
   });
 }
@@ -42,15 +47,15 @@ describe("expandSessions", () => {
   });
 
   it("non-calendar: an undated سانس yields nothing", () => {
-    const s = schedule({ slots: [{ id: "slot-1", date: "", startTime: "18:00", endTime: "20:00" }] });
+    const s = schedule({ slots: [{ id: "slot-1", date: "", startTime: "18:00", durationMin: "120" }] });
     expect(expandSessions(draft({ schedule: s }))).toHaveLength(0);
   });
 
   it("non-calendar: each سانس keeps its own date", () => {
     const s = schedule({
       slots: [
-        { id: "a", date: "2026-09-01", startTime: "18:00", endTime: "20:00" },
-        { id: "b", date: "2026-09-05", startTime: "21:00", endTime: "23:00" },
+        { id: "a", date: "2026-09-01", startTime: "18:00", durationMin: "120" },
+        { id: "b", date: "2026-09-05", startTime: "21:00", durationMin: "120" },
       ],
     });
     const out = expandSessions(draft({ schedule: s }));
@@ -65,8 +70,8 @@ describe("expandSessions", () => {
     const s = calSchedule({
       endDate: "2026-09-03", // 3 days
       slots: [
-        { id: "a", date: "", startTime: "18:00", endTime: "20:00" },
-        { id: "b", date: "", startTime: "21:00", endTime: "23:00" },
+        { id: "a", date: "", startTime: "18:00", durationMin: "120" },
+        { id: "b", date: "", startTime: "21:00", durationMin: "120" },
       ],
     });
     expect(expandSessions(draft({ schedule: s }))).toHaveLength(6); // 3 × 2
@@ -98,10 +103,43 @@ describe("expandSessions", () => {
       startDate: "2026-09-05",
       endDate: "2026-09-05",
       byDay: ["SA"],
-      slots: [{ id: "g", date: "", startTime: "18:00", endTime: "20:00" }],
-      daySlots: { SA: [{ id: "sa-extra", date: "", startTime: "21:00", endTime: "23:00" }] },
+      slots: [{ id: "g", date: "", startTime: "18:00", durationMin: "120" }],
+      daySlots: { SA: [{ id: "sa-extra", date: "", startTime: "21:00", durationMin: "120" }] },
     });
     expect(expandSessions(draft({ schedule: s }))).toHaveLength(2); // global + extra
+  });
+});
+
+describe("duration ⇄ end clock", () => {
+  it("wraps past midnight instead of going negative", () => {
+    expect(addMinutes("23:00", 120)).toBe("01:00");
+    expect(minutesBetween("23:00", "01:00")).toBe(120);
+  });
+
+  it("round-trips a stored slot through the draft and back", () => {
+    const stored = { id: "s", startTime: "18:00", endTime: "19:30" };
+    const draftSlot = slotFromStored(stored);
+    expect(draftSlot.durationMin).toBe("90");
+    expect(slotToStored(draftSlot)).toEqual(stored);
+  });
+
+  it("falls back to the default when the stored pair is unreadable", () => {
+    expect(slotFromStored({ id: "s", startTime: "18:00", endTime: "" }).durationMin).toBe(
+      DEFAULT_DURATION_MIN,
+    );
+  });
+
+  it("ends a late سانس on the next day, not before its own start", () => {
+    // The bug this replaced: `venueIso(date, "01:00")` put the end 22 hours
+    // before the start, because it reused the start's calendar date.
+    const { startAt, endAt } = sessionInstants({
+      id: "s",
+      date: "2026-09-01",
+      startTime: "23:00",
+      durationMin: 120,
+    });
+    expect(Date.parse(endAt) - Date.parse(startAt)).toBe(120 * 60_000);
+    expect(endAt > startAt).toBe(true);
   });
 });
 
@@ -151,7 +189,7 @@ describe("validateDraft", () => {
   });
 
   it("non-calendar requires a dated سانس", () => {
-    const s = schedule({ slots: [{ id: "x", date: "", startTime: "", endTime: "" }] });
+    const s = schedule({ slots: [{ id: "x", date: "", startTime: "", durationMin: "" }] });
     expect(validateDraft(draft({ ...ok(), schedule: s })).schedule).toBeTruthy();
   });
 

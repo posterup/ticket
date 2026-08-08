@@ -7,6 +7,7 @@
  * on submit.
  */
 
+import { addMinutes, minutesBetween, venueIso } from "@/lib/format";
 import type { WeekDay } from "@/types";
 import type { TicketTemplate } from "@/components/tickets/TicketPreview";
 
@@ -29,19 +30,28 @@ export interface SessionDraft {
   id: string;
   date: string;
   startTime: string;
-  endTime: string;
+  /** Length in whole minutes; the end is derived, never typed. */
+  durationMin: number;
 }
 
 /**
  * A سانس (show time-slot). In the non-calendar model each سانس carries its own
  * `date`; in the calendar model the date is supplied by the range and `date`
  * is ignored.
+ *
+ * **Duration, not an end clock.** The organiser answers «چقدر طول می‌کشد؟» with
+ * one number instead of setting two clocks that have to agree. Kept as a string
+ * like every other draft field, because it is what an input holds mid-typing.
+ * The stored `EventSession` still has a real `endAt` — the conversion happens
+ * once, on submit, by adding the minutes to the start *instant*, which is also
+ * what makes a سانس ending after midnight land on the next day instead of
+ * before its own start.
  */
 export interface TimeSlot {
   id: string;
   date: string;
   startTime: string;
-  endTime: string;
+  durationMin: string;
 }
 
 /**
@@ -174,8 +184,83 @@ export function defaultTicketDesign(): TicketTemplate {
   };
 }
 
+/**
+ * A blank سانس, pre-filled with an hour.
+ *
+ * The old empty end-time field had no sensible default — any clock we picked
+ * would be a guess about when the event ends. A *length* does have one, and 60
+ * minutes is both the commonest answer and an obviously-editable one, so the
+ * organiser who leaves it alone still gets a valid سانس rather than an error.
+ */
+export const DEFAULT_DURATION_MIN = "60";
+
 export function emptySlot(id: string): TimeSlot {
-  return { id, date: "", startTime: "", endTime: "" };
+  return { id, date: "", startTime: "", durationMin: DEFAULT_DURATION_MIN };
+}
+
+/**
+ * The shape a سانس takes once stored — `RecurrenceSchedule.slots`, and the
+ * `HH:mm` pair the dashboard reads back off an `EventSession`.
+ *
+ * Storage keeps an end clock. The draft keeps a length. Both directions of that
+ * translation live here, next to each other, so they cannot drift: everything
+ * downstream of the wire — the public event page, the ICS export, the door
+ * scanner — reads `endTime`/`endAt` and none of it had to change for the input
+ * to change.
+ */
+export interface StoredSlot {
+  id: string;
+  startTime: string;
+  endTime: string;
+}
+
+/** Stored end-clock → draft duration. Unreadable pairs fall back to the default. */
+export function slotFromStored(s: StoredSlot): TimeSlot {
+  const minutes = minutesBetween(s.startTime, s.endTime);
+  return {
+    id: s.id,
+    date: "",
+    startTime: s.startTime,
+    durationMin: minutes && minutes > 0 ? String(minutes) : DEFAULT_DURATION_MIN,
+  };
+}
+
+/** Draft duration → stored end clock. */
+export function slotToStored(slot: TimeSlot): StoredSlot {
+  return {
+    id: slot.id,
+    startTime: slot.startTime,
+    endTime: addMinutes(slot.startTime, slotMinutes(slot)),
+  };
+}
+
+/** A سانس as one line: «۱۸:۰۰–۱۹:۳۰», with the end derived, never typed. */
+export function slotLabel(slot: TimeSlot): string {
+  if (!slot.startTime) return "";
+  const { endTime } = slotToStored(slot);
+  return endTime ? `${slot.startTime}–${endTime}` : slot.startTime;
+}
+
+/**
+ * A draft session as the two instants the wire carries.
+ *
+ * `endAt` is the start **instant** plus the minutes — not `venueIso(date,
+ * endClock)`, which is what the composer used to do and which silently broke
+ * the late show: a سانس starting 23:00 and running two hours produced an
+ * `endAt` of 01:00 *on the same date*, twenty-two hours before its own start.
+ * Nothing rejected it, and the event page rendered a negative-length session.
+ * Adding minutes to an instant cannot express that.
+ */
+export function sessionInstants(s: SessionDraft): {
+  startAt: string;
+  endAt: string;
+} {
+  const startAt = venueIso(s.date, s.startTime);
+  const minutes = s.durationMin > 0 ? s.durationMin : Number(DEFAULT_DURATION_MIN);
+  return {
+    startAt,
+    endAt: new Date(Date.parse(startAt) + minutes * 60_000).toISOString(),
+  };
 }
 
 export function emptyTicket(id: string, kind: TicketKind = "paid"): TicketTypeDraft {
@@ -254,6 +339,20 @@ const WEEKDAY_OF: WeekDay[] = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 const MAX_SESSIONS = 366;
 
 /**
+ * A slot's length as a number, falling back to the default rather than to zero.
+ *
+ * A blank or half-typed field is "not answered yet", and a zero-length سانس is
+ * a session that ends the instant it starts — the availability indicator
+ * divides by it and the door scanner treats it as already over. Validation
+ * still rejects a blank duration before submit; this only decides what the live
+ * preview shows while the organiser is mid-edit.
+ */
+function slotMinutes(slot: TimeSlot): number {
+  const n = Number(slot.durationMin);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : Number(DEFAULT_DURATION_MIN);
+}
+
+/**
  * Resolve the draft's schedule into concrete sessions. Every day in
  * `[startDate, endDate]` (filtered to `byDay` when `calendar` is on) is paired
  * with each defined سانس time-slot. Client preview and submit share this.
@@ -293,7 +392,7 @@ export function expandSchedule(schedule: ScheduleDraft): SessionDraft[] {
         id: `${date}-${slot.id}`,
         date,
         startTime: slot.startTime,
-        endTime: slot.endTime,
+        durationMin: slotMinutes(slot),
       });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
@@ -308,7 +407,7 @@ export function expandSchedule(schedule: ScheduleDraft): SessionDraft[] {
         id: `${s.date}-${s.id}`,
         date: s.date,
         startTime: s.startTime,
-        endTime: s.endTime,
+        durationMin: slotMinutes(s),
       }));
   }
 
@@ -336,7 +435,7 @@ export function expandSchedule(schedule: ScheduleDraft): SessionDraft[] {
           id: `${date}-${slot.id}`,
           date,
           startTime: slot.startTime,
-          endTime: slot.endTime,
+          durationMin: slotMinutes(slot),
         });
       }
     }

@@ -1,6 +1,18 @@
-import { expandSessions, type CreateDraft } from "./types";
+import { expandSessions, type CreateDraft, type TimeSlot } from "./types";
 
 export type DraftErrors = Record<string, string>;
+
+/**
+ * A سانس length the organiser actually supplied.
+ *
+ * Blank and «۰» are both rejected, and they are different mistakes: blank is an
+ * unanswered field, zero is a session that ends the moment it starts. Neither
+ * can reach the server, where `endAt` would land on or before `startAt`.
+ */
+function hasDuration(slot: TimeSlot | undefined): boolean {
+  const n = Number(slot?.durationMin);
+  return Number.isFinite(n) && n > 0;
+}
 
 /**
  * Validate the composer draft. Returns a flat map of field-key -> Persian
@@ -30,14 +42,14 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
       e.schedule = "تاریخ پایان نباید پیش از تاریخ شروع باشد.";
     } else if (!slot?.startTime) {
       e.schedule = "ساعت شروع را تعیین کنید.";
-    } else if (!slot.endTime) {
-      e.schedule = "ساعت پایان را تعیین کنید.";
+    } else if (!hasDuration(slot)) {
+      e.schedule = "مدت برگزاری را به دقیقه وارد کنید.";
     }
   } else if (!calendar) {
     if (!slots.some((s) => s.date && s.startTime)) {
       e.schedule = "حداقل یک سانس با تاریخ و ساعت شروع تعریف کنید.";
-    } else if (slots.some((s) => s.date && s.startTime && !s.endTime)) {
-      e.schedule = "برای هر سانس ساعت پایان را هم مشخص کنید.";
+    } else if (slots.some((s) => s.date && s.startTime && !hasDuration(s))) {
+      e.schedule = "برای هر سانس مدت برگزاری را به دقیقه وارد کنید.";
     }
   } else if (!startDate) {
     e.schedule = "تاریخ شروع را تعیین کنید.";
@@ -45,8 +57,8 @@ export function validateDraft(draft: CreateDraft): DraftErrors {
     e.schedule = "تاریخ پایان نباید پیش از تاریخ شروع باشد.";
   } else if (!slots.some((s) => s.startTime)) {
     e.schedule = "حداقل یک سانس با ساعت شروع تعریف کنید.";
-  } else if (slots.some((s) => s.startTime && !s.endTime)) {
-    e.schedule = "برای هر سانس ساعت پایان را هم مشخص کنید.";
+  } else if (slots.some((s) => s.startTime && !hasDuration(s))) {
+    e.schedule = "برای هر سانس مدت برگزاری را به دقیقه وارد کنید.";
   } else if (byDay.length > 0 && expandSessions(draft).length === 0) {
     e.schedule = "در بازهٔ انتخابی روزی با روزهای اجرا هم‌خوانی ندارد.";
   }

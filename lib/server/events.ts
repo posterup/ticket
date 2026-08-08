@@ -13,9 +13,13 @@ import type {
   SessionAvailability,
   Venue,
 } from "@/types";
-import { expandSchedule, type ScheduleDraft } from "@/lib/create/types";
+import {
+  expandSchedule,
+  sessionInstants,
+  slotFromStored,
+  type ScheduleDraft,
+} from "@/lib/create/types";
 import { phoneVariants } from "@/lib/server/sms";
-import { venueIso } from "@/lib/format";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 
 import type { Prisma } from "@/generated/client";
@@ -248,12 +252,7 @@ export type EventUpdate = Partial<
 
 /** ScheduleDraft equivalent of a stored {@link RecurrenceSchedule}. */
 function toScheduleDraft(spec: RecurrenceSchedule): ScheduleDraft {
-  const toSlot = (s: { id: string; startTime: string; endTime: string }) => ({
-    id: s.id,
-    date: "",
-    startTime: s.startTime,
-    endTime: s.endTime,
-  });
+  const toSlot = slotFromStored;
   return {
     calendar: true,
     startDate: spec.startDate,
@@ -284,16 +283,18 @@ async function applySchedule(
   const existing = await db.eventSession.findMany({ where: { eventId } });
   const byStart = new Map(existing.map((s) => [s.startAt.toISOString(), s]));
 
-  // `venueIso`, not a `Z` — these are wall-clock times at the venue. Appending
-  // `Z` put every regenerated سانس three and a half hours late, and because the
-  // match below keys on `startAt`, none of them lined up with the rows the
-  // wizard had written: the transaction deleted every existing سانس and made
-  // new ones, discarding availability, the cancelled flag, and any order
-  // pointing at them.
-  const wanted = expandSchedule(toScheduleDraft(spec)).map((s) => ({
-    startAt: new Date(venueIso(s.date, s.startTime)),
-    endAt: new Date(venueIso(s.date, s.endTime || s.startTime)),
-  }));
+  // `sessionInstants` — the same conversion the wizard submits through, and
+  // venue wall-clock rather than a `Z`. Appending `Z` here put every
+  // regenerated سانس three and a half hours late, and because the match below
+  // keys on `startAt`, none of them lined up with the rows the wizard had
+  // written: the transaction deleted every existing سانس and made new ones,
+  // discarding availability, the cancelled flag, and any order pointing at
+  // them. Sharing the helper is what keeps the two paths from drifting apart
+  // again.
+  const wanted = expandSchedule(toScheduleDraft(spec)).map((s) => {
+    const { startAt, endAt } = sessionInstants(s);
+    return { startAt: new Date(startAt), endAt: new Date(endAt) };
+  });
   const wantedKeys = new Set(wanted.map((s) => s.startAt.toISOString()));
 
   await db.$transaction([

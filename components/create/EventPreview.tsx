@@ -10,7 +10,13 @@ import {
   EyeOff,
 } from "lucide-react";
 
-import { formatClock, formatJalaliDate, formatNumber, formatTime, formatToman } from "@/lib/format";
+import {
+  addMinutes,
+  formatClock,
+  formatJalaliDate,
+  formatNumber,
+  formatToman,
+} from "@/lib/format";
 import { LOCATION_LABELS, VISIBILITY_LABELS } from "@/lib/create/labels";
 import type { CreateDraft, SessionDraft, TicketTypeDraft } from "@/lib/create/types";
 
@@ -34,7 +40,8 @@ function timeRange(s: SessionDraft): string {
   // The typed clock time, not an instant. Routing it through a 1970 date made
   // the preview render an 18:00 session as ۲۱:۳۰.
   const start = formatClock(s.startTime);
-  return s.endTime ? `${start} تا ${formatClock(s.endTime)}` : start;
+  const end = addMinutes(s.startTime, s.durationMin);
+  return end ? `${start} تا ${formatClock(end)}` : start;
 }
 
 /** Live preview of the event as an attendee will see it. */
