@@ -4,7 +4,7 @@
  * reruns never collide; created rows are cleaned up per suite.
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
 import * as P from "@/generated/enums";
 import { db } from "@/lib/server/db";
