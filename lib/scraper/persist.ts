@@ -334,7 +334,12 @@ export async function persistEvent(
             rawData: { payload: e.raw, __tracked: nextSnapshot } as object,
             contentHash: hash,
             sourceStatus: sourceStatusFor(lifecycle),
-            verificationStatus: P.SourceVerification.VERIFIED,
+            // A finished event skips the verification fetch ("pending");
+            // that must not erase what verification last concluded.
+            verificationStatus:
+              verification.status === "verified"
+                ? P.SourceVerification.VERIFIED
+                : existing.verificationStatus,
             verificationScore: verification.score,
             verificationErrors: verification.errors,
             verifiedAt: now,

@@ -11,7 +11,7 @@ import * as P from "@/generated/enums";
 import { db } from "@/lib/server/db";
 
 import { envNum, mapLimit, slog } from "./http";
-import { hasPlausibleDates } from "./lifecycle";
+import { eventLifecycle, hasPlausibleDates, isCurrentlyRelevant } from "./lifecycle";
 import {
   persistEvent,
   reconcileMissing,
@@ -185,7 +185,12 @@ async function syncDavvvat(
         );
         return;
       }
-      const verification = await verifyDavvvat(event);
+      // Verification costs a detail-page fetch. An event that is already over
+      // will never be published, so it skips the fetch entirely — persist
+      // still records its finished/cancelled state.
+      const verification = isCurrentlyRelevant(eventLifecycle(event, now))
+        ? await verifyDavvvat(event)
+        : { status: "pending" as const, score: 0, errors: [], checks: {} };
       tally(counters, (await persistEvent(event, verification, { dryRun: opts.dryRun, now })).action);
       if (verification.status === "conflict") counters.reviewQueued += 1;
     } catch (error) {
@@ -321,15 +326,22 @@ export async function runSync(opts: SyncOptions): Promise<SyncReport> {
     reports.push(report);
 
     if (runRow) {
-      await db.scrapeRun.update({
-        where: { id: runRow.id },
-        data: {
-          status: report.healthy ? "ok" : "unhealthy",
-          counters: report.counters as unknown as object,
-          errors: report.errors as unknown as object,
-          finishedAt: new Date(),
-        },
-      });
+      try {
+        await db.scrapeRun.update({
+          where: { id: runRow.id },
+          data: {
+            status: report.healthy ? "ok" : "unhealthy",
+            counters: report.counters as unknown as object,
+            errors: report.errors as unknown as object,
+            finishedAt: new Date(),
+          },
+        });
+      } catch {
+        // The row can vanish if someone reseeds the shared dev database
+        // mid-run (prisma db seed TRUNCATEs every table). Losing one audit
+        // row must not fail an otherwise-complete sync.
+        slog({ stage: "sync", source, status: "audit-row-lost" });
+      }
     }
     slog({
       stage: "sync",
