@@ -8,7 +8,9 @@ import persian_fa from "react-date-object/locales/persian_fa";
 import gregorian_en from "react-date-object/locales/gregorian_en";
 
 import { cn } from "@/lib/utils";
-import { formatNumber } from "@/lib/format";
+import { addMinutes, formatClock, formatNumber } from "@/lib/format";
+import { TimeField } from "@/components/ui/time-field";
+import { DurationField } from "@/components/ui/duration-field";
 
 export interface DateRange {
   /** Gregorian `YYYY-MM-DD`. */
@@ -16,7 +18,8 @@ export interface DateRange {
   endDate: string;
   /** `HH:mm`. */
   startTime: string;
-  endTime: string;
+  /** Length in whole minutes, as a digit-only string. */
+  durationMin: string;
 }
 
 /** Gregorian `YYYY-MM-DD` → a Persian-calendar DateObject for the picker value. */
@@ -77,6 +80,11 @@ export function DateRangeFields({
   }
 
   const days = dayCount(value.startDate, value.endDate);
+  const minutes = Number(value.durationMin);
+  const endsAt =
+    value.startTime && Number.isFinite(minutes) && minutes > 0
+      ? addMinutes(value.startTime, minutes)
+      : "";
 
   return (
     <div className="flex flex-col gap-5">
@@ -101,7 +109,16 @@ export function DateRangeFields({
           : "روز شروع و روز پایان را روی تقویم انتخاب کنید."}
       </p>
 
-      {/* One hour range, shared by every day — native time pickers, از/تا. */}
+      {/*
+        One start time and one length, shared by every day in the range.
+
+        These were two bare `<input type="time">` — the only hand-rolled time
+        entry left in the codebase, and it showed: the native control renders a
+        different widget in every browser, ignores the Jalali calendar the row
+        above it uses, and was styled by copying `TimeField`'s classes rather
+        than being it. Now it *is* `TimeField`, so a fix to the picker reaches
+        every سانس in the product at once.
+      */}
       <div className="flex flex-col gap-2">
         <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
           <Clock className="size-4 text-faint" aria-hidden />
@@ -109,28 +126,30 @@ export function DateRangeFields({
         </span>
         <div className="grid grid-cols-2 gap-3">
           <label htmlFor="range-start-time" className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted">از ساعت</span>
-            <input
+            <span className="text-xs text-muted">ساعت شروع</span>
+            <TimeField
               id="range-start-time"
-              type="time"
-              dir="ltr"
               value={value.startTime}
-              onChange={(e) => onChange({ ...value, startTime: e.target.value })}
-              className="h-12 w-full rounded-md border border-border bg-card px-3.5 text-center text-sm tabular-nums text-foreground outline-none transition-colors hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15"
+              onChange={(startTime) => onChange({ ...value, startTime })}
             />
           </label>
-          <label htmlFor="range-end-time" className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted">تا ساعت</span>
-            <input
-              id="range-end-time"
-              type="time"
-              dir="ltr"
-              value={value.endTime}
-              onChange={(e) => onChange({ ...value, endTime: e.target.value })}
-              className="h-12 w-full rounded-md border border-border bg-card px-3.5 text-center text-sm tabular-nums text-foreground outline-none transition-colors hover:border-border-strong focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-ring/15"
+          <label htmlFor="range-duration" className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted">مدت (دقیقه)</span>
+            <DurationField
+              id="range-duration"
+              value={value.durationMin}
+              onChange={(durationMin) => onChange({ ...value, durationMin })}
             />
           </label>
         </div>
+        {endsAt ? (
+          /* The derived end, stated rather than typed — an organiser setting a
+             length still wants to see the clock time it lands on, especially
+             the late show that lands on tomorrow's. */
+          <p className="text-xs text-muted">
+            پایان هر روز: {formatClock(endsAt)}
+          </p>
+        ) : null}
       </div>
     </div>
   );

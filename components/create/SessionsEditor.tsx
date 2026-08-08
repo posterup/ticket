@@ -8,10 +8,12 @@ import { formatNumber, formatJalaliDate } from "@/lib/format";
 import { Field } from "@/components/ui/field";
 import { DateField } from "@/components/ui/date-field";
 import { TimeField } from "@/components/ui/time-field";
+import { DurationField } from "@/components/ui/duration-field";
 import { Toggle } from "@/components/create/ui";
 import { DateRangeFields } from "@/components/create/DateRangeFields";
 import { CALENDAR_MODE_ENABLED } from "@/lib/flags";
 import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "@/lib/wizard/labels";
+import { DEFAULT_DURATION_MIN, slotLabel } from "@/lib/create/types";
 import type { ScheduleDraft, TimeSlot } from "@/lib/create/types";
 import type { WeekDay } from "@/types";
 
@@ -33,7 +35,7 @@ interface Props {
   onRemoveException: (date: string) => void;
 }
 
-/** A سانس row: optional date (non-calendar) + start/end times. */
+/** A سانس row: optional date (non-calendar) + start time and length. */
 function SlotRow({
   slot,
   index,
@@ -77,11 +79,11 @@ function SlotRow({
           onChange={(v) => onChange({ startTime: v })}
         />
       </Field>
-      <Field id={`slot-end-${slot.id}`} label="پایان">
-        <TimeField
-          id={`slot-end-${slot.id}`}
-          value={slot.endTime}
-          onChange={(v) => onChange({ endTime: v })}
+      <Field id={`slot-duration-${slot.id}`} label="مدت (دقیقه)">
+        <DurationField
+          id={`slot-duration-${slot.id}`}
+          value={slot.durationMin}
+          onChange={(v) => onChange({ durationMin: v })}
         />
       </Field>
       {canRemove ? (
@@ -132,9 +134,9 @@ export function SessionsEditor(props: Props) {
         : { range: false },
     );
   };
-  // Per-day سانس‌ها that are open for editing. A row stays open (start + end
-  // fields) until confirmed, so setting the start time doesn't collapse it into
-  // a chip before the user can finish entering the end time.
+  // Per-day سانس‌ها that are open for editing. A row stays open (start +
+  // duration fields) until confirmed, so setting the start time doesn't collapse
+  // it into a chip before the user can adjust the length.
   const [editingDaySlots, setEditingDaySlots] = useState<Set<string>>(
     () => new Set(),
   );
@@ -225,15 +227,15 @@ export function SessionsEditor(props: Props) {
           startDate: schedule.startDate,
           endDate: schedule.endDate,
           startTime: rangeSlot?.startTime ?? "",
-          endTime: rangeSlot?.endTime ?? "",
+          durationMin: rangeSlot?.durationMin ?? DEFAULT_DURATION_MIN,
         }}
         invalid={Boolean(error)}
-        onChange={({ startDate, endDate, startTime, endTime }) =>
+        onChange={({ startDate, endDate, startTime, durationMin }) =>
           onScheduleChange({
             startDate,
             endDate,
             slots: [
-              { id: rangeSlot?.id ?? "slot-1", date: "", startTime, endTime },
+              { id: rangeSlot?.id ?? "slot-1", date: "", startTime, durationMin },
             ],
           })
         }
@@ -336,7 +338,7 @@ export function SessionsEditor(props: Props) {
                               key={s.id}
                               className="rounded-full border border-border bg-subtle px-3 py-1 text-xs text-muted"
                             >
-                              {s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime}
+                              {slotLabel(s)}
                             </span>
                           ))}
                         {/* per-day extra سانس‌ها as editable/removable chips */}
@@ -363,7 +365,7 @@ export function SessionsEditor(props: Props) {
                               */
                               className="rounded-sm outline-none hover:underline focus-visible:underline focus-visible:ring-2 focus-visible:ring-background"
                             >
-                              {s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime}
+                              {slotLabel(s)}
                             </button>
                             <button
                               type="button"
@@ -396,17 +398,19 @@ export function SessionsEditor(props: Props) {
                               value={s.startTime}
                               onChange={(v) => {
                                 onDaySlotChange(day, s.id, { startTime: v });
-                                // Keep the row open so the end time can still be
-                                // set instead of collapsing into a chip.
+                                // Keep the row open so the duration can still be
+                                // adjusted instead of collapsing into a chip.
                                 openDaySlot(s.id);
                               }}
                             />
                           </Field>
-                          <Field id={`d-end-${day}-${s.id}`} label="پایان">
-                            <TimeField
-                              id={`d-end-${day}-${s.id}`}
-                              value={s.endTime}
-                              onChange={(v) => onDaySlotChange(day, s.id, { endTime: v })}
+                          <Field id={`d-duration-${day}-${s.id}`} label="مدت (دقیقه)">
+                            <DurationField
+                              id={`d-duration-${day}-${s.id}`}
+                              value={s.durationMin}
+                              onChange={(v) =>
+                                onDaySlotChange(day, s.id, { durationMin: v })
+                              }
                             />
                           </Field>
                           <div className="mb-1 flex items-center gap-1">

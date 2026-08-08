@@ -11,6 +11,8 @@ import { SessionsEditor } from "@/components/create/SessionsEditor";
 import {
   emptySlot,
   expandSchedule,
+  slotLabel,
+  slotToStored,
   type ScheduleDraft,
   type TimeSlot,
 } from "@/lib/create/types";
@@ -105,11 +107,7 @@ export function RecurrenceEditor({ eventId, schedule: initial }: Props) {
       setError("دست‌کم یک سانس با ساعت شروع تعریف کنید.");
       return;
     }
-    const cleanSlot = (s: TimeSlot) => ({
-      id: s.id,
-      startTime: s.startTime,
-      endTime: s.endTime || s.startTime,
-    });
+    const cleanSlot = slotToStored;
     const daySlots: NonNullable<RecurrenceSchedule["daySlots"]> = {};
     for (const d of WEEKDAY_ORDER) {
       const arr = (schedule.daySlots[d] ?? [])
@@ -201,7 +199,7 @@ export function RecurrenceEditor({ eventId, schedule: initial }: Props) {
                       key={s.id}
                       className="rounded-full border border-border bg-subtle px-2 py-0.5 text-xs text-muted"
                     >
-                      {s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime}
+                      {slotLabel(s)}
                     </span>
                   ))}
                 </span>

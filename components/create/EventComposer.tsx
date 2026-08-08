@@ -40,6 +40,8 @@ import {
   emptyTicket,
   expandSessions,
   initialDraft,
+  sessionInstants,
+  slotLabel,
   type CreateDraft,
   type LocationMode,
   type ScheduleDraft,
@@ -146,7 +148,7 @@ export function EventComposer({
       ? draft.schedule.slots
           .filter((s) => s.startTime)
           .map((s) => {
-            const time = s.endTime ? `${s.startTime}–${s.endTime}` : s.startTime;
+            const time = slotLabel(s);
             const label =
               !draft.schedule.calendar && s.date
                 ? `${formatJalaliDate(`${s.date}T00:00:00.000Z`)} · ${time}`
@@ -308,10 +310,7 @@ export function EventComposer({
             ? { lat: draft.location.lat, lng: draft.location.lng }
             : {}),
         },
-        sessions: expanded.map((s) => ({
-          startAt: iso(s.date, s.startTime),
-          endAt: iso(s.date, s.endTime || s.startTime),
-        })),
+        sessions: expanded.map(sessionInstants),
         ...(mode === "recurring"
           ? {
               recurrence: {
@@ -356,7 +355,7 @@ export function EventComposer({
        */
       const last = expanded[expanded.length - 1] ?? expanded[0];
       const defaultSalesEnd = last
-        ? iso(last.date, last.endTime || last.startTime || "23:59")
+        ? sessionInstants(last).endAt
         : new Date(Date.now() + 365 * 86_400_000).toISOString();
       await Promise.all(
         draft.ticketTypes.map((t) =>

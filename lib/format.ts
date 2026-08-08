@@ -40,6 +40,49 @@ export function formatClock(hhmm: string): string {
   return hhmm.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
 }
 
+/** Minutes past midnight for an `HH:mm` string, or `undefined` if unparseable. */
+function clockMinutes(hhmm: string): number | undefined {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
+  if (!m) return undefined;
+  const hour = Number(m[1]);
+  const minute = Number(m[2]);
+  if (hour > 23 || minute > 59) return undefined;
+  return hour * 60 + minute;
+}
+
+/**
+ * `"22:30"` plus 120 minutes is `"00:30"` — the clock wraps, deliberately.
+ *
+ * The organiser enters a start and a length, so a late show legitimately ends
+ * on the next day's clock face. This returns only that clock face; the calendar
+ * day it belongs to is the caller's problem, and callers that need a real
+ * instant must add the minutes to the start *instant* instead (see
+ * {@link venueIso}) rather than pairing this result back with the start date.
+ */
+export function addMinutes(hhmm: string, minutes: number): string {
+  const base = clockMinutes(hhmm);
+  if (base === undefined || !Number.isFinite(minutes)) return "";
+  const total = ((base + Math.trunc(minutes)) % 1440 + 1440) % 1440;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+}
+
+/**
+ * How long `[start, end]` lasts, in minutes, reading an end at or before the
+ * start as crossing midnight — `["23:00", "01:00"]` is 120, not −1320.
+ *
+ * Equal times are the one ambiguous case and resolve to a full day rather than
+ * zero: this exists to read a stored session back into the duration field, and
+ * every stored session has a non-zero length. Returns `undefined` when either
+ * side is unparseable, so a caller can tell "not set yet" from "zero".
+ */
+export function minutesBetween(start: string, end: string): number | undefined {
+  const from = clockMinutes(start);
+  const to = clockMinutes(end);
+  if (from === undefined || to === undefined) return undefined;
+  return to > from ? to - from : to + 1440 - from;
+}
+
 /**
  * The venue's wall clock, split into the two fields a form edits.
  *

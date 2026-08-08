@@ -26,7 +26,7 @@ import { EventDiscounts } from "@/components/dashboard/EventDiscounts";
 import { EventConsole } from "@/components/dashboard/EventConsole";
 import { TicketDesigner } from "@/components/tickets/TicketDesigner";
 import type { TicketSample } from "@/components/tickets/TicketPreview";
-import { emptySlot, type ScheduleDraft } from "@/lib/create/types";
+import { emptySlot, slotFromStored, type ScheduleDraft } from "@/lib/create/types";
 import type {
   DiscountCode,
   Event,
@@ -47,12 +47,7 @@ interface Params {
  */
 function buildScheduleDraft(event: Event): ScheduleDraft {
   const rs = event.recurrenceSchedule;
-  const toSlot = (s: { id: string; startTime: string; endTime: string }) => ({
-    id: s.id,
-    date: "",
-    startTime: s.startTime,
-    endTime: s.endTime,
-  });
+  const toSlot = slotFromStored;
   if (rs) {
     return {
       calendar: true,
